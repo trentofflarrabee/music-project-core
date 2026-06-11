@@ -12,6 +12,8 @@ function mpc_get_homepage_defaults() {
         // Hero.
         'hero_enabled' => 1,
         'hero_heading' => get_bloginfo('name'),
+        'hero_layout' => 'split',
+        'hero_overlay_opacity' => 45,
         'hero_text' => 'A reusable WordPress theme for bands, artists, and music projects.',
         'hero_mobile_image_id' => 0,
         'hero_desktop_video_id' => 0,
@@ -69,6 +71,20 @@ function mpc_sanitize_homepage_settings($input) {
     $output = [];
 
     // Hero.
+    $allowed_hero_layouts = ['split', 'full_bleed'];
+
+    $output['hero_layout'] = isset($input['hero_layout'])
+        ? sanitize_key($input['hero_layout'])
+        : 'split';
+
+    if (!in_array($output['hero_layout'], $allowed_hero_layouts, true)) {
+        $output['hero_layout'] = 'split';
+    }
+
+    $output['hero_overlay_opacity'] = isset($input['hero_overlay_opacity'])
+    ? min(100, max(0, absint($input['hero_overlay_opacity'])))
+    : 45;
+
     $output['hero_enabled'] = !empty($input['hero_enabled']) ? 1 : 0;
 
     $output['hero_heading'] = isset($input['hero_heading'])
@@ -314,6 +330,52 @@ function mpc_render_homepage_settings_page() {
                             >
                             <?php esc_html_e('Show hero section on homepage', 'music-project-core'); ?>
                         </label>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_homepage_hero_layout">Hero Layout</label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_hero_layout"
+                            name="mpc_homepage_settings[hero_layout]"
+                        >
+                            <option value="split" <?php selected($settings['hero_layout'], 'split'); ?>>
+                                Split Media / Text
+                            </option>
+                            <option value="full_bleed" <?php selected($settings['hero_layout'], 'full_bleed'); ?>>
+                                Full-Bleed Media
+                            </option>
+                        </select>
+
+                        <p class="description">
+                            Full-Bleed uses the desktop video when available. Otherwise it uses the hero image.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_homepage_hero_overlay_opacity">Hero Overlay Strength</label>
+                    </th>
+                    <td>
+                        <input
+                            id="mpc_homepage_hero_overlay_opacity"
+                            type="range"
+                            min="0"
+                            max="100"
+                            step="5"
+                            name="mpc_homepage_settings[hero_overlay_opacity]"
+                            value="<?php echo esc_attr($settings['hero_overlay_opacity']); ?>"
+                            oninput="this.nextElementSibling.value = this.value"
+                        >
+                        <output><?php echo esc_html($settings['hero_overlay_opacity']); ?></output>
+
+                        <p class="description">
+                            Controls the darkness of the full-bleed hero overlay. Lower numbers show more image/video.
+                        </p>
                     </td>
                 </tr>
 

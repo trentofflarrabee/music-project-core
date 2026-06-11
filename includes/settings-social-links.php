@@ -1,188 +1,244 @@
 <?php
+/**
+ * Social Links Settings
+ *
+ * Stores global social/profile links and display preferences.
+ */
 
 if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Supported social platforms.
- */
-function mpc_get_social_platforms() {
+function mpc_get_social_link_items() {
     return [
         'instagram' => [
-            'label' => __('Instagram', 'music-project-core'),
-            'type'  => 'url',
+            'label' => 'Instagram',
+            'type' => 'url',
+            'placeholder' => 'https://instagram.com/yourband',
         ],
         'spotify' => [
-            'label' => __('Spotify', 'music-project-core'),
-            'type'  => 'url',
+            'label' => 'Spotify',
+            'type' => 'url',
+            'placeholder' => 'https://open.spotify.com/artist/...',
         ],
         'apple_music' => [
-            'label' => __('Apple Music', 'music-project-core'),
-            'type'  => 'url',
+            'label' => 'Apple Music',
+            'type' => 'url',
+            'placeholder' => 'https://music.apple.com/...',
         ],
         'bandcamp' => [
-            'label' => __('Bandcamp', 'music-project-core'),
-            'type'  => 'url',
+            'label' => 'Bandcamp',
+            'type' => 'url',
+            'placeholder' => 'https://yourband.bandcamp.com',
         ],
         'youtube' => [
-            'label' => __('YouTube', 'music-project-core'),
-            'type'  => 'url',
+            'label' => 'YouTube',
+            'type' => 'url',
+            'placeholder' => 'https://youtube.com/@yourband',
         ],
         'tiktok' => [
-            'label' => __('TikTok', 'music-project-core'),
-            'type'  => 'url',
+            'label' => 'TikTok',
+            'type' => 'url',
+            'placeholder' => 'https://tiktok.com/@yourband',
         ],
         'soundcloud' => [
-            'label' => __('SoundCloud', 'music-project-core'),
-            'type'  => 'url',
+            'label' => 'SoundCloud',
+            'type' => 'url',
+            'placeholder' => 'https://soundcloud.com/yourband',
         ],
         'facebook' => [
-            'label' => __('Facebook', 'music-project-core'),
-            'type'  => 'url',
+            'label' => 'Facebook',
+            'type' => 'url',
+            'placeholder' => 'https://facebook.com/yourband',
         ],
         'website' => [
-            'label' => __('Website', 'music-project-core'),
-            'type'  => 'url',
+            'label' => 'Website',
+            'type' => 'url',
+            'placeholder' => 'https://yourband.com',
         ],
         'email' => [
-            'label' => __('Email', 'music-project-core'),
-            'type'  => 'email',
+            'label' => 'Email',
+            'type' => 'email',
+            'placeholder' => 'booking@example.com',
         ],
     ];
 }
 
-/**
- * Default social links.
- */
+function mpc_get_social_display_options() {
+    return [
+        'labels' => 'Text Labels',
+        'icons' => 'Icons Only',
+        'icons_labels' => 'Icons + Labels',
+    ];
+}
+
 function mpc_get_social_links_defaults() {
     $defaults = [];
 
-    foreach (mpc_get_social_platforms() as $platform => $data) {
-        $defaults[$platform] = '';
+    foreach (mpc_get_social_link_items() as $key => $item) {
+        $defaults[$key] = '';
     }
+
+    $defaults['hero_display'] = 'labels';
+    $defaults['footer_display'] = 'labels';
 
     return $defaults;
 }
 
-/**
- * Get all social links.
- */
-function mpc_get_social_links() {
-    $saved = get_option('mpc_social_links', []);
+function mpc_get_social_links_settings() {
+    $settings = get_option('mpc_social_links_settings', []);
 
-    if (!is_array($saved)) {
-        $saved = [];
+    if (!is_array($settings)) {
+        $settings = [];
     }
 
-    return wp_parse_args($saved, mpc_get_social_links_defaults());
+    return wp_parse_args($settings, mpc_get_social_links_defaults());
 }
 
-/**
- * Get one social link.
- */
-function mpc_get_social_link($platform) {
-    $links = mpc_get_social_links();
+function mpc_get_social_links_setting($key, $default = '') {
+    $settings = mpc_get_social_links_settings();
 
-    return isset($links[$platform]) ? $links[$platform] : '';
+    return isset($settings[$key]) ? $settings[$key] : $default;
 }
 
-/**
- * Sanitize social links before saving.
- */
-function mpc_sanitize_social_links($input) {
-    $platforms = mpc_get_social_platforms();
-    $output = [];
+function mpc_sanitize_social_links_settings($input) {
+    $input = is_array($input) ? $input : [];
+    $output = mpc_get_social_links_defaults();
 
-    foreach ($platforms as $platform => $data) {
-        $value = isset($input[$platform]) ? trim($input[$platform]) : '';
+    foreach (mpc_get_social_link_items() as $key => $item) {
+        $value = isset($input[$key]) ? trim((string) $input[$key]) : '';
 
-        if ($data['type'] === 'email') {
-            $output[$platform] = sanitize_email($value);
+        if ($item['type'] === 'email') {
+            $output[$key] = sanitize_email($value);
         } else {
-            $output[$platform] = esc_url_raw($value);
+            $output[$key] = esc_url_raw($value);
         }
+    }
+
+    $allowed_displays = array_keys(mpc_get_social_display_options());
+
+    foreach (['hero_display', 'footer_display'] as $display_key) {
+        $value = isset($input[$display_key]) ? sanitize_key($input[$display_key]) : 'labels';
+        $output[$display_key] = in_array($value, $allowed_displays, true) ? $value : 'labels';
     }
 
     return $output;
 }
 
-/**
- * Register social settings.
- */
 function mpc_register_social_links_settings() {
     register_setting(
-        'mpc_social_links_group',
-        'mpc_social_links',
-        [
-            'sanitize_callback' => 'mpc_sanitize_social_links',
-        ]
+        'mpc_social_links_settings_group',
+        'mpc_social_links_settings',
+        'mpc_sanitize_social_links_settings'
     );
 }
 add_action('admin_init', 'mpc_register_social_links_settings');
 
-/**
- * Add Social Links submenu page.
- */
-function mpc_add_social_links_submenu() {
+function mpc_add_social_links_admin_menu() {
     add_submenu_page(
         'mpc-homepage',
-        __('Social Links', 'music-project-core'),
-        __('Social Links', 'music-project-core'),
+        'Social Links',
+        'Social Links',
         'manage_options',
         'mpc-social-links',
         'mpc_render_social_links_settings_page'
     );
 }
-add_action('admin_menu', 'mpc_add_social_links_submenu');
+add_action('admin_menu', 'mpc_add_social_links_admin_menu', 10);
 
-/**
- * Render Social Links settings page.
- */
+function mpc_render_social_display_select($settings, $key, $label, $description = '') {
+    $options = mpc_get_social_display_options();
+    ?>
+    <tr>
+        <th scope="row">
+            <label for="mpc_social_<?php echo esc_attr($key); ?>">
+                <?php echo esc_html($label); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_social_<?php echo esc_attr($key); ?>"
+                name="mpc_social_links_settings[<?php echo esc_attr($key); ?>]"
+            >
+                <?php foreach ($options as $value => $option_label) : ?>
+                    <option value="<?php echo esc_attr($value); ?>" <?php selected($settings[$key], $value); ?>>
+                        <?php echo esc_html($option_label); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <?php if ($description) : ?>
+                <p class="description"><?php echo esc_html($description); ?></p>
+            <?php endif; ?>
+        </td>
+    </tr>
+    <?php
+}
+
 function mpc_render_social_links_settings_page() {
     if (!current_user_can('manage_options')) {
         return;
     }
 
-    $links = mpc_get_social_links();
-    $platforms = mpc_get_social_platforms();
+    $settings = mpc_get_social_links_settings();
+    $items = mpc_get_social_link_items();
     ?>
-
     <div class="wrap">
-        <h1><?php esc_html_e('Music Project Social Links', 'music-project-core'); ?></h1>
-
-        <p>
-            <?php esc_html_e('Add the social/profile links for this artist or music project. Empty fields will not display on the frontend.', 'music-project-core'); ?>
-        </p>
+        <h1>Social Links</h1>
 
         <form method="post" action="options.php">
-            <?php settings_fields('mpc_social_links_group'); ?>
+            <?php settings_fields('mpc_social_links_settings_group'); ?>
+
+            <h2>Links</h2>
 
             <table class="form-table" role="presentation">
-                <?php foreach ($platforms as $platform => $data) : ?>
-                    <tr>
-                        <th scope="row">
-                            <label for="mpc_social_<?php echo esc_attr($platform); ?>">
-                                <?php echo esc_html($data['label']); ?>
-                            </label>
-                        </th>
-                        <td>
-                            <input
-                                type="<?php echo esc_attr($data['type']); ?>"
-                                id="mpc_social_<?php echo esc_attr($platform); ?>"
-                                name="mpc_social_links[<?php echo esc_attr($platform); ?>]"
-                                class="regular-text"
-                                value="<?php echo esc_attr($links[$platform]); ?>"
-                                placeholder="<?php echo $data['type'] === 'email' ? esc_attr('name@example.com') : esc_attr('https://...'); ?>"
-                            >
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
+                <tbody>
+                    <?php foreach ($items as $key => $item) : ?>
+                        <tr>
+                            <th scope="row">
+                                <label for="mpc_social_<?php echo esc_attr($key); ?>">
+                                    <?php echo esc_html($item['label']); ?>
+                                </label>
+                            </th>
+                            <td>
+                                <input
+                                    id="mpc_social_<?php echo esc_attr($key); ?>"
+                                    class="regular-text"
+                                    type="<?php echo $item['type'] === 'email' ? 'email' : 'url'; ?>"
+                                    name="mpc_social_links_settings[<?php echo esc_attr($key); ?>]"
+                                    value="<?php echo esc_attr($settings[$key]); ?>"
+                                    placeholder="<?php echo esc_attr($item['placeholder']); ?>"
+                                >
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
             </table>
 
-            <?php submit_button(__('Save Social Links', 'music-project-core')); ?>
+            <h2>Display Options</h2>
+
+            <table class="form-table" role="presentation">
+                <tbody>
+                    <?php
+                    mpc_render_social_display_select(
+                        $settings,
+                        'hero_display',
+                        'Hero Social Display',
+                        'Controls how social links appear in the homepage hero.'
+                    );
+
+                    mpc_render_social_display_select(
+                        $settings,
+                        'footer_display',
+                        'Footer Social Display',
+                        'Controls how social links appear in the site footer.'
+                    );
+                    ?>
+                </tbody>
+            </table>
+
+            <?php submit_button(); ?>
         </form>
     </div>
-
     <?php
 }
