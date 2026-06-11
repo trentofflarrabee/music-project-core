@@ -1,0 +1,2 @@
+# music-project-core
+
