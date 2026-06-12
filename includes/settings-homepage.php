@@ -15,6 +15,8 @@ function mpc_get_homepage_defaults() {
         'hero_layout' => 'split',
         'hero_overlay_opacity' => 45,
         'hero_text' => 'A reusable WordPress theme for bands, artists, and music projects.',
+        'hero_overlay_style' => 'side',
+        'hero_content_position' => 'bottom_left',   
         'hero_mobile_image_id' => 0,
         'hero_desktop_video_id' => 0,
         'hero_cta_text' => '',
@@ -80,6 +82,25 @@ function mpc_sanitize_homepage_settings($input) {
     if (!in_array($output['hero_layout'], $allowed_hero_layouts, true)) {
         $output['hero_layout'] = 'split';
     }
+    
+    $allowed_hero_overlay_styles = ['side', 'bottom', 'center', 'even'];
+    $allowed_hero_content_positions = ['bottom_left', 'center_left', 'bottom_center', 'center_center'];
+
+    $output['hero_overlay_style'] = isset($input['hero_overlay_style'])
+        ? sanitize_key($input['hero_overlay_style'])
+        : 'side';
+
+    if (!in_array($output['hero_overlay_style'], $allowed_hero_overlay_styles, true)) {
+        $output['hero_overlay_style'] = 'side';
+    }
+
+    $output['hero_content_position'] = isset($input['hero_content_position'])
+        ? sanitize_key($input['hero_content_position'])
+        : 'bottom_left';
+
+    if (!in_array($output['hero_content_position'], $allowed_hero_content_positions, true)) {
+        $output['hero_content_position'] = 'bottom_left';
+    } 
 
     $output['hero_overlay_opacity'] = isset($input['hero_overlay_opacity'])
     ? min(100, max(0, absint($input['hero_overlay_opacity'])))
@@ -109,7 +130,7 @@ function mpc_sanitize_homepage_settings($input) {
 
     $output['hero_cta_url'] = isset($input['hero_cta_url'])
         ? esc_url_raw($input['hero_cta_url'])
-        : '';
+        : '';   
 
     // Featured Content.
     $output['featured_enabled'] = !empty($input['featured_enabled']) ? 1 : 0;
@@ -375,6 +396,64 @@ function mpc_render_homepage_settings_page() {
 
                         <p class="description">
                             Controls the darkness of the full-bleed hero overlay. Lower numbers show more image/video.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_homepage_hero_overlay_style">Hero Overlay Style</label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_hero_overlay_style"
+                            name="mpc_homepage_settings[hero_overlay_style]"
+                        >
+                            <option value="side" <?php selected($settings['hero_overlay_style'], 'side'); ?>>
+                                Side Gradient
+                            </option>
+                            <option value="bottom" <?php selected($settings['hero_overlay_style'], 'bottom'); ?>>
+                                Bottom Gradient
+                            </option>
+                            <option value="center" <?php selected($settings['hero_overlay_style'], 'center'); ?>>
+                                Center Vignette
+                            </option>
+                            <option value="even" <?php selected($settings['hero_overlay_style'], 'even'); ?>>
+                                Even Wash
+                            </option>
+                        </select>
+
+                        <p class="description">
+                            Controls the direction/style of the full-bleed hero overlay.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_homepage_hero_content_position">Hero Content Position</label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_hero_content_position"
+                            name="mpc_homepage_settings[hero_content_position]"
+                        >
+                            <option value="bottom_left" <?php selected($settings['hero_content_position'], 'bottom_left'); ?>>
+                                Bottom Left
+                            </option>
+                            <option value="center_left" <?php selected($settings['hero_content_position'], 'center_left'); ?>>
+                                Center Left
+                            </option>
+                            <option value="bottom_center" <?php selected($settings['hero_content_position'], 'bottom_center'); ?>>
+                                Bottom Center
+                            </option>
+                            <option value="center_center" <?php selected($settings['hero_content_position'], 'center_center'); ?>>
+                                Center Center
+                            </option>
+                        </select>
+
+                        <p class="description">
+                            Controls where the text sits inside the full-bleed hero.
                         </p>
                     </td>
                 </tr>
