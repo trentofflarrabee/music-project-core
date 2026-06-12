@@ -4,11 +4,101 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+function mpc_get_homepage_section_definitions() {
+    return [
+        'hero' => [
+            'label' => 'Hero',
+            'description' => 'Main landing section with heading, media, CTA, and socials.',
+        ],
+        'featured-content' => [
+            'label' => 'Featured Content',
+            'description' => 'Promo section for a release, video, announcement, or quote.',
+        ],
+        'shows' => [
+            'label' => 'Shows',
+            'description' => 'Tour dates or live show embed.',
+        ],
+        'blog' => [
+            'label' => 'Blog / News',
+            'description' => 'Recent posts from the site blog.',
+        ],
+        'newsletter' => [
+            'label' => 'Newsletter',
+            'description' => 'Signup form or newsletter embed.',
+        ],
+    ];
+}
+
+function mpc_get_homepage_section_default_order() {
+    return array_keys(mpc_get_homepage_section_definitions());
+}
+
+function mpc_get_homepage_section_default_visibility() {
+    return array_fill_keys(mpc_get_homepage_section_default_order(), 1);
+}
+
+function mpc_normalize_homepage_section_order($order) {
+    $known_sections = mpc_get_homepage_section_default_order();
+
+    if (is_string($order)) {
+        $order = array_filter(array_map('trim', explode(',', $order)));
+    }
+
+    if (!is_array($order)) {
+        $order = [];
+    }
+
+    $normalized = [];
+
+    foreach ($order as $section) {
+        $section = sanitize_key($section);
+
+        if (in_array($section, $known_sections, true) && !in_array($section, $normalized, true)) {
+            $normalized[] = $section;
+        }
+    }
+
+    foreach ($known_sections as $section) {
+        if (!in_array($section, $normalized, true)) {
+            $normalized[] = $section;
+        }
+    }
+
+    return $normalized;
+}
+
+function mpc_get_homepage_section_order() {
+    $settings = mpc_get_homepage_settings();
+    $order = isset($settings['section_order']) ? $settings['section_order'] : '';
+
+    return mpc_normalize_homepage_section_order($order);
+}
+
+function mpc_get_homepage_section_visibility() {
+    $settings = mpc_get_homepage_settings();
+
+    $visibility = isset($settings['section_visibility']) && is_array($settings['section_visibility'])
+        ? $settings['section_visibility']
+        : [];
+
+    return wp_parse_args($visibility, mpc_get_homepage_section_default_visibility());
+}
+
+function mpc_is_homepage_section_visible($section) {
+    $section = sanitize_key($section);
+    $visibility = mpc_get_homepage_section_visibility();
+
+    return !empty($visibility[$section]);
+}
+
 /**
  * Default homepage settings.
  */
 function mpc_get_homepage_defaults() {
     return [
+        'section_order' => implode(',', mpc_get_homepage_section_default_order()),
+        'section_visibility' => mpc_get_homepage_section_default_visibility(),
+
         // Hero.
         'hero_enabled' => 1,
         'hero_heading' => get_bloginfo('name'),
@@ -32,6 +122,8 @@ function mpc_get_homepage_defaults() {
         'featured_cta_text' => '',
         'featured_cta_url' => '',
         'featured_show_quote' => 1,
+        'featured_layout' => 'split_card',
+        'featured_quote_position' => 'beside',
         'featured_media_type' => 'image',
         'featured_video_url' => '',
 
@@ -97,8 +189,28 @@ function mpc_sanitize_featured_video_url($url) {
  * Sanitize homepage settings before saving.
  */
 function mpc_sanitize_homepage_settings($input) {
+    $input = is_array($input) ? $input : [];
+
     $defaults = mpc_get_homepage_defaults();
     $output = [];
+
+    // Section Manager.
+    $known_sections = mpc_get_homepage_section_default_order();
+
+    $output['section_order'] = isset($input['section_order'])
+        ? implode(',', mpc_normalize_homepage_section_order($input['section_order']))
+        : implode(',', $known_sections);
+
+    $section_visibility = [];
+
+    foreach ($known_sections as $section) {
+        $section_visibility[$section] = !empty($input['section_visibility'][$section]) ? 1 : 0;
+    }
+
+    $output['section_visibility'] = $section_visibility;
+
+    // Hero.
+    $allowed_hero_layouts = ['split', 'full_bleed'];
 
     // Hero.
     $allowed_hero_layouts = ['split', 'full_bleed'];
@@ -191,7 +303,39 @@ function mpc_sanitize_homepage_settings($input) {
         ? esc_url_raw($input['featured_cta_url'])
         : '';
 
-    $output['featured_show_quote'] = !empty($input['featured_show_quote']) ? 1 : 0;
+    $allowed_featured_layouts = [
+        'split_card',
+        'media_left',
+        'media_right',
+        'stacked',
+    ];
+
+    $output['featured_layout'] = isset($input['featured_layout'])
+        ? sanitize_key($input['featured_layout'])
+        : 'split_card';
+
+    if (!in_array($output['featured_layout'], $allowed_featured_layouts, true)) {
+        $output['featured_layout'] = 'split_card';
+    }
+
+    $allowed_featured_quote_positions = [
+        'beside',
+        'below',
+        'hidden',
+    ];
+
+    $output['featured_quote_position'] = isset($input['featured_quote_position'])
+        ? sanitize_key($input['featured_quote_position'])
+        : 'beside';
+
+    if (!in_array($output['featured_quote_position'], $allowed_featured_quote_positions, true)) {
+        $output['featured_quote_position'] = 'beside';
+    }
+
+    /**
+     * Keep old featured_show_quote setting in sync for backward compatibility.
+     */
+    $output['featured_show_quote'] = $output['featured_quote_position'] === 'hidden' ? 0 : 1;
 
     $allowed_featured_media_types = ['image', 'video'];
 
@@ -374,6 +518,56 @@ function mpc_render_homepage_settings_page() {
 
         <form method="post" action="options.php">
             <?php settings_fields('mpc_homepage_settings_group'); ?>
+
+            <?php
+                $section_definitions = mpc_get_homepage_section_definitions();
+                $section_order = mpc_get_homepage_section_order();
+                $section_visibility = mpc_get_homepage_section_visibility();
+                ?>
+
+                <h2>Section Manager</h2>
+
+                <p>
+                    Choose which homepage sections appear, and drag them into the order you want.
+                </p>
+
+                <div class="mpc-section-manager">
+                    <input
+                        type="hidden"
+                        class="mpc-section-order-input"
+                        name="mpc_homepage_settings[section_order]"
+                        value="<?php echo esc_attr(implode(',', $section_order)); ?>"
+                    >
+
+                    <ul class="mpc-section-list">
+                        <?php foreach ($section_order as $section) : ?>
+                            <?php
+                            if (!isset($section_definitions[$section])) {
+                                continue;
+                            }
+
+                            $definition = $section_definitions[$section];
+                            ?>
+                            <li class="mpc-section-list__item" draggable="true" data-section="<?php echo esc_attr($section); ?>">
+                                <span class="mpc-section-list__handle" aria-hidden="true">↕</span>
+
+                                <label class="mpc-section-list__label">
+<input
+    type="checkbox"
+    name="mpc_homepage_settings[section_visibility][<?php echo esc_attr($section); ?>]"
+    value="1"
+    <?php checked(!empty($section_visibility[$section]), true); ?>
+>
+
+                                    <span>
+                                        <strong><?php echo esc_html($definition['label']); ?></strong>
+                                        <small><?php echo esc_html($definition['description']); ?></small>
+                                    </span>
+                                </label>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
 
             <h2><?php esc_html_e('Hero Section', 'music-project-core'); ?></h2>
 
@@ -635,6 +829,61 @@ function mpc_render_homepage_settings_page() {
 
                 <tr>
                     <th scope="row">
+                        <label for="mpc_homepage_featured_layout">Featured Layout</label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_featured_layout"
+                            name="mpc_homepage_settings[featured_layout]"
+                        >
+                            <option value="split_card" <?php selected($settings['featured_layout'], 'split_card'); ?>>
+                                Split Card
+                            </option>
+                            <option value="media_left" <?php selected($settings['featured_layout'], 'media_left'); ?>>
+                                Media Left / Text Right
+                            </option>
+                            <option value="media_right" <?php selected($settings['featured_layout'], 'media_right'); ?>>
+                                Text Left / Media Right
+                            </option>
+                            <option value="stacked" <?php selected($settings['featured_layout'], 'stacked'); ?>>
+                                Stacked / Poster
+                            </option>
+                        </select>
+
+                        <p class="description">
+                            Controls the visual layout of the featured promo card.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_homepage_featured_quote_position">Quote Position</label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_featured_quote_position"
+                            name="mpc_homepage_settings[featured_quote_position]"
+                        >
+                            <option value="beside" <?php selected($settings['featured_quote_position'], 'beside'); ?>>
+                                Beside Featured Content
+                            </option>
+                            <option value="below" <?php selected($settings['featured_quote_position'], 'below'); ?>>
+                                Below Featured Content
+                            </option>
+                            <option value="hidden" <?php selected($settings['featured_quote_position'], 'hidden'); ?>>
+                                Hidden
+                            </option>
+                        </select>
+
+                        <p class="description">
+                            Controls where the featured press quote appears.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
                         <label for="featured_label"><?php esc_html_e('Featured Label', 'music-project-core'); ?></label>
                     </th>
                     <td>
@@ -697,6 +946,7 @@ function mpc_render_homepage_settings_page() {
                     <td>
                         <select
                             id="mpc_homepage_featured_media_type"
+                            class="mpc-featured-media-type-select"
                             name="mpc_homepage_settings[featured_media_type]"
                         >
                             <option value="image" <?php selected($settings['featured_media_type'], 'image'); ?>>
@@ -713,7 +963,7 @@ function mpc_render_homepage_settings_page() {
                     </td>
                 </tr>
 
-                <tr>
+                <tr class="mpc-conditional-row mpc-featured-video-row">
                     <th scope="row">
                         <label for="mpc_homepage_featured_video_url">Featured Video URL</label>
                     </th>
