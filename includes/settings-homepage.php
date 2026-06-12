@@ -32,6 +32,8 @@ function mpc_get_homepage_defaults() {
         'featured_cta_text' => '',
         'featured_cta_url' => '',
         'featured_show_quote' => 1,
+        'featured_media_type' => 'image',
+        'featured_video_url' => '',
 
         // Blog.
         'blog_enabled' => 1,
@@ -63,6 +65,32 @@ function mpc_get_homepage_setting($key, $default = '') {
     $settings = mpc_get_homepage_settings();
 
     return isset($settings[$key]) ? $settings[$key] : $default;
+}
+
+function mpc_sanitize_featured_video_url($url) {
+    $url = esc_url_raw(trim((string) $url));
+
+    if (!$url) {
+        return '';
+    }
+
+    $host = wp_parse_url($url, PHP_URL_HOST);
+
+    if (!$host) {
+        return '';
+    }
+
+    $host = strtolower($host);
+    $host = preg_replace('/^www\./', '', $host);
+
+    $allowed_hosts = [
+        'youtube.com',
+        'youtu.be',
+        'vimeo.com',
+        'player.vimeo.com',
+    ];
+
+    return in_array($host, $allowed_hosts, true) ? $url : '';
 }
 
 /**
@@ -164,6 +192,20 @@ function mpc_sanitize_homepage_settings($input) {
         : '';
 
     $output['featured_show_quote'] = !empty($input['featured_show_quote']) ? 1 : 0;
+
+    $allowed_featured_media_types = ['image', 'video'];
+
+    $output['featured_media_type'] = isset($input['featured_media_type'])
+        ? sanitize_key($input['featured_media_type'])
+        : 'image';
+
+    if (!in_array($output['featured_media_type'], $allowed_featured_media_types, true)) {
+        $output['featured_media_type'] = 'image';
+    }
+
+    $output['featured_video_url'] = isset($input['featured_video_url'])
+        ? mpc_sanitize_featured_video_url($input['featured_video_url'])
+        : '';
 
     // Blog.
     $output['blog_enabled'] = !empty($input['blog_enabled']) ? 1 : 0;
@@ -361,6 +403,7 @@ function mpc_render_homepage_settings_page() {
                     <td>
                         <select
                             id="mpc_homepage_hero_layout"
+                            class="mpc-hero-layout-select"
                             name="mpc_homepage_settings[hero_layout]"
                         >
                             <option value="split" <?php selected($settings['hero_layout'], 'split'); ?>>
@@ -372,12 +415,22 @@ function mpc_render_homepage_settings_page() {
                         </select>
 
                         <p class="description">
-                            Full-Bleed uses the desktop video when available. Otherwise it uses the hero image.
+                            Split shows media beside the text. Full-Bleed places text over a large background image or video.
                         </p>
+
+                        <div class="mpc-admin-helper mpc-admin-helper--split">
+                            <strong>Split Media / Text:</strong>
+                            Best for a traditional landing section with clear text and a framed image or video.
+                        </div>
+
+                        <div class="mpc-admin-helper mpc-admin-helper--full-bleed">
+                            <strong>Full-Bleed Media:</strong>
+                            Best for a cinematic hero. Uses desktop video when available; otherwise falls back to the hero image.
+                        </div>
                     </td>
                 </tr>
 
-                <tr>
+                <tr class="mpc-conditional-row mpc-hero-full-bleed-row">
                     <th scope="row">
                         <label for="mpc_homepage_hero_overlay_opacity">Hero Overlay Strength</label>
                     </th>
@@ -400,7 +453,7 @@ function mpc_render_homepage_settings_page() {
                     </td>
                 </tr>
 
-                <tr>
+                <tr class="mpc-conditional-row mpc-hero-full-bleed-row">
                     <th scope="row">
                         <label for="mpc_homepage_hero_overlay_style">Hero Overlay Style</label>
                     </th>
@@ -429,7 +482,7 @@ function mpc_render_homepage_settings_page() {
                     </td>
                 </tr>
 
-                <tr>
+                <tr class="mpc-conditional-row mpc-hero-full-bleed-row">
                     <th scope="row">
                         <label for="mpc_homepage_hero_content_position">Hero Content Position</label>
                     </th>
@@ -633,6 +686,49 @@ function mpc_render_homepage_settings_page() {
                         <?php mpc_render_media_field('featured_image_id', $settings['featured_image_id'], 'image'); ?>
                         <p class="description">
                             <?php esc_html_e('Used for the manual featured content card.', 'music-project-core'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_homepage_featured_media_type">Featured Media Type</label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_featured_media_type"
+                            name="mpc_homepage_settings[featured_media_type]"
+                        >
+                            <option value="image" <?php selected($settings['featured_media_type'], 'image'); ?>>
+                                Image / Artwork
+                            </option>
+                            <option value="video" <?php selected($settings['featured_media_type'], 'video'); ?>>
+                                Video Embed
+                            </option>
+                        </select>
+
+                        <p class="description">
+                            Choose whether the featured media area shows an uploaded image or a YouTube/Vimeo video.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_homepage_featured_video_url">Featured Video URL</label>
+                    </th>
+                    <td>
+                        <input
+                            id="mpc_homepage_featured_video_url"
+                            class="regular-text"
+                            type="url"
+                            name="mpc_homepage_settings[featured_video_url]"
+                            value="<?php echo esc_url($settings['featured_video_url']); ?>"
+                            placeholder="https://www.youtube.com/watch?v=..."
+                        >
+
+                        <p class="description">
+                            Supports YouTube and Vimeo URLs only. Used when Featured Media Type is set to Video Embed.
                         </p>
                     </td>
                 </tr>

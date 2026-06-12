@@ -17,3 +17,34 @@
 .mpc-media-field .button {
     width: fit-content;
 }
+
+/* Homepage admin helpers */
+
+.mpc-admin-helper {
+    max-width: 680px;
+    margin-top: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-left: 4px solid #2271b1;
+    background: #f6f7f7;
+    color: #1d2327;
+}
+
+.mpc-admin-helper strong {
+    display: inline-block;
+    margin-right: 0.25rem;
+}
+
+.mpc-conditional-row {
+    transition: opacity 160ms ease;
+}
+
+#mpc_homepage_hero_overlay_opacity {
+    vertical-align: middle;
+}
+
+#mpc_homepage_hero_overlay_opacity + output {
+    display: inline-block;
+    min-width: 2.5rem;
+    margin-left: 0.5rem;
+    font-weight: 700;
+}

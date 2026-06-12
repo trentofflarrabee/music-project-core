@@ -50,3 +50,40 @@ jQuery(function ($) {
         preview.html('');
     });
 });
+
+(function () {
+    function initHeroAdminToggles() {
+        const layoutSelect = document.querySelector('.mpc-hero-layout-select');
+
+        if (!layoutSelect) {
+            return;
+        }
+
+        const fullBleedRows = document.querySelectorAll('.mpc-hero-full-bleed-row');
+        const splitHelpers = document.querySelectorAll('.mpc-admin-helper--split');
+        const fullBleedHelpers = document.querySelectorAll('.mpc-admin-helper--full-bleed');
+
+        function setVisible(elements, shouldShow) {
+            elements.forEach((element) => {
+                element.style.display = shouldShow ? '' : 'none';
+            });
+        }
+
+        function updateHeroFields() {
+            const isFullBleed = layoutSelect.value === 'full_bleed';
+
+            setVisible(fullBleedRows, isFullBleed);
+            setVisible(splitHelpers, !isFullBleed);
+            setVisible(fullBleedHelpers, isFullBleed);
+        }
+
+        layoutSelect.addEventListener('change', updateHeroFields);
+        updateHeroFields();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initHeroAdminToggles);
+    } else {
+        initHeroAdminToggles();
+    }
+})();

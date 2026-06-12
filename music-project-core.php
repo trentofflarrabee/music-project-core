@@ -21,3 +21,4 @@ require_once MPC_PATH . 'includes/settings-integrations.php';
 require_once MPC_PATH . 'includes/shortcodes-bandsintown.php';
 require_once MPC_PATH . 'includes/press-quotes.php';
 require_once MPC_PATH . 'includes/settings-theme-style.php';
+require_once MPC_PATH . 'includes/settings-footer.php';
