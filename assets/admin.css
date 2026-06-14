@@ -1,3 +1,12 @@
+/* =========================================================
+   MUSIC PROJECT CORE ADMIN
+   ========================================================= */
+
+
+/* =========================================================
+   MEDIA FIELDS
+   ========================================================= */
+
 .mpc-media-field {
     display: flex;
     flex-direction: column;
@@ -5,20 +14,39 @@
     max-width: 420px;
 }
 
+.mpc-media-preview:empty {
+    display: none;
+}
+
 .mpc-media-preview img {
     display: block;
     max-width: 260px;
     height: auto;
+    padding: 4px;
     border: 1px solid #ccd0d4;
     background: #fff;
-    padding: 4px;
+}
+
+.mpc-media-preview p {
+    margin: 0;
+    padding: 0.75rem;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    background: #fff;
 }
 
 .mpc-media-field .button {
     width: fit-content;
 }
 
-/* Homepage admin helpers */
+
+/* =========================================================
+   CONDITIONAL FIELDS / HELPERS
+   ========================================================= */
+
+.mpc-conditional-row {
+    transition: opacity 160ms ease;
+}
 
 .mpc-admin-helper {
     max-width: 680px;
@@ -34,9 +62,10 @@
     margin-right: 0.25rem;
 }
 
-.mpc-conditional-row {
-    transition: opacity 160ms ease;
-}
+
+/* =========================================================
+   RANGE CONTROLS
+   ========================================================= */
 
 #mpc_homepage_hero_overlay_opacity {
     vertical-align: middle;
@@ -49,7 +78,10 @@
     font-weight: 700;
 }
 
-/* Homepage Section Manager */
+
+/* =========================================================
+   HOMEPAGE SECTION MANAGER
+   ========================================================= */
 
 .mpc-section-manager {
     max-width: 820px;
@@ -73,6 +105,10 @@
     border-radius: 8px;
     background: #fff;
     cursor: grab;
+}
+
+.mpc-section-list__item:hover {
+    border-color: #8c8f94;
 }
 
 .mpc-section-list__item.is-dragging {
@@ -107,4 +143,23 @@
     display: block;
     margin-top: 0.15rem;
     color: #646970;
+}
+
+
+/* =========================================================
+   SMALL SCREEN ADMIN TWEAKS
+   ========================================================= */
+
+@media (max-width: 782px) {
+    .mpc-section-list__item {
+        align-items: flex-start;
+    }
+
+    .mpc-section-list__handle {
+        padding-top: 0.2rem;
+    }
+
+    .mpc-media-preview img {
+        max-width: 100%;
+    }
 }

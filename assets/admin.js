@@ -1,57 +1,86 @@
-jQuery(function ($) {
-    $('.mpc-media-upload').on('click', function (event) {
-        event.preventDefault();
+(function ($) {
+    'use strict';
 
-        const button = $(this);
-        const targetId = button.data('target');
-        const mediaType = button.data('type');
-        const input = $('#' + targetId);
-        const preview = $('[data-preview-for="' + targetId + '"]');
-
-        const frame = wp.media({
-            title: 'Choose File',
-            button: {
-                text: 'Use this file'
-            },
-            library: mediaType ? { type: mediaType } : {},
-            multiple: false
+    function setVisible(elements, shouldShow) {
+        elements.forEach((element) => {
+            element.style.display = shouldShow ? '' : 'none';
         });
+    }
 
-        frame.on('select', function () {
-            const attachment = frame.state().get('selection').first().toJSON();
+    function initMediaUploader() {
+        $(document).on('click', '.mpc-media-upload', function (event) {
+            event.preventDefault();
 
-            input.val(attachment.id);
-
-            if (mediaType === 'image') {
-                const imageUrl = attachment.sizes && attachment.sizes.medium
-                    ? attachment.sizes.medium.url
-                    : attachment.url;
-
-                preview.html('<img src="' + imageUrl + '" alt="">');
-            } else {
-                preview.html('<p><strong>Selected file:</strong><br>' + attachment.filename + '</p>');
+            if (typeof wp === 'undefined' || !wp.media) {
+                return;
             }
 
-            button.text('Replace File');
+            const button = $(this);
+            const targetId = button.data('target');
+            const mediaType = button.data('type');
+            const input = $('#' + targetId);
+            const preview = $('[data-preview-for="' + targetId + '"]');
+
+            if (!targetId || !input.length) {
+                return;
+            }
+
+            const frame = wp.media({
+                title: 'Choose File',
+                button: {
+                    text: 'Use this file'
+                },
+                library: mediaType ? { type: mediaType } : {},
+                multiple: false
+            });
+
+            frame.on('select', function () {
+                const attachment = frame.state().get('selection').first().toJSON();
+
+                input.val(attachment.id);
+                preview.empty();
+
+                if (mediaType === 'image') {
+                    const imageUrl = attachment.sizes && attachment.sizes.medium
+                        ? attachment.sizes.medium.url
+                        : attachment.url;
+
+                    $('<img>', {
+                        src: imageUrl,
+                        alt: ''
+                    }).appendTo(preview);
+                } else {
+                    const fileNotice = $('<p>');
+                    $('<strong>').text('Selected file:').appendTo(fileNotice);
+                    $('<br>').appendTo(fileNotice);
+                    fileNotice.append(document.createTextNode(attachment.filename || attachment.url));
+
+                    preview.append(fileNotice);
+                }
+
+                button.text('Replace File');
+            });
+
+            frame.open();
         });
 
-        frame.open();
-    });
+        $(document).on('click', '.mpc-media-remove', function (event) {
+            event.preventDefault();
 
-    $('.mpc-media-remove').on('click', function (event) {
-        event.preventDefault();
+            const button = $(this);
+            const targetId = button.data('target');
+            const input = $('#' + targetId);
+            const preview = $('[data-preview-for="' + targetId + '"]');
 
-        const button = $(this);
-        const targetId = button.data('target');
-        const input = $('#' + targetId);
-        const preview = $('[data-preview-for="' + targetId + '"]');
+            if (!targetId || !input.length) {
+                return;
+            }
 
-        input.val('');
-        preview.html('');
-    });
-});
+            input.val('');
+            preview.empty();
+        });
+    }
 
-(function () {
     function initHeroAdminToggles() {
         const layoutSelect = document.querySelector('.mpc-hero-layout-select');
 
@@ -62,12 +91,6 @@ jQuery(function ($) {
         const fullBleedRows = document.querySelectorAll('.mpc-hero-full-bleed-row');
         const splitHelpers = document.querySelectorAll('.mpc-admin-helper--split');
         const fullBleedHelpers = document.querySelectorAll('.mpc-admin-helper--full-bleed');
-
-        function setVisible(elements, shouldShow) {
-            elements.forEach((element) => {
-                element.style.display = shouldShow ? '' : 'none';
-            });
-        }
 
         function updateHeroFields() {
             const isFullBleed = layoutSelect.value === 'full_bleed';
@@ -81,14 +104,6 @@ jQuery(function ($) {
         updateHeroFields();
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initHeroAdminToggles);
-    } else {
-        initHeroAdminToggles();
-    }
-})();
-
-(function () {
     function initFeaturedAdminToggles() {
         const mediaTypeSelect = document.querySelector('.mpc-featured-media-type-select');
 
@@ -97,12 +112,6 @@ jQuery(function ($) {
         }
 
         const videoRows = document.querySelectorAll('.mpc-featured-video-row');
-
-        function setVisible(elements, shouldShow) {
-            elements.forEach((element) => {
-                element.style.display = shouldShow ? '' : 'none';
-            });
-        }
 
         function updateFeaturedFields() {
             const isVideo = mediaTypeSelect.value === 'video';
@@ -114,14 +123,34 @@ jQuery(function ($) {
         updateFeaturedFields();
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initFeaturedAdminToggles);
-    } else {
-        initFeaturedAdminToggles();
-    }
-})();
+    function initBlogAdminToggles() {
+        const layoutSelect = document.querySelector('.mpc-blog-layout-select');
+        const featuredSourceSelect = document.querySelector('.mpc-blog-featured-source-select');
 
-(function () {
+        if (!layoutSelect) {
+            return;
+        }
+
+        const featuredRows = document.querySelectorAll('.mpc-blog-featured-first-row');
+        const manualRows = document.querySelectorAll('.mpc-blog-manual-featured-row');
+
+        function updateBlogFields() {
+            const isFeaturedFirst = layoutSelect.value === 'featured_first';
+            const isManual = featuredSourceSelect && featuredSourceSelect.value === 'manual';
+
+            setVisible(featuredRows, isFeaturedFirst);
+            setVisible(manualRows, isFeaturedFirst && isManual);
+        }
+
+        layoutSelect.addEventListener('change', updateBlogFields);
+
+        if (featuredSourceSelect) {
+            featuredSourceSelect.addEventListener('change', updateBlogFields);
+        }
+
+        updateBlogFields();
+    }
+
     function initSectionManager() {
         const list = document.querySelector('.mpc-section-list');
         const orderInput = document.querySelector('.mpc-section-order-input');
@@ -194,9 +223,13 @@ jQuery(function ($) {
         updateOrderInput();
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initSectionManager);
-    } else {
+    function initMPCAdmin() {
+        initMediaUploader();
+        initHeroAdminToggles();
+        initFeaturedAdminToggles();
+        initBlogAdminToggles();
         initSectionManager();
     }
-})();
+
+    $(initMPCAdmin);
+})(jQuery);

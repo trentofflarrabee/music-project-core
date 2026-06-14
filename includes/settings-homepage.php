@@ -130,7 +130,14 @@ function mpc_get_homepage_defaults() {
         // Blog.
         'blog_enabled' => 1,
         'blog_heading' => 'Blog',
+        'blog_layout' => 'grid',
+        'blog_featured_source' => 'latest',
+        'blog_featured_post_id' => 0,
         'blog_posts_per_page' => 2,
+        'blog_additional_posts' => 2,
+        'blog_show_images' => 1,
+        'blog_show_dates' => 1,
+        'blog_show_excerpts' => 1,
         'blog_read_more_text' => 'Read More',
         'blog_view_all_text' => 'View All Posts',
         'blog_view_all_url' => '/blog',
@@ -358,6 +365,30 @@ function mpc_sanitize_homepage_settings($input) {
         ? sanitize_text_field($input['blog_heading'])
         : $defaults['blog_heading'];
 
+    $allowed_blog_layouts = ['grid', 'featured_first', 'compact'];
+
+    $output['blog_layout'] = isset($input['blog_layout'])
+        ? sanitize_key($input['blog_layout'])
+        : 'grid';
+
+    if (!in_array($output['blog_layout'], $allowed_blog_layouts, true)) {
+        $output['blog_layout'] = 'grid';
+    }
+
+    $allowed_featured_sources = ['latest', 'manual'];
+
+    $output['blog_featured_source'] = isset($input['blog_featured_source'])
+        ? sanitize_key($input['blog_featured_source'])
+        : 'latest';
+
+    if (!in_array($output['blog_featured_source'], $allowed_featured_sources, true)) {
+        $output['blog_featured_source'] = 'latest';
+    }
+
+    $output['blog_featured_post_id'] = isset($input['blog_featured_post_id'])
+        ? absint($input['blog_featured_post_id'])
+        : 0;
+
     $output['blog_posts_per_page'] = isset($input['blog_posts_per_page'])
         ? absint($input['blog_posts_per_page'])
         : $defaults['blog_posts_per_page'];
@@ -369,6 +400,18 @@ function mpc_sanitize_homepage_settings($input) {
     if ($output['blog_posts_per_page'] > 12) {
         $output['blog_posts_per_page'] = 12;
     }
+
+    $output['blog_additional_posts'] = isset($input['blog_additional_posts'])
+        ? absint($input['blog_additional_posts'])
+        : 2;
+
+    if ($output['blog_additional_posts'] > 6) {
+        $output['blog_additional_posts'] = 6;
+    }
+
+    $output['blog_show_images'] = !empty($input['blog_show_images']) ? 1 : 0;
+    $output['blog_show_dates'] = !empty($input['blog_show_dates']) ? 1 : 0;
+    $output['blog_show_excerpts'] = !empty($input['blog_show_excerpts']) ? 1 : 0;
 
     $output['blog_read_more_text'] = isset($input['blog_read_more_text'])
         ? sanitize_text_field($input['blog_read_more_text'])
@@ -552,12 +595,12 @@ function mpc_render_homepage_settings_page() {
                                 <span class="mpc-section-list__handle" aria-hidden="true">↕</span>
 
                                 <label class="mpc-section-list__label">
-<input
-    type="checkbox"
-    name="mpc_homepage_settings[section_visibility][<?php echo esc_attr($section); ?>]"
-    value="1"
-    <?php checked(!empty($section_visibility[$section]), true); ?>
->
+                                <input
+                                    type="checkbox"
+                                    name="mpc_homepage_settings[section_visibility][<?php echo esc_attr($section); ?>]"
+                                    value="1"
+                                    <?php checked(!empty($section_visibility[$section]), true); ?>
+                                >
 
                                     <span>
                                         <strong><?php echo esc_html($definition['label']); ?></strong>
@@ -1074,6 +1117,169 @@ function mpc_render_homepage_settings_page() {
                         >
                     </td>
                 </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_homepage_blog_layout">Blog / News Layout</label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_blog_layout"
+                            class="mpc-blog-layout-select"
+                            name="mpc_homepage_settings[blog_layout]"
+                        >
+                            <option value="grid" <?php selected($settings['blog_layout'], 'grid'); ?>>
+                                Grid
+                            </option>
+                            <option value="featured_first" <?php selected($settings['blog_layout'], 'featured_first'); ?>>
+                                Featured First
+                            </option>
+                            <option value="compact" <?php selected($settings['blog_layout'], 'compact'); ?>>
+                                Compact List
+                            </option>
+                        </select>
+
+                        <p class="description">
+                            Featured First is best for editorial posts, song deep-dives, studio dispatches, or evergreen updates.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr class="mpc-conditional-row mpc-blog-featured-first-row">
+                    <th scope="row">
+                        <label for="mpc_homepage_blog_featured_source">Featured Post Source</label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_blog_featured_source"
+                            class="mpc-blog-featured-source-select"
+                            name="mpc_homepage_settings[blog_featured_source]"
+                        >
+                            <option value="latest" <?php selected($settings['blog_featured_source'], 'latest'); ?>>
+                                Latest Post
+                            </option>
+                            <option value="manual" <?php selected($settings['blog_featured_source'], 'manual'); ?>>
+                                Manually Selected Post
+                            </option>
+                        </select>
+
+                        <p class="description">
+                            Choose whether the large featured card uses the latest post or a specific selected post.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr class="mpc-conditional-row mpc-blog-featured-first-row mpc-blog-manual-featured-row">
+                    <th scope="row">
+                        <label for="mpc_homepage_blog_featured_post_id">Featured Post</label>
+                    </th>
+                    <td>
+                        <?php
+                        $blog_posts_for_select = get_posts([
+                            'post_type' => 'post',
+                            'post_status' => ['publish', 'draft', 'private'],
+                            'posts_per_page' => 100,
+                            'orderby' => 'date',
+                            'order' => 'DESC',
+                        ]);
+                        ?>
+
+                        <select
+                            id="mpc_homepage_blog_featured_post_id"
+                            name="mpc_homepage_settings[blog_featured_post_id]"
+                        >
+                            <option value="0">Select a post</option>
+
+                            <?php foreach ($blog_posts_for_select as $blog_post_option) : ?>
+                                <option
+                                    value="<?php echo esc_attr($blog_post_option->ID); ?>"
+                                    <?php selected((int) $settings['blog_featured_post_id'], $blog_post_option->ID); ?>
+                                >
+                                    <?php echo esc_html(get_the_title($blog_post_option)); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+
+                        <p class="description">
+                            Useful for pinning a song deep-dive, studio dispatch, announcement, or evergreen article.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr class="mpc-conditional-row mpc-blog-featured-first-row">
+                    <th scope="row">
+                        <label for="mpc_homepage_blog_additional_posts">Additional Posts</label>
+                    </th>
+                    <td>
+                        <input
+                            id="mpc_homepage_blog_additional_posts"
+                            type="number"
+                            min="0"
+                            max="6"
+                            name="mpc_homepage_settings[blog_additional_posts]"
+                            value="<?php echo esc_attr($settings['blog_additional_posts']); ?>"
+                        >
+
+                        <p class="description">
+                            Number of smaller posts shown after the featured post.
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">Display Options</th>
+                    <td>
+                        <input
+                            type="hidden"
+                            name="mpc_homepage_settings[blog_show_images]"
+                            value="0"
+                        >
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="mpc_homepage_settings[blog_show_images]"
+                                value="1"
+                                <?php checked($settings['blog_show_images'], 1); ?>
+                            >
+                            Show featured images
+                        </label>
+
+                        <br>
+
+                        <input
+                            type="hidden"
+                            name="mpc_homepage_settings[blog_show_dates]"
+                            value="0"
+                        >
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="mpc_homepage_settings[blog_show_dates]"
+                                value="1"
+                                <?php checked($settings['blog_show_dates'], 1); ?>
+                            >
+                            Show dates
+                        </label>
+
+                        <br>
+
+                        <input
+                            type="hidden"
+                            name="mpc_homepage_settings[blog_show_excerpts]"
+                            value="0"
+                        >
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="mpc_homepage_settings[blog_show_excerpts]"
+                                value="1"
+                                <?php checked($settings['blog_show_excerpts'], 1); ?>
+                            >
+                            Show excerpts
+                        </label>
+                    </td>
+                </tr>
+
 
                 <tr>
                     <th scope="row">
