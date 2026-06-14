@@ -25,6 +25,7 @@ function mpc_get_theme_style_defaults() {
         'font_accent' => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         'heading_text_transform' => 'none',
         'heading_letter_spacing' => '-0.04em',
+        'font_quote' => '',
 
         // Texture.
         'texture_enabled' => 0,
@@ -185,6 +186,10 @@ function mpc_sanitize_theme_style_settings($input) {
     $output['heading_letter_spacing'] = preg_match('/^-?\d+(\.\d+)?(px|rem|em)$/', $letter_spacing)
         ? $letter_spacing
         : $defaults['heading_letter_spacing'];
+
+    $output['font_quote'] = isset($input['font_quote'])
+        ? sanitize_text_field($input['font_quote'])
+        : '';
 
     // Texture.
     $output['texture_enabled'] = !empty($input['texture_enabled']) ? 1 : 0;
@@ -521,6 +526,26 @@ function mpc_render_theme_style_settings_page() {
                         >
                         <p class="description">
                             <?php esc_html_e('Used for labels, nav, social links, and small accent text.', 'music-project-core'); ?>
+                        </p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_theme_style_font_quote">Quote Font</label>
+                    </th>
+                    <td>
+                        <input
+                            id="mpc_theme_style_font_quote"
+                            class="regular-text"
+                            type="text"
+                            name="mpc_theme_style_settings[font_quote]"
+                            value="<?php echo esc_attr($settings['font_quote']); ?>"
+                            placeholder='"Playfair Display", serif'
+                        >
+
+                        <p class="description">
+                            Optional font family for press quotes. Leave blank to use the heading font.
                         </p>
                     </td>
                 </tr>

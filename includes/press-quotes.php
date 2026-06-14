@@ -218,3 +218,174 @@ function mpc_get_featured_press_quote() {
         'source_url' => get_post_meta($quote->ID, '_mpc_press_quote_source_url', true),
     ];
 }
+
+/**
+ * Press Quote admin columns.
+ */
+
+function mpc_press_quote_admin_columns($columns) {
+    $new_columns = [];
+
+    $new_columns['cb'] = $columns['cb'];
+    $new_columns['title'] = 'Quote Title';
+    $new_columns['quote_text'] = 'Quote';
+    $new_columns['quote_source'] = 'Source';
+    $new_columns['quote_featured'] = 'Featured';
+    $new_columns['date'] = $columns['date'];
+
+    return $new_columns;
+}
+add_filter('manage_mpc_press_quote_posts_columns', 'mpc_press_quote_admin_columns');
+
+function mpc_press_quote_admin_column_content($column, $post_id) {
+    if ($column === 'quote_text') {
+        $quote = get_post_meta($post_id, '_mpc_press_quote_text', true);
+
+        if ($quote) {
+            echo esc_html(wp_trim_words($quote, 18));
+        } else {
+            echo '<span aria-hidden="true">—</span>';
+        }
+    }
+
+    if ($column === 'quote_source') {
+        $source_name = get_post_meta($post_id, '_mpc_press_quote_source_name', true);
+        $source_url = get_post_meta($post_id, '_mpc_press_quote_source_url', true);
+
+        if ($source_name && $source_url) {
+            printf(
+                '<a href="%s" target="_blank" rel="noopener noreferrer">%s</a>',
+                esc_url($source_url),
+                esc_html($source_name)
+            );
+        } elseif ($source_name) {
+            echo esc_html($source_name);
+        } else {
+            echo '<span aria-hidden="true">—</span>';
+        }
+    }
+
+    if ($column === 'quote_featured') {
+        $featured = get_post_meta($post_id, '_mpc_press_quote_featured', true);
+
+        if ($featured) {
+            echo '<strong style="color:#008a20;">Yes</strong>';
+        } else {
+            echo '<span style="color:#646970;">No</span>';
+        }
+    }
+}
+add_action('manage_mpc_press_quote_posts_custom_column', 'mpc_press_quote_admin_column_content', 10, 2);
+
+/**
+ * Press Quote featured filter.
+ */
+function mpc_press_quote_admin_filters($post_type) {
+    if ($post_type !== 'mpc_press_quote') {
+        return;
+    }
+
+    $current = isset($_GET['mpc_quote_featured_filter'])
+        ? sanitize_key($_GET['mpc_quote_featured_filter'])
+        : '';
+    ?>
+    <select name="mpc_quote_featured_filter">
+        <option value="">All Quotes</option>
+        <option value="featured" <?php selected($current, 'featured'); ?>>Featured Only</option>
+        <option value="not_featured" <?php selected($current, 'not_featured'); ?>>Not Featured</option>
+    </select>
+    <?php
+}
+add_action('restrict_manage_posts', 'mpc_press_quote_admin_filters');
+
+function mpc_press_quote_admin_filter_query($query) {
+    global $pagenow;
+
+    if (!is_admin() || $pagenow !== 'edit.php' || !$query->is_main_query()) {
+        return;
+    }
+
+    $post_type = $query->get('post_type');
+
+    if ($post_type !== 'mpc_press_quote') {
+        return;
+    }
+
+    $filter = isset($_GET['mpc_quote_featured_filter'])
+        ? sanitize_key($_GET['mpc_quote_featured_filter'])
+        : '';
+
+    if ($filter === 'featured') {
+        $query->set('meta_query', [
+            [
+                'key' => '_mpc_press_quote_featured',
+                'value' => '1',
+                'compare' => '=',
+            ],
+        ]);
+    }
+
+    if ($filter === 'not_featured') {
+        $query->set('meta_query', [
+            'relation' => 'OR',
+            [
+                'key' => '_mpc_press_quote_featured',
+                'value' => '1',
+                'compare' => '!=',
+            ],
+            [
+                'key' => '_mpc_press_quote_featured',
+                'compare' => 'NOT EXISTS',
+            ],
+        ]);
+    }
+}
+add_action('pre_get_posts', 'mpc_press_quote_admin_filter_query');
+
+/**
+ * Auto-fill quote title when left blank.
+ */
+function mpc_press_quote_auto_title($post_id, $post, $update) {
+    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+        return;
+    }
+
+    if ($post->post_type !== 'mpc_press_quote') {
+        return;
+    }
+
+    if ($post->post_status === 'auto-draft') {
+        return;
+    }
+
+    if (trim($post->post_title) !== '') {
+        return;
+    }
+
+    $quote = get_post_meta($post_id, '_mpc_press_quote_text', true);
+    $source = get_post_meta($post_id, '_mpc_press_quote_source_name', true);
+
+    $title_parts = [];
+
+    if ($quote) {
+        $title_parts[] = wp_trim_words($quote, 8, '…');
+    }
+
+    if ($source) {
+        $title_parts[] = $source;
+    }
+
+    $new_title = $title_parts
+        ? implode(' — ', $title_parts)
+        : 'Press Quote #' . $post_id;
+
+    remove_action('save_post_mpc_press_quote', 'mpc_press_quote_auto_title', 20);
+
+    wp_update_post([
+        'ID' => $post_id,
+        'post_title' => $new_title,
+    ]);
+
+    add_action('save_post_mpc_press_quote', 'mpc_press_quote_auto_title', 20, 3);
+}
+add_action('save_post_mpc_press_quote', 'mpc_press_quote_auto_title', 20, 3);
