@@ -82,6 +82,29 @@
     }
 
     function initHeroAdminToggles() {
+
+        const heroLayoutField = $('[name="mpc_homepage_settings[hero_layout]"]');
+const fullBleedOnlyFields = $('.mpc-hero-full-bleed-field');
+
+const getHeroLayoutValue = () => {
+    const checkedValue = heroLayoutField.filter(':checked').val();
+
+    if (checkedValue) {
+        return checkedValue;
+    }
+
+    return heroLayoutField.val();
+};
+
+const toggleFullBleedOnlyFields = () => {
+    const isFullBleed = getHeroLayoutValue() === 'full_bleed';
+
+    setVisible(fullBleedOnlyFields, isFullBleed);
+};
+
+heroLayoutField.on('change', toggleFullBleedOnlyFields);
+toggleFullBleedOnlyFields();
+
         const layoutSelect = document.querySelector('.mpc-hero-layout-select');
 
         if (!layoutSelect) {

@@ -719,32 +719,32 @@ function mpc_render_homepage_settings_page() {
                     </td>
                 </tr>
 
-                <tr class="mpc-conditional-row mpc-hero-full-bleed-row">
+                <tr class="mpc-hero-full-bleed-field">
                     <th scope="row">
-                        <label for="mpc_homepage_hero_content_position">Hero Content Position</label>
+                        <label for="mpc_homepage_hero_content_position"><?php esc_html_e('Full-Bleed Hero Content Position', 'music-project-core'); ?></label>
                     </th>
                     <td>
                         <select
                             id="mpc_homepage_hero_content_position"
                             name="mpc_homepage_settings[hero_content_position]"
                         >
-                            <option value="bottom_left" <?php selected($settings['hero_content_position'], 'bottom_left'); ?>>
-                                Bottom Left
-                            </option>
-                            <option value="center_left" <?php selected($settings['hero_content_position'], 'center_left'); ?>>
-                                Center Left
-                            </option>
-                            <option value="bottom_center" <?php selected($settings['hero_content_position'], 'bottom_center'); ?>>
-                                Bottom Center
-                            </option>
-                            <option value="center_center" <?php selected($settings['hero_content_position'], 'center_center'); ?>>
-                                Center Center
-                            </option>
+            <option value="bottom_left" <?php selected($settings['hero_content_position'] ?? 'bottom_left', 'bottom_left'); ?>>
+                <?php esc_html_e('Bottom Left', 'music-project-core'); ?>
+            </option>
+            <option value="center_left" <?php selected($settings['hero_content_position'] ?? 'bottom_left', 'center_left'); ?>>
+                <?php esc_html_e('Center Left', 'music-project-core'); ?>
+            </option>
+            <option value="bottom_center" <?php selected($settings['hero_content_position'] ?? 'bottom_left', 'bottom_center'); ?>>
+                <?php esc_html_e('Bottom Center', 'music-project-core'); ?>
+            </option>
+            <option value="center_center" <?php selected($settings['hero_content_position'] ?? 'bottom_left', 'center_center'); ?>>
+                <?php esc_html_e('Center Center', 'music-project-core'); ?>
+            </option>
                         </select>
 
-                        <p class="description">
-                            Controls where the text sits inside the full-bleed hero.
-                        </p>
+        <p class="description">
+            <?php esc_html_e('Only applies when Hero Layout is set to Full Bleed.', 'music-project-core'); ?>
+        </p>
                     </td>
                 </tr>
 

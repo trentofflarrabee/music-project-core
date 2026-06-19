@@ -26,6 +26,9 @@ function mpc_get_theme_style_defaults() {
         'heading_text_transform' => 'none',
         'heading_letter_spacing' => '-0.04em',
         'heading_alignment_scope' => 'none',
+        'hero_heading_color' => '#ffffff',
+        'hero_lead_color'   => '#f5f5f5',
+        'hero_text_shadow'  => 'subtle',
         'font_quote' => '',
 
         // Texture.
@@ -198,6 +201,20 @@ function mpc_sanitize_theme_style_settings($input) {
             ? $input['heading_alignment_scope']
             : $defaults['heading_alignment_scope'];
 
+            $output['hero_heading_color'] = isset($input['hero_heading_color'])
+            ? sanitize_hex_color($input['hero_heading_color'])
+            : $defaults['hero_heading_color'];
+
+        $output['hero_lead_color'] = isset($input['hero_lead_color'])
+            ? sanitize_hex_color($input['hero_lead_color'])
+            : $defaults['hero_lead_color'];
+
+        $allowed_hero_text_shadows = ['none', 'subtle', 'strong'];
+
+        $output['hero_text_shadow'] = isset($input['hero_text_shadow']) && in_array($input['hero_text_shadow'], $allowed_hero_text_shadows, true)
+            ? $input['hero_text_shadow']
+            : $defaults['hero_text_shadow'];
+
     $output['font_quote'] = isset($input['font_quote'])
         ? sanitize_text_field($input['font_quote'])
         : '';
@@ -311,37 +328,26 @@ function mpc_render_theme_style_media_field($field_name, $attachment_id, $media_
     }
     ?>
 
-    <div class="mpc-media-field">
-        <input
-            type="hidden"
-            id="<?php echo esc_attr($field_id); ?>"
-            name="mpc_theme_style_settings[<?php echo esc_attr($field_name); ?>]"
-            value="<?php echo esc_attr($attachment_id); ?>"
-        >
+<div class="mpc-media-field">
+    <input type="hidden" id="<?php echo esc_attr($field_id); ?>"
+        name="mpc_theme_style_settings[<?php echo esc_attr($field_name); ?>]"
+        value="<?php echo esc_attr($attachment_id); ?>">
 
-        <div class="mpc-media-preview" data-preview-for="<?php echo esc_attr($field_id); ?>">
-            <?php echo $preview; ?>
-        </div>
-
-        <button
-            type="button"
-            class="button mpc-media-upload"
-            data-target="<?php echo esc_attr($field_id); ?>"
-            data-type="<?php echo esc_attr($media_type); ?>"
-        >
-            <?php echo $attachment_id ? esc_html__('Replace File', 'music-project-core') : esc_html__('Choose File', 'music-project-core'); ?>
-        </button>
-
-        <button
-            type="button"
-            class="button mpc-media-remove"
-            data-target="<?php echo esc_attr($field_id); ?>"
-        >
-            <?php esc_html_e('Remove', 'music-project-core'); ?>
-        </button>
+    <div class="mpc-media-preview" data-preview-for="<?php echo esc_attr($field_id); ?>">
+        <?php echo $preview; ?>
     </div>
 
-    <?php
+    <button type="button" class="button mpc-media-upload" data-target="<?php echo esc_attr($field_id); ?>"
+        data-type="<?php echo esc_attr($media_type); ?>">
+        <?php echo $attachment_id ? esc_html__('Replace File', 'music-project-core') : esc_html__('Choose File', 'music-project-core'); ?>
+    </button>
+
+    <button type="button" class="button mpc-media-remove" data-target="<?php echo esc_attr($field_id); ?>">
+        <?php esc_html_e('Remove', 'music-project-core'); ?>
+    </button>
+</div>
+
+<?php
 }
 
 /**
@@ -355,490 +361,451 @@ function mpc_render_theme_style_settings_page() {
     $settings = mpc_get_theme_style_settings();
     ?>
 
-    <div class="wrap">
-        <h1><?php esc_html_e('Music Project Theme Style', 'music-project-core'); ?></h1>
+<div class="wrap">
+    <h1><?php esc_html_e('Music Project Theme Style', 'music-project-core'); ?></h1>
 
-        <p>
-            <?php esc_html_e('Control reusable visual branding for this music project: colors, typography, and subtle background texture.', 'music-project-core'); ?>
-        </p>
+    <p>
+        <?php esc_html_e('Control reusable visual branding for this music project: colors, typography, and subtle background texture.', 'music-project-core'); ?>
+    </p>
 
-        <form method="post" action="options.php">
-            <?php settings_fields('mpc_theme_style_settings_group'); ?>
+    <form method="post" action="options.php">
+        <?php settings_fields('mpc_theme_style_settings_group'); ?>
 
-            <h2><?php esc_html_e('Colors', 'music-project-core'); ?></h2>
+        <h2><?php esc_html_e('Colors', 'music-project-core'); ?></h2>
 
-            <table class="form-table" role="presentation">
-                <tr>
-                    <th scope="row">
-                        <label for="color_background"><?php esc_html_e('Background Color', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="color"
-                            id="color_background"
-                            name="mpc_theme_style_settings[color_background]"
-                            value="<?php echo esc_attr($settings['color_background']); ?>"
-                        >
-                    </td>
-                </tr>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row">
+                    <label for="color_background"><?php esc_html_e('Background Color', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="color" id="color_background" name="mpc_theme_style_settings[color_background]"
+                        value="<?php echo esc_attr($settings['color_background']); ?>">
+                </td>
+            </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="color_surface"><?php esc_html_e('Surface / Card Color', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="color"
-                            id="color_surface"
-                            name="mpc_theme_style_settings[color_surface]"
-                            value="<?php echo esc_attr($settings['color_surface']); ?>"
-                        >
-                    </td>
-                </tr>
+            <tr>
+                <th scope="row">
+                    <label
+                        for="color_surface"><?php esc_html_e('Surface / Card Color', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="color" id="color_surface" name="mpc_theme_style_settings[color_surface]"
+                        value="<?php echo esc_attr($settings['color_surface']); ?>">
+                </td>
+            </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="color_text"><?php esc_html_e('Text Color', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="color"
-                            id="color_text"
-                            name="mpc_theme_style_settings[color_text]"
-                            value="<?php echo esc_attr($settings['color_text']); ?>"
-                        >
-                    </td>
-                </tr>
+            <tr>
+                <th scope="row">
+                    <label for="color_text"><?php esc_html_e('Text Color', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="color" id="color_text" name="mpc_theme_style_settings[color_text]"
+                        value="<?php echo esc_attr($settings['color_text']); ?>">
+                </td>
+            </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="color_muted"><?php esc_html_e('Muted Text Color', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="color"
-                            id="color_muted"
-                            name="mpc_theme_style_settings[color_muted]"
-                            value="<?php echo esc_attr($settings['color_muted']); ?>"
-                        >
-                    </td>
-                </tr>
+            <tr>
+                <th scope="row">
+                    <label for="color_muted"><?php esc_html_e('Muted Text Color', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="color" id="color_muted" name="mpc_theme_style_settings[color_muted]"
+                        value="<?php echo esc_attr($settings['color_muted']); ?>">
+                </td>
+            </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="color_accent"><?php esc_html_e('Accent Color', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="color"
-                            id="color_accent"
-                            name="mpc_theme_style_settings[color_accent]"
-                            value="<?php echo esc_attr($settings['color_accent']); ?>"
-                        >
-                    </td>
-                </tr>
+            <tr>
+                <th scope="row">
+                    <label for="color_accent"><?php esc_html_e('Accent Color', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="color" id="color_accent" name="mpc_theme_style_settings[color_accent]"
+                        value="<?php echo esc_attr($settings['color_accent']); ?>">
+                </td>
+            </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="color_button_background"><?php esc_html_e('Button Background', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="color"
-                            id="color_button_background"
-                            name="mpc_theme_style_settings[color_button_background]"
-                            value="<?php echo esc_attr($settings['color_button_background']); ?>"
-                        >
-                    </td>
-                </tr>
+            <tr>
+                <th scope="row">
+                    <label
+                        for="color_button_background"><?php esc_html_e('Button Background', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="color" id="color_button_background"
+                        name="mpc_theme_style_settings[color_button_background]"
+                        value="<?php echo esc_attr($settings['color_button_background']); ?>">
+                </td>
+            </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="color_button_text"><?php esc_html_e('Button Text', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="color"
-                            id="color_button_text"
-                            name="mpc_theme_style_settings[color_button_text]"
-                            value="<?php echo esc_attr($settings['color_button_text']); ?>"
-                        >
-                    </td>
-                </tr>
-            </table>
+            <tr>
+                <th scope="row">
+                    <label for="color_button_text"><?php esc_html_e('Button Text', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="color" id="color_button_text" name="mpc_theme_style_settings[color_button_text]"
+                        value="<?php echo esc_attr($settings['color_button_text']); ?>">
+                </td>
+            </tr>
 
-            <hr>
-
-            <h2><?php esc_html_e('Typography', 'music-project-core'); ?></h2>
-
-            <table class="form-table" role="presentation">
-                <tr>
-                    <th scope="row">
-                        <label for="google_fonts_url"><?php esc_html_e('Google Fonts Stylesheet URL', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="url"
-                            id="google_fonts_url"
-                            name="mpc_theme_style_settings[google_fonts_url]"
-                            class="large-text"
-                            value="<?php echo esc_url($settings['google_fonts_url']); ?>"
-                            placeholder="https://fonts.googleapis.com/css2?family=..."
-                        >
-                        <p class="description">
-                            <?php esc_html_e('Optional. Paste the Google Fonts stylesheet URL only, not the full <link> tag.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th scope="row">
-                        <label for="font_heading"><?php esc_html_e('Heading Font Family', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="font_heading"
-                            name="mpc_theme_style_settings[font_heading]"
-                            class="large-text"
-                            value="<?php echo esc_attr($settings['font_heading']); ?>"
-                        >
-                        <p class="description">
-                            <?php esc_html_e('Example: "Oswald", Impact, sans-serif', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th scope="row">
-                        <label for="font_body"><?php esc_html_e('Body Font Family', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="font_body"
-                            name="mpc_theme_style_settings[font_body]"
-                            class="large-text"
-                            value="<?php echo esc_attr($settings['font_body']); ?>"
-                        >
-                        <p class="description">
-                            <?php esc_html_e('Example: "Lora", Georgia, serif', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th scope="row">
-                        <label for="font_accent"><?php esc_html_e('Accent Font Family', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="font_accent"
-                            name="mpc_theme_style_settings[font_accent]"
-                            class="large-text"
-                            value="<?php echo esc_attr($settings['font_accent']); ?>"
-                        >
-                        <p class="description">
-                            <?php esc_html_e('Used for labels, nav, social links, and small accent text.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th scope="row">
-                        <label for="mpc_theme_style_font_quote">Quote Font</label>
-                    </th>
-                    <td>
-                        <input
-                            id="mpc_theme_style_font_quote"
-                            class="regular-text"
-                            type="text"
-                            name="mpc_theme_style_settings[font_quote]"
-                            value="<?php echo esc_attr($settings['font_quote']); ?>"
-                            placeholder='"Playfair Display", serif'
-                        >
-
-                        <p class="description">
-                            Optional font family for press quotes. Leave blank to use the heading font.
-                        </p>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th scope="row">
-                        <label for="heading_text_transform"><?php esc_html_e('Heading Text Transform', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <select
-                            id="heading_text_transform"
-                            name="mpc_theme_style_settings[heading_text_transform]"
-                        >
-                            <option value="none" <?php selected($settings['heading_text_transform'], 'none'); ?>>
-                                <?php esc_html_e('None', 'music-project-core'); ?>
-                            </option>
-                            <option value="uppercase" <?php selected($settings['heading_text_transform'], 'uppercase'); ?>>
-                                <?php esc_html_e('Uppercase', 'music-project-core'); ?>
-                            </option>
-                            <option value="lowercase" <?php selected($settings['heading_text_transform'], 'lowercase'); ?>>
-                                <?php esc_html_e('Lowercase', 'music-project-core'); ?>
-                            </option>
-                            <option value="capitalize" <?php selected($settings['heading_text_transform'], 'capitalize'); ?>>
-                                <?php esc_html_e('Capitalize', 'music-project-core'); ?>
-                            </option>
-                        </select>
-                    </td>
-                </tr>
-
-                <tr>
-                    <th scope="row">
-                        <label for="heading_letter_spacing"><?php esc_html_e('Heading Letter Spacing', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="heading_letter_spacing"
-                            name="mpc_theme_style_settings[heading_letter_spacing]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['heading_letter_spacing']); ?>"
-                            placeholder="-0.04em"
-                        >
-                        <p class="description">
-                            <?php esc_html_e('Use values like -0.04em, 0.02em, 1px, etc.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
-
-                <tr>
+            <tr>
     <th scope="row">
-        <label for="mpc_theme_style_heading_alignment_scope">
-            <?php esc_html_e('Heading Alignment', 'music-project-core'); ?>
+        <label for="mpc_theme_style_hero_heading_color">
+            <?php esc_html_e('Hero Heading Color', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <input
+            type="color"
+            id="mpc_theme_style_hero_heading_color"
+            name="mpc_theme_style_settings[hero_heading_color]"
+            value="<?php echo esc_attr($settings['hero_heading_color'] ?? '#ffffff'); ?>"
+        >
+    </td>
+</tr>
+
+<tr>
+    <th scope="row">
+        <label for="mpc_theme_style_hero_lead_color">
+            <?php esc_html_e('Hero Lead Text Color', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <input
+            type="color"
+            id="mpc_theme_style_hero_lead_color"
+            name="mpc_theme_style_settings[hero_lead_color]"
+            value="<?php echo esc_attr($settings['hero_lead_color'] ?? '#f5f5f5'); ?>"
+        >
+    </td>
+</tr>
+
+<tr>
+    <th scope="row">
+        <label for="mpc_theme_style_hero_text_shadow">
+            <?php esc_html_e('Hero Text Shadow', 'music-project-core'); ?>
         </label>
     </th>
     <td>
         <select
-            id="mpc_theme_style_heading_alignment_scope"
-            name="mpc_theme_style_settings[heading_alignment_scope]"
+            id="mpc_theme_style_hero_text_shadow"
+            name="mpc_theme_style_settings[hero_text_shadow]"
         >
-            <option value="none" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'none'); ?>>
-                <?php esc_html_e('Default', 'music-project-core'); ?>
+            <option value="none" <?php selected($settings['hero_text_shadow'] ?? 'subtle', 'none'); ?>>
+                <?php esc_html_e('None', 'music-project-core'); ?>
             </option>
 
-            <option value="home" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'home'); ?>>
-                <?php esc_html_e('Center homepage headings', 'music-project-core'); ?>
+            <option value="subtle" <?php selected($settings['hero_text_shadow'] ?? 'subtle', 'subtle'); ?>>
+                <?php esc_html_e('Subtle', 'music-project-core'); ?>
             </option>
 
-            <option value="all" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'all'); ?>>
-                <?php esc_html_e('Center all headings', 'music-project-core'); ?>
+            <option value="strong" <?php selected($settings['hero_text_shadow'] ?? 'subtle', 'strong'); ?>>
+                <?php esc_html_e('Strong', 'music-project-core'); ?>
             </option>
         </select>
 
         <p class="description">
-            <?php esc_html_e('Choose whether headings keep the default layout, center only on homepage sections, or center across the whole site.', 'music-project-core'); ?>
+            <?php esc_html_e('Useful when the hero sits over photos or videos.', 'music-project-core'); ?>
         </p>
     </td>
 </tr>
-            </table>
 
-            <hr>
+        </table>
 
-            <h2><?php esc_html_e('Background Texture', 'music-project-core'); ?></h2>
+        <hr>
 
-            <table class="form-table" role="presentation">
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Enable Texture', 'music-project-core'); ?>
-                    </th>
-                    <td>
+        <h2><?php esc_html_e('Typography', 'music-project-core'); ?></h2>
+
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row">
+                    <label
+                        for="google_fonts_url"><?php esc_html_e('Google Fonts Stylesheet URL', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="url" id="google_fonts_url" name="mpc_theme_style_settings[google_fonts_url]"
+                        class="large-text" value="<?php echo esc_url($settings['google_fonts_url']); ?>"
+                        placeholder="https://fonts.googleapis.com/css2?family=...">
+                    <p class="description">
+                        <?php esc_html_e('Optional. Paste the Google Fonts stylesheet URL only, not the full <link> tag.', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="font_heading"><?php esc_html_e('Heading Font Family', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="text" id="font_heading" name="mpc_theme_style_settings[font_heading]"
+                        class="large-text" value="<?php echo esc_attr($settings['font_heading']); ?>">
+                    <p class="description">
+                        <?php esc_html_e('Example: "Oswald", Impact, sans-serif', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="font_body"><?php esc_html_e('Body Font Family', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="text" id="font_body" name="mpc_theme_style_settings[font_body]" class="large-text"
+                        value="<?php echo esc_attr($settings['font_body']); ?>">
+                    <p class="description">
+                        <?php esc_html_e('Example: "Lora", Georgia, serif', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="font_accent"><?php esc_html_e('Accent Font Family', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="text" id="font_accent" name="mpc_theme_style_settings[font_accent]" class="large-text"
+                        value="<?php echo esc_attr($settings['font_accent']); ?>">
+                    <p class="description">
+                        <?php esc_html_e('Used for labels, nav, social links, and small accent text.', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_theme_style_font_quote">Quote Font</label>
+                </th>
+                <td>
+                    <input id="mpc_theme_style_font_quote" class="regular-text" type="text"
+                        name="mpc_theme_style_settings[font_quote]"
+                        value="<?php echo esc_attr($settings['font_quote']); ?>"
+                        placeholder='"Playfair Display", serif'>
+
+                    <p class="description">
+                        Optional font family for press quotes. Leave blank to use the heading font.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label
+                        for="heading_text_transform"><?php esc_html_e('Heading Text Transform', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <select id="heading_text_transform" name="mpc_theme_style_settings[heading_text_transform]">
+                        <option value="none" <?php selected($settings['heading_text_transform'], 'none'); ?>>
+                            <?php esc_html_e('None', 'music-project-core'); ?>
+                        </option>
+                        <option value="uppercase" <?php selected($settings['heading_text_transform'], 'uppercase'); ?>>
+                            <?php esc_html_e('Uppercase', 'music-project-core'); ?>
+                        </option>
+                        <option value="lowercase" <?php selected($settings['heading_text_transform'], 'lowercase'); ?>>
+                            <?php esc_html_e('Lowercase', 'music-project-core'); ?>
+                        </option>
+                        <option value="capitalize"
+                            <?php selected($settings['heading_text_transform'], 'capitalize'); ?>>
+                            <?php esc_html_e('Capitalize', 'music-project-core'); ?>
+                        </option>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label
+                        for="heading_letter_spacing"><?php esc_html_e('Heading Letter Spacing', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="text" id="heading_letter_spacing"
+                        name="mpc_theme_style_settings[heading_letter_spacing]" class="regular-text"
+                        value="<?php echo esc_attr($settings['heading_letter_spacing']); ?>" placeholder="-0.04em">
+                    <p class="description">
+                        <?php esc_html_e('Use values like -0.04em, 0.02em, 1px, etc.', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_theme_style_heading_alignment_scope">
+                        <?php esc_html_e('Heading Alignment', 'music-project-core'); ?>
+                    </label>
+                </th>
+                <td>
+                    <select id="mpc_theme_style_heading_alignment_scope"
+                        name="mpc_theme_style_settings[heading_alignment_scope]">
+                        <option value="none" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'none'); ?>>
+                            <?php esc_html_e('Default', 'music-project-core'); ?>
+                        </option>
+
+                        <option value="home" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'home'); ?>>
+                            <?php esc_html_e('Center homepage headings', 'music-project-core'); ?>
+                        </option>
+
+                        <option value="all" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'all'); ?>>
+                            <?php esc_html_e('Center all headings', 'music-project-core'); ?>
+                        </option>
+                    </select>
+
+                    <p class="description">
+                        <?php esc_html_e('Choose whether headings keep the default layout, center only on homepage sections, or center across the whole site.', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+        </table>
+
+        <hr>
+
+        <h2><?php esc_html_e('Background Texture', 'music-project-core'); ?></h2>
+
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row">
+                    <?php esc_html_e('Enable Texture', 'music-project-core'); ?>
+                </th>
+                <td>
+                    <label>
+                        <input type="hidden" name="mpc_theme_style_settings[texture_enabled]" value="0">
+                        <input type="checkbox" name="mpc_theme_style_settings[texture_enabled]" value="1"
+                            <?php checked(1, $settings['texture_enabled']); ?>>
+                        <?php esc_html_e('Enable subtle background texture support', 'music-project-core'); ?>
+                    </label>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <?php esc_html_e('Texture Image', 'music-project-core'); ?>
+                </th>
+                <td>
+                    <?php mpc_render_theme_style_media_field('texture_image_id', $settings['texture_image_id'], 'image'); ?>
+                    <p class="description">
+                        <?php esc_html_e('Small repeating textures work best. Example: amp cloth, paper grain, scan texture.', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="texture_opacity"><?php esc_html_e('Texture Opacity', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="number" id="texture_opacity" name="mpc_theme_style_settings[texture_opacity]"
+                        class="small-text" min="0" max="1" step="0.01"
+                        value="<?php echo esc_attr($settings['texture_opacity']); ?>">
+                    <p class="description">
+                        <?php esc_html_e('Recommended: 0.04 to 0.14 for subtle texture.', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="texture_size"><?php esc_html_e('Texture Size', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <input type="text" id="texture_size" name="mpc_theme_style_settings[texture_size]"
+                        class="regular-text" value="<?php echo esc_attr($settings['texture_size']); ?>"
+                        placeholder="420px">
+                    <p class="description">
+                        <?php esc_html_e('Examples: auto, cover, contain, 300px, 420px, 50%.', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="texture_repeat"><?php esc_html_e('Texture Repeat', 'music-project-core'); ?></label>
+                </th>
+                <td>
+                    <select id="texture_repeat" name="mpc_theme_style_settings[texture_repeat]">
+                        <option value="repeat" <?php selected($settings['texture_repeat'], 'repeat'); ?>>
+                            <?php esc_html_e('Repeat', 'music-project-core'); ?>
+                        </option>
+                        <option value="no-repeat" <?php selected($settings['texture_repeat'], 'no-repeat'); ?>>
+                            <?php esc_html_e('No Repeat', 'music-project-core'); ?>
+                        </option>
+                        <option value="repeat-x" <?php selected($settings['texture_repeat'], 'repeat-x'); ?>>
+                            <?php esc_html_e('Repeat X', 'music-project-core'); ?>
+                        </option>
+                        <option value="repeat-y" <?php selected($settings['texture_repeat'], 'repeat-y'); ?>>
+                            <?php esc_html_e('Repeat Y', 'music-project-core'); ?>
+                        </option>
+                    </select>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <?php esc_html_e('Apply Texture To', 'music-project-core'); ?>
+                </th>
+                <td>
+                    <p>
                         <label>
-                            <input type="hidden" name="mpc_theme_style_settings[texture_enabled]" value="0">
-                            <input
-                                type="checkbox"
-                                name="mpc_theme_style_settings[texture_enabled]"
-                                value="1"
-                                <?php checked(1, $settings['texture_enabled']); ?>
-                            >
-                            <?php esc_html_e('Enable subtle background texture support', 'music-project-core'); ?>
+                            <input type="hidden" name="mpc_theme_style_settings[texture_apply_body]" value="0">
+                            <input type="checkbox" name="mpc_theme_style_settings[texture_apply_body]" value="1"
+                                <?php checked(1, $settings['texture_apply_body']); ?>>
+                            <?php esc_html_e('Body background / outer margins', 'music-project-core'); ?>
                         </label>
-                    </td>
-                </tr>
+                    </p>
 
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Texture Image', 'music-project-core'); ?>
-                    </th>
-                    <td>
-                        <?php mpc_render_theme_style_media_field('texture_image_id', $settings['texture_image_id'], 'image'); ?>
-                        <p class="description">
-                            <?php esc_html_e('Small repeating textures work best. Example: amp cloth, paper grain, scan texture.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
+                    <p>
+                        <label>
+                            <input type="hidden" name="mpc_theme_style_settings[texture_apply_footer]" value="0">
+                            <input type="checkbox" name="mpc_theme_style_settings[texture_apply_footer]" value="1"
+                                <?php checked(1, $settings['texture_apply_footer']); ?>>
+                            <?php esc_html_e('Footer', 'music-project-core'); ?>
+                        </label>
+                    </p>
 
-                <tr>
-                    <th scope="row">
-                        <label for="texture_opacity"><?php esc_html_e('Texture Opacity', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="number"
-                            id="texture_opacity"
-                            name="mpc_theme_style_settings[texture_opacity]"
-                            class="small-text"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value="<?php echo esc_attr($settings['texture_opacity']); ?>"
-                        >
-                        <p class="description">
-                            <?php esc_html_e('Recommended: 0.04 to 0.14 for subtle texture.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
+                    <p>
+                        <label>
+                            <input type="hidden" name="mpc_theme_style_settings[texture_apply_buttons]" value="0">
+                            <input type="checkbox" name="mpc_theme_style_settings[texture_apply_buttons]" value="1"
+                                <?php checked(1, $settings['texture_apply_buttons']); ?>>
+                            <?php esc_html_e('Buttons / CTAs', 'music-project-core'); ?>
+                        </label>
+                    </p>
 
-                <tr>
-                    <th scope="row">
-                        <label for="texture_size"><?php esc_html_e('Texture Size', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="texture_size"
-                            name="mpc_theme_style_settings[texture_size]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['texture_size']); ?>"
-                            placeholder="420px"
-                        >
-                        <p class="description">
-                            <?php esc_html_e('Examples: auto, cover, contain, 300px, 420px, 50%.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
+                    <br>
 
-                <tr>
-                    <th scope="row">
-                        <label for="texture_repeat"><?php esc_html_e('Texture Repeat', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <select
-                            id="texture_repeat"
-                            name="mpc_theme_style_settings[texture_repeat]"
-                        >
-                            <option value="repeat" <?php selected($settings['texture_repeat'], 'repeat'); ?>>
-                                <?php esc_html_e('Repeat', 'music-project-core'); ?>
-                            </option>
-                            <option value="no-repeat" <?php selected($settings['texture_repeat'], 'no-repeat'); ?>>
-                                <?php esc_html_e('No Repeat', 'music-project-core'); ?>
-                            </option>
-                            <option value="repeat-x" <?php selected($settings['texture_repeat'], 'repeat-x'); ?>>
-                                <?php esc_html_e('Repeat X', 'music-project-core'); ?>
-                            </option>
-                            <option value="repeat-y" <?php selected($settings['texture_repeat'], 'repeat-y'); ?>>
-                                <?php esc_html_e('Repeat Y', 'music-project-core'); ?>
-                            </option>
-                        </select>
-                    </td>
-                </tr>
+                    <label>
+                        <input type="checkbox" name="mpc_theme_style_settings[texture_apply_mobile_nav]" value="1"
+                            <?php checked($settings['texture_apply_mobile_nav'], 1); ?>>
+                        Apply texture to mobile navigation overlay
+                    </label>
 
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Apply Texture To', 'music-project-core'); ?>
-                    </th>
-                    <td>
-                        <p>
-                            <label>
-                                <input type="hidden" name="mpc_theme_style_settings[texture_apply_body]" value="0">
-                                <input
-                                    type="checkbox"
-                                    name="mpc_theme_style_settings[texture_apply_body]"
-                                    value="1"
-                                    <?php checked(1, $settings['texture_apply_body']); ?>
-                                >
-                                <?php esc_html_e('Body background / outer margins', 'music-project-core'); ?>
-                            </label>
-                        </p>
+                    <br>
 
-                        <p>
-                            <label>
-                                <input type="hidden" name="mpc_theme_style_settings[texture_apply_footer]" value="0">
-                                <input
-                                    type="checkbox"
-                                    name="mpc_theme_style_settings[texture_apply_footer]"
-                                    value="1"
-                                    <?php checked(1, $settings['texture_apply_footer']); ?>
-                                >
-                                <?php esc_html_e('Footer', 'music-project-core'); ?>
-                            </label>
-                        </p>
+                    <label>
+                        <input type="checkbox" name="mpc_theme_style_settings[texture_apply_cards]" value="1"
+                            <?php checked($settings['texture_apply_cards'], 1); ?>>
+                        Apply texture to cards and panels
+                    </label>
 
-                        <p>
-                            <label>
-                                <input type="hidden" name="mpc_theme_style_settings[texture_apply_buttons]" value="0">
-                                <input
-                                    type="checkbox"
-                                    name="mpc_theme_style_settings[texture_apply_buttons]"
-                                    value="1"
-                                    <?php checked(1, $settings['texture_apply_buttons']); ?>
-                                >
-                                <?php esc_html_e('Buttons / CTAs', 'music-project-core'); ?>
-                            </label>
-                        </p>
+                    <br>
 
-                        <br>
+                    <label>
+                        <input type="checkbox" name="mpc_theme_style_settings[texture_apply_media_frames]" value="1"
+                            <?php checked($settings['texture_apply_media_frames'], 1); ?>>
+                        Apply texture to media frames
+                    </label>
 
-<label>
-    <input
-        type="checkbox"
-        name="mpc_theme_style_settings[texture_apply_mobile_nav]"
-        value="1"
-        <?php checked($settings['texture_apply_mobile_nav'], 1); ?>
-    >
-    Apply texture to mobile navigation overlay
-</label>
+                    <br>
 
-<br>
+                    <label>
+                        <input type="checkbox" name="mpc_theme_style_settings[texture_apply_sections]" value="1"
+                            <?php checked($settings['texture_apply_sections'], 1); ?>>
+                        Apply subtle texture to section backgrounds
+                    </label>
 
-<label>
-    <input
-        type="checkbox"
-        name="mpc_theme_style_settings[texture_apply_cards]"
-        value="1"
-        <?php checked($settings['texture_apply_cards'], 1); ?>
-    >
-    Apply texture to cards and panels
-</label>
+                </td>
+            </tr>
+        </table>
 
-<br>
+        <?php submit_button(__('Save Theme Style', 'music-project-core')); ?>
+    </form>
+</div>
 
-<label>
-    <input
-        type="checkbox"
-        name="mpc_theme_style_settings[texture_apply_media_frames]"
-        value="1"
-        <?php checked($settings['texture_apply_media_frames'], 1); ?>
-    >
-    Apply texture to media frames
-</label>
-
-<br>
-
-<label>
-    <input
-        type="checkbox"
-        name="mpc_theme_style_settings[texture_apply_sections]"
-        value="1"
-        <?php checked($settings['texture_apply_sections'], 1); ?>
-    >
-    Apply subtle texture to section backgrounds
-</label>
-
-                    </td>
-                </tr>
-            </table>
-
-            <?php submit_button(__('Save Theme Style', 'music-project-core')); ?>
-        </form>
-    </div>
-
-    <?php
+<?php
 }
