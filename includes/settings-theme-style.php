@@ -25,6 +25,7 @@ function mpc_get_theme_style_defaults() {
         'font_accent' => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         'heading_text_transform' => 'none',
         'heading_letter_spacing' => '-0.04em',
+        'heading_alignment_scope' => 'none',
         'font_quote' => '',
 
         // Texture.
@@ -36,6 +37,10 @@ function mpc_get_theme_style_defaults() {
         'texture_apply_body' => 1,
         'texture_apply_footer' => 1,
         'texture_apply_buttons' => 0,
+        'texture_apply_mobile_nav' => 1,
+        'texture_apply_cards' => 0,
+        'texture_apply_media_frames' => 0,
+        'texture_apply_sections' => 0,
     ];
 }
 
@@ -187,6 +192,12 @@ function mpc_sanitize_theme_style_settings($input) {
         ? $letter_spacing
         : $defaults['heading_letter_spacing'];
 
+        $allowed_heading_alignment_scopes = ['none', 'home', 'all'];
+
+        $output['heading_alignment_scope'] = isset($input['heading_alignment_scope']) && in_array($input['heading_alignment_scope'], $allowed_heading_alignment_scopes, true)
+            ? $input['heading_alignment_scope']
+            : $defaults['heading_alignment_scope'];
+
     $output['font_quote'] = isset($input['font_quote'])
         ? sanitize_text_field($input['font_quote'])
         : '';
@@ -218,6 +229,10 @@ function mpc_sanitize_theme_style_settings($input) {
     $output['texture_apply_body'] = !empty($input['texture_apply_body']) ? 1 : 0;
     $output['texture_apply_footer'] = !empty($input['texture_apply_footer']) ? 1 : 0;
     $output['texture_apply_buttons'] = !empty($input['texture_apply_buttons']) ? 1 : 0;
+    $output['texture_apply_mobile_nav'] = !empty($input['texture_apply_mobile_nav']) ? 1 : 0;
+    $output['texture_apply_cards'] = !empty($input['texture_apply_cards']) ? 1 : 0;
+    $output['texture_apply_media_frames'] = !empty($input['texture_apply_media_frames']) ? 1 : 0;
+    $output['texture_apply_sections'] = !empty($input['texture_apply_sections']) ? 1 : 0;
 
     return $output;
 }
@@ -593,6 +608,36 @@ function mpc_render_theme_style_settings_page() {
                         </p>
                     </td>
                 </tr>
+
+                <tr>
+    <th scope="row">
+        <label for="mpc_theme_style_heading_alignment_scope">
+            <?php esc_html_e('Heading Alignment', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <select
+            id="mpc_theme_style_heading_alignment_scope"
+            name="mpc_theme_style_settings[heading_alignment_scope]"
+        >
+            <option value="none" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'none'); ?>>
+                <?php esc_html_e('Default', 'music-project-core'); ?>
+            </option>
+
+            <option value="home" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'home'); ?>>
+                <?php esc_html_e('Center homepage headings', 'music-project-core'); ?>
+            </option>
+
+            <option value="all" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'all'); ?>>
+                <?php esc_html_e('Center all headings', 'music-project-core'); ?>
+            </option>
+        </select>
+
+        <p class="description">
+            <?php esc_html_e('Choose whether headings keep the default layout, center only on homepage sections, or center across the whole site.', 'music-project-core'); ?>
+        </p>
+    </td>
+</tr>
             </table>
 
             <hr>
@@ -738,6 +783,55 @@ function mpc_render_theme_style_settings_page() {
                                 <?php esc_html_e('Buttons / CTAs', 'music-project-core'); ?>
                             </label>
                         </p>
+
+                        <br>
+
+<label>
+    <input
+        type="checkbox"
+        name="mpc_theme_style_settings[texture_apply_mobile_nav]"
+        value="1"
+        <?php checked($settings['texture_apply_mobile_nav'], 1); ?>
+    >
+    Apply texture to mobile navigation overlay
+</label>
+
+<br>
+
+<label>
+    <input
+        type="checkbox"
+        name="mpc_theme_style_settings[texture_apply_cards]"
+        value="1"
+        <?php checked($settings['texture_apply_cards'], 1); ?>
+    >
+    Apply texture to cards and panels
+</label>
+
+<br>
+
+<label>
+    <input
+        type="checkbox"
+        name="mpc_theme_style_settings[texture_apply_media_frames]"
+        value="1"
+        <?php checked($settings['texture_apply_media_frames'], 1); ?>
+    >
+    Apply texture to media frames
+</label>
+
+<br>
+
+<label>
+    <input
+        type="checkbox"
+        name="mpc_theme_style_settings[texture_apply_sections]"
+        value="1"
+        <?php checked($settings['texture_apply_sections'], 1); ?>
+    >
+    Apply subtle texture to section backgrounds
+</label>
+
                     </td>
                 </tr>
             </table>
