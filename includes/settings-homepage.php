@@ -14,6 +14,10 @@ function mpc_get_homepage_section_definitions() {
             'label' => 'Featured Content',
             'description' => 'Promo section for a release, video, announcement, or quote.',
         ],
+        'services' => [
+            'label' => 'Services',
+            'description' => 'List of services offered.',
+        ],
         'shows' => [
             'label' => 'Shows',
             'description' => 'Tour dates or live show embed.',
@@ -126,6 +130,15 @@ function mpc_get_homepage_defaults() {
         'featured_quote_position' => 'beside',
         'featured_media_type' => 'image',
         'featured_video_url' => '',
+
+        // Services.
+        'services_heading' => __('Services', 'music-project-core'),
+        'services_intro' => '',
+        'services_layout' => 'grid',
+        'services_columns' => '3',
+        'services_cta_text' => '',
+        'services_cta_url' => '',
+        'services_items' => [],
 
         // Blog.
         'blog_enabled' => 1,
@@ -424,6 +437,65 @@ function mpc_sanitize_homepage_settings($input) {
     $output['blog_view_all_url'] = isset($input['blog_view_all_url'])
         ? esc_url_raw($input['blog_view_all_url'])
         : $defaults['blog_view_all_url'];
+
+        // Services.
+    $output['services_heading'] = isset($input['services_heading'])
+        ? sanitize_text_field($input['services_heading'])
+        : $defaults['services_heading'];
+
+    $output['services_intro'] = isset($input['services_intro'])
+        ? sanitize_textarea_field($input['services_intro'])
+        : $defaults['services_intro'];
+
+    $allowed_services_layouts = ['grid', 'featured_first', 'compact'];
+    $services_layout = isset($input['services_layout'])
+        ? sanitize_key($input['services_layout'])
+        : $defaults['services_layout'];
+
+    $output['services_layout'] = in_array($services_layout, $allowed_services_layouts, true)
+        ? $services_layout
+        : $defaults['services_layout'];
+
+    $allowed_services_columns = ['2', '3', '4'];
+    $services_columns = isset($input['services_columns'])
+        ? sanitize_key($input['services_columns'])
+        : $defaults['services_columns'];
+
+    $output['services_columns'] = in_array($services_columns, $allowed_services_columns, true)
+        ? $services_columns
+        : $defaults['services_columns'];
+
+    $output['services_cta_text'] = isset($input['services_cta_text'])
+        ? sanitize_text_field($input['services_cta_text'])
+        : $defaults['services_cta_text'];
+
+    $output['services_cta_url'] = isset($input['services_cta_url'])
+        ? esc_url_raw($input['services_cta_url'])
+        : $defaults['services_cta_url'];
+
+    $services_items = [];
+
+    if (!empty($input['services_items']) && is_array($input['services_items'])) {
+        foreach ($input['services_items'] as $item) {
+            $title = isset($item['title']) ? sanitize_text_field($item['title']) : '';
+            $description = isset($item['description']) ? sanitize_textarea_field($item['description']) : '';
+            $link_text = isset($item['link_text']) ? sanitize_text_field($item['link_text']) : '';
+            $link_url = isset($item['link_url']) ? esc_url_raw($item['link_url']) : '';
+
+            if (!$title && !$description && !$link_text && !$link_url) {
+                continue;
+            }
+
+            $services_items[] = [
+                'title' => $title,
+                'description' => $description,
+                'link_text' => $link_text,
+                'link_url' => $link_url,
+            ];
+        }
+    }
+
+    $output['services_items'] = array_slice($services_items, 0, 8);
         
     return $output;
 }
@@ -1079,6 +1151,198 @@ function mpc_render_homepage_settings_page() {
                     </td>
                 </tr>
             </table>
+
+            <hr>
+
+<h2><?php esc_html_e('Services', 'music-project-core'); ?></h2>
+
+<table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_services_heading">
+                <?php esc_html_e('Services Heading', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="mpc_homepage_services_heading"
+                name="mpc_homepage_settings[services_heading]"
+                value="<?php echo esc_attr($settings['services_heading'] ?? 'Services'); ?>"
+                class="regular-text"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_services_intro">
+                <?php esc_html_e('Services Intro Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <textarea
+                id="mpc_homepage_services_intro"
+                name="mpc_homepage_settings[services_intro]"
+                rows="3"
+                class="large-text"
+            ><?php echo esc_textarea($settings['services_intro'] ?? ''); ?></textarea>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_services_layout">
+                <?php esc_html_e('Services Layout', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_homepage_services_layout"
+                name="mpc_homepage_settings[services_layout]"
+            >
+                <option value="grid" <?php selected($settings['services_layout'] ?? 'grid', 'grid'); ?>>
+                    <?php esc_html_e('Grid', 'music-project-core'); ?>
+                </option>
+                <option value="featured_first" <?php selected($settings['services_layout'] ?? 'grid', 'featured_first'); ?>>
+                    <?php esc_html_e('Featured First', 'music-project-core'); ?>
+                </option>
+                <option value="compact" <?php selected($settings['services_layout'] ?? 'grid', 'compact'); ?>>
+                    <?php esc_html_e('Compact List', 'music-project-core'); ?>
+                </option>
+            </select>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_services_columns">
+                <?php esc_html_e('Cards Per Row', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_homepage_services_columns"
+                name="mpc_homepage_settings[services_columns]"
+            >
+                <option value="2" <?php selected($settings['services_columns'] ?? '3', '2'); ?>>
+                    <?php esc_html_e('2', 'music-project-core'); ?>
+                </option>
+                <option value="3" <?php selected($settings['services_columns'] ?? '3', '3'); ?>>
+                    <?php esc_html_e('3', 'music-project-core'); ?>
+                </option>
+                <option value="4" <?php selected($settings['services_columns'] ?? '3', '4'); ?>>
+                    <?php esc_html_e('4', 'music-project-core'); ?>
+                </option>
+            </select>
+        </td>
+    </tr>
+</table>
+
+<h3><?php esc_html_e('Service Items', 'music-project-core'); ?></h3>
+
+<?php
+$service_item_defaults = [
+    'title' => '',
+    'description' => '',
+    'link_text' => '',
+    'link_url' => '',
+];
+
+$services_items = $settings['services_items'] ?? [];
+$services_items = is_array($services_items) ? $services_items : [];
+$services_items = array_slice(array_pad($services_items, 8, $service_item_defaults), 0, 8);
+?>
+
+<table class="widefat striped" style="max-width: 1100px;">
+    <thead>
+        <tr>
+            <th><?php esc_html_e('Heading', 'music-project-core'); ?></th>
+            <th><?php esc_html_e('Description', 'music-project-core'); ?></th>
+            <th><?php esc_html_e('Link Text', 'music-project-core'); ?></th>
+            <th><?php esc_html_e('Link URL', 'music-project-core'); ?></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <?php foreach ($services_items as $index => $item) : ?>
+            <?php $item = wp_parse_args($item, $service_item_defaults); ?>
+
+            <tr>
+                <td>
+                    <input
+                        type="text"
+                        name="mpc_homepage_settings[services_items][<?php echo esc_attr($index); ?>][title]"
+                        value="<?php echo esc_attr($item['title']); ?>"
+                        class="regular-text"
+                    >
+                </td>
+
+                <td>
+                    <textarea
+                        name="mpc_homepage_settings[services_items][<?php echo esc_attr($index); ?>][description]"
+                        rows="3"
+                        class="large-text"
+                    ><?php echo esc_textarea($item['description']); ?></textarea>
+                </td>
+
+                <td>
+                    <input
+                        type="text"
+                        name="mpc_homepage_settings[services_items][<?php echo esc_attr($index); ?>][link_text]"
+                        value="<?php echo esc_attr($item['link_text']); ?>"
+                        class="regular-text"
+                    >
+                </td>
+
+                <td>
+                    <input
+                        type="url"
+                        name="mpc_homepage_settings[services_items][<?php echo esc_attr($index); ?>][link_url]"
+                        value="<?php echo esc_url($item['link_url']); ?>"
+                        class="regular-text"
+                    >
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody>
+</table>
+
+<table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_services_cta_text">
+                <?php esc_html_e('Bottom CTA Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="mpc_homepage_services_cta_text"
+                name="mpc_homepage_settings[services_cta_text]"
+                value="<?php echo esc_attr($settings['services_cta_text'] ?? ''); ?>"
+                class="regular-text"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_services_cta_url">
+                <?php esc_html_e('Bottom CTA URL', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="url"
+                id="mpc_homepage_services_cta_url"
+                name="mpc_homepage_settings[services_cta_url]"
+                value="<?php echo esc_url($settings['services_cta_url'] ?? ''); ?>"
+                class="regular-text"
+            >
+        </td>
+    </tr>
+</table>
 
             <hr>
 

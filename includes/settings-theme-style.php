@@ -18,6 +18,20 @@ function mpc_get_theme_style_defaults() {
         'color_button_background' => '#f5f5f5',
         'color_button_text' => '#111111',
 
+        // Site chrome.
+        'header_background_color' => '#000000',
+        'header_text_color' => '#f5f5f5',
+        'header_border_color' => '#1f1f1f',
+
+        'mobile_nav_background_color' => '#000000',
+        'mobile_nav_text_color' => '#f5f5f5',
+        'mobile_nav_border_color' => '#242424',
+
+        'footer_background_color' => '#000000',
+        'footer_text_color' => '#f5f5f5',
+        'footer_muted_color' => '#b8b8b8',
+        'footer_border_color' => '#1f1f1f',
+
         // Typography.
         'google_fonts_url' => '',
         'font_heading' => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -29,6 +43,12 @@ function mpc_get_theme_style_defaults() {
         'hero_heading_color' => '#ffffff',
         'hero_lead_color'   => '#f5f5f5',
         'hero_text_shadow'  => 'subtle',
+
+        // Design tokens.
+        'corner_style' => 'rounded',
+        'card_shadow_style' => 'standard',
+        'border_strength' => 'subtle',
+
         'font_quote' => '',
 
         // Texture.
@@ -161,6 +181,26 @@ function mpc_sanitize_theme_style_settings($input) {
         $output[$field] = $color ?: $defaults[$field];
     }
 
+    // Site chrome colors.
+    $chrome_color_fields = [
+        'header_background_color',
+        'header_text_color',
+        'header_border_color',
+        'mobile_nav_background_color',
+        'mobile_nav_text_color',
+        'mobile_nav_border_color',
+        'footer_background_color',
+        'footer_text_color',
+        'footer_muted_color',
+        'footer_border_color',
+    ];
+
+    foreach ($chrome_color_fields as $field) {
+        $value = isset($input[$field]) ? sanitize_hex_color($input[$field]) : '';
+
+        $output[$field] = $value ?: $defaults[$field];
+    }
+
     // Typography.
     $output['google_fonts_url'] = isset($input['google_fonts_url'])
         ? mpc_sanitize_google_fonts_url($input['google_fonts_url'])
@@ -214,6 +254,35 @@ function mpc_sanitize_theme_style_settings($input) {
         $output['hero_text_shadow'] = isset($input['hero_text_shadow']) && in_array($input['hero_text_shadow'], $allowed_hero_text_shadows, true)
             ? $input['hero_text_shadow']
             : $defaults['hero_text_shadow'];
+
+// Design tokens.
+$allowed_corner_styles = ['sharp', 'subtle', 'rounded', 'soft'];
+$corner_style = isset($input['corner_style'])
+    ? sanitize_key($input['corner_style'])
+    : $defaults['corner_style'];
+
+$output['corner_style'] = in_array($corner_style, $allowed_corner_styles, true)
+    ? $corner_style
+    : $defaults['corner_style'];
+
+$allowed_card_shadow_styles = ['none', 'subtle', 'standard', 'dramatic'];
+$card_shadow_style = isset($input['card_shadow_style'])
+    ? sanitize_key($input['card_shadow_style'])
+    : $defaults['card_shadow_style'];
+
+$output['card_shadow_style'] = in_array($card_shadow_style, $allowed_card_shadow_styles, true)
+    ? $card_shadow_style
+    : $defaults['card_shadow_style'];
+
+$allowed_border_strengths = ['minimal', 'subtle', 'defined'];
+$border_strength = isset($input['border_strength'])
+    ? sanitize_key($input['border_strength'])
+    : $defaults['border_strength'];
+
+$output['border_strength'] = in_array($border_strength, $allowed_border_strengths, true)
+    ? $border_strength
+    : $defaults['border_strength'];
+
 
     $output['font_quote'] = isset($input['font_quote'])
         ? sanitize_text_field($input['font_quote'])
@@ -512,6 +581,280 @@ function mpc_render_theme_style_settings_page() {
         </table>
 
         <hr>
+
+        <h2><?php esc_html_e('Design Details', 'music-project-core'); ?></h2>
+
+        <table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_corner_style">
+                <?php esc_html_e('Corner Style', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_theme_style_corner_style"
+                name="mpc_theme_style_settings[corner_style]"
+            >
+                <option value="sharp" <?php selected($settings['corner_style'] ?? 'rounded', 'sharp'); ?>>
+                    <?php esc_html_e('Sharp', 'music-project-core'); ?>
+                </option>
+
+                <option value="subtle" <?php selected($settings['corner_style'] ?? 'rounded', 'subtle'); ?>>
+                    <?php esc_html_e('Subtle', 'music-project-core'); ?>
+                </option>
+
+                <option value="rounded" <?php selected($settings['corner_style'] ?? 'rounded', 'rounded'); ?>>
+                    <?php esc_html_e('Rounded', 'music-project-core'); ?>
+                </option>
+
+                <option value="soft" <?php selected($settings['corner_style'] ?? 'rounded', 'soft'); ?>>
+                    <?php esc_html_e('Soft', 'music-project-core'); ?>
+                </option>
+            </select>
+
+            <p class="description">
+                <?php esc_html_e('Controls the overall roundness of cards, media, buttons, and form controls.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_card_shadow_style">
+                <?php esc_html_e('Card Shadow Style', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_theme_style_card_shadow_style"
+                name="mpc_theme_style_settings[card_shadow_style]"
+            >
+                <option value="none" <?php selected($settings['card_shadow_style'] ?? 'standard', 'none'); ?>>
+                    <?php esc_html_e('None', 'music-project-core'); ?>
+                </option>
+
+                <option value="subtle" <?php selected($settings['card_shadow_style'] ?? 'standard', 'subtle'); ?>>
+                    <?php esc_html_e('Subtle', 'music-project-core'); ?>
+                </option>
+
+                <option value="standard" <?php selected($settings['card_shadow_style'] ?? 'standard', 'standard'); ?>>
+                    <?php esc_html_e('Standard', 'music-project-core'); ?>
+                </option>
+
+                <option value="dramatic" <?php selected($settings['card_shadow_style'] ?? 'standard', 'dramatic'); ?>>
+                    <?php esc_html_e('Dramatic', 'music-project-core'); ?>
+                </option>
+            </select>
+
+            <p class="description">
+                <?php esc_html_e('Controls elevation on card-style elements like featured content, blog cards, event cards, and panels.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_border_strength">
+                <?php esc_html_e('Border Strength', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_theme_style_border_strength"
+                name="mpc_theme_style_settings[border_strength]"
+            >
+                <option value="minimal" <?php selected($settings['border_strength'] ?? 'subtle', 'minimal'); ?>>
+                    <?php esc_html_e('Minimal', 'music-project-core'); ?>
+                </option>
+
+                <option value="subtle" <?php selected($settings['border_strength'] ?? 'subtle', 'subtle'); ?>>
+                    <?php esc_html_e('Subtle', 'music-project-core'); ?>
+                </option>
+
+                <option value="defined" <?php selected($settings['border_strength'] ?? 'subtle', 'defined'); ?>>
+                    <?php esc_html_e('Defined', 'music-project-core'); ?>
+                </option>
+            </select>
+
+            <p class="description">
+                <?php esc_html_e('Useful when shadows are disabled or when you want sharper editorial card edges.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+</table>
+
+<hr>
+
+<h2><?php esc_html_e('Site Chrome', 'music-project-core'); ?></h2>
+
+<p>
+    <?php esc_html_e('Controls the header, mobile navigation overlay, and footer colors.', 'music-project-core'); ?>
+</p>
+
+<table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_header_background_color">
+                <?php esc_html_e('Header Background', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_header_background_color"
+                name="mpc_theme_style_settings[header_background_color]"
+                value="<?php echo esc_attr($settings['header_background_color'] ?? '#000000'); ?>"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_header_text_color">
+                <?php esc_html_e('Header Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_header_text_color"
+                name="mpc_theme_style_settings[header_text_color]"
+                value="<?php echo esc_attr($settings['header_text_color'] ?? '#f5f5f5'); ?>"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_header_border_color">
+                <?php esc_html_e('Header Border', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_header_border_color"
+                name="mpc_theme_style_settings[header_border_color]"
+                value="<?php echo esc_attr($settings['header_border_color'] ?? '#1f1f1f'); ?>"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_mobile_nav_background_color">
+                <?php esc_html_e('Mobile Nav Background', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_mobile_nav_background_color"
+                name="mpc_theme_style_settings[mobile_nav_background_color]"
+                value="<?php echo esc_attr($settings['mobile_nav_background_color'] ?? '#000000'); ?>"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_mobile_nav_text_color">
+                <?php esc_html_e('Mobile Nav Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_mobile_nav_text_color"
+                name="mpc_theme_style_settings[mobile_nav_text_color]"
+                value="<?php echo esc_attr($settings['mobile_nav_text_color'] ?? '#f5f5f5'); ?>"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_mobile_nav_border_color">
+                <?php esc_html_e('Mobile Nav Border', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_mobile_nav_border_color"
+                name="mpc_theme_style_settings[mobile_nav_border_color]"
+                value="<?php echo esc_attr($settings['mobile_nav_border_color'] ?? '#242424'); ?>"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_footer_background_color">
+                <?php esc_html_e('Footer Background', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_footer_background_color"
+                name="mpc_theme_style_settings[footer_background_color]"
+                value="<?php echo esc_attr($settings['footer_background_color'] ?? '#000000'); ?>"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_footer_text_color">
+                <?php esc_html_e('Footer Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_footer_text_color"
+                name="mpc_theme_style_settings[footer_text_color]"
+                value="<?php echo esc_attr($settings['footer_text_color'] ?? '#f5f5f5'); ?>"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_footer_muted_color">
+                <?php esc_html_e('Footer Muted Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_footer_muted_color"
+                name="mpc_theme_style_settings[footer_muted_color]"
+                value="<?php echo esc_attr($settings['footer_muted_color'] ?? '#b8b8b8'); ?>"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_footer_border_color">
+                <?php esc_html_e('Footer Border', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="color"
+                id="mpc_theme_style_footer_border_color"
+                name="mpc_theme_style_settings[footer_border_color]"
+                value="<?php echo esc_attr($settings['footer_border_color'] ?? '#1f1f1f'); ?>"
+            >
+        </td>
+    </tr>
+</table>
+
+<hr>
 
         <h2><?php esc_html_e('Typography', 'music-project-core'); ?></h2>
 
