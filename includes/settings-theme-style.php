@@ -43,6 +43,7 @@ function mpc_get_theme_style_defaults() {
         'hero_heading_color' => '#ffffff',
         'hero_lead_color'   => '#f5f5f5',
         'hero_text_shadow'  => 'subtle',
+        'hero_text_shadow_color' => '#000000',
 
         // Design tokens.
         'corner_style' => 'rounded',
@@ -255,33 +256,41 @@ function mpc_sanitize_theme_style_settings($input) {
             ? $input['hero_text_shadow']
             : $defaults['hero_text_shadow'];
 
-// Design tokens.
-$allowed_corner_styles = ['sharp', 'subtle', 'rounded', 'soft'];
-$corner_style = isset($input['corner_style'])
-    ? sanitize_key($input['corner_style'])
-    : $defaults['corner_style'];
+        $output['hero_text_shadow_color'] = isset($input['hero_text_shadow_color'])
+            ? sanitize_hex_color($input['hero_text_shadow_color'])
+            : $defaults['hero_text_shadow_color'];
 
-$output['corner_style'] = in_array($corner_style, $allowed_corner_styles, true)
-    ? $corner_style
-    : $defaults['corner_style'];
+        if (!$output['hero_text_shadow_color']) {
+            $output['hero_text_shadow_color'] = $defaults['hero_text_shadow_color'];
+        }    
 
-$allowed_card_shadow_styles = ['none', 'subtle', 'standard', 'dramatic'];
-$card_shadow_style = isset($input['card_shadow_style'])
-    ? sanitize_key($input['card_shadow_style'])
-    : $defaults['card_shadow_style'];
+        // Design tokens.
+        $allowed_corner_styles = ['sharp', 'subtle', 'rounded', 'soft'];
+        $corner_style = isset($input['corner_style'])
+            ? sanitize_key($input['corner_style'])
+            : $defaults['corner_style'];
 
-$output['card_shadow_style'] = in_array($card_shadow_style, $allowed_card_shadow_styles, true)
-    ? $card_shadow_style
-    : $defaults['card_shadow_style'];
+        $output['corner_style'] = in_array($corner_style, $allowed_corner_styles, true)
+            ? $corner_style
+            : $defaults['corner_style'];
 
-$allowed_border_strengths = ['minimal', 'subtle', 'defined'];
-$border_strength = isset($input['border_strength'])
-    ? sanitize_key($input['border_strength'])
-    : $defaults['border_strength'];
+        $allowed_card_shadow_styles = ['none', 'subtle', 'standard', 'dramatic'];
+        $card_shadow_style = isset($input['card_shadow_style'])
+            ? sanitize_key($input['card_shadow_style'])
+            : $defaults['card_shadow_style'];
 
-$output['border_strength'] = in_array($border_strength, $allowed_border_strengths, true)
-    ? $border_strength
-    : $defaults['border_strength'];
+        $output['card_shadow_style'] = in_array($card_shadow_style, $allowed_card_shadow_styles, true)
+            ? $card_shadow_style
+            : $defaults['card_shadow_style'];
+
+        $allowed_border_strengths = ['minimal', 'subtle', 'defined'];
+        $border_strength = isset($input['border_strength'])
+            ? sanitize_key($input['border_strength'])
+            : $defaults['border_strength'];
+
+        $output['border_strength'] = in_array($border_strength, $allowed_border_strengths, true)
+            ? $border_strength
+            : $defaults['border_strength'];
 
 
     $output['font_quote'] = isset($input['font_quote'])
@@ -574,6 +583,28 @@ function mpc_render_theme_style_settings_page() {
 
         <p class="description">
             <?php esc_html_e('Useful when the hero sits over photos or videos.', 'music-project-core'); ?>
+        </p>
+    </td>
+</tr>
+
+<tr>
+    <th scope="row">
+        <label for="mpc_theme_style_hero_text_shadow_color">
+            <?php esc_html_e('Hero Text Shadow Color', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <input
+            type="text"
+            id="mpc_theme_style_hero_text_shadow_color"
+            name="mpc_theme_style_settings[hero_text_shadow_color]"
+            value="<?php echo esc_attr($settings['hero_text_shadow_color'] ?? '#000000'); ?>"
+            class="mpc-color-field"
+            data-default-color="#000000"
+        >
+
+        <p class="description">
+            <?php esc_html_e('Controls the color used by the hero text shadow preset. Use dark colors for light text, or light colors for dark text.', 'music-project-core'); ?>
         </p>
     </td>
 </tr>

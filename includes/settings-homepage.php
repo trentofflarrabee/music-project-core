@@ -107,6 +107,7 @@ function mpc_get_homepage_defaults() {
         'hero_enabled' => 1,
         'hero_heading' => get_bloginfo('name'),
         'hero_layout' => 'split',
+        'hero_height' => 'full_screen',
         'hero_overlay_opacity' => 45,
         'hero_text' => 'A reusable WordPress theme for bands, artists, and music projects.',
         
@@ -333,6 +334,17 @@ $output['hero_text_align'] = in_array($hero_text_align, $allowed_hero_text_align
     $output['hero_cta_url'] = isset($input['hero_cta_url'])
         ? esc_url_raw($input['hero_cta_url'])
         : '';   
+
+
+        $allowed_hero_heights = ['compact', 'standard', 'full_screen'];
+
+$output['hero_height'] = isset($input['hero_height'])
+    ? sanitize_key($input['hero_height'])
+    : $defaults['hero_height'];
+
+if (!in_array($output['hero_height'], $allowed_hero_heights, true)) {
+    $output['hero_height'] = $defaults['hero_height'];
+}
 
     // Featured Content.
     $output['featured_enabled'] = !empty($input['featured_enabled']) ? 1 : 0;
@@ -778,6 +790,34 @@ function mpc_render_homepage_settings_page() {
                             <strong>Full-Bleed Media:</strong>
                             Best for a cinematic hero. Uses desktop video when available; otherwise falls back to the hero image.
                         </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">
+                        <label for="mpc_homepage_hero_height">
+                            <?php esc_html_e('Hero Height', 'music-project-core'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_hero_height"
+                            name="mpc_homepage_settings[hero_height]"
+                        >
+                            <option value="compact" <?php selected($settings['hero_height'] ?? 'full_screen', 'compact'); ?>>
+                                <?php esc_html_e('Compact', 'music-project-core'); ?>
+                            </option>
+                            <option value="standard" <?php selected($settings['hero_height'] ?? 'full_screen', 'standard'); ?>>
+                                <?php esc_html_e('Standard', 'music-project-core'); ?>
+                            </option>
+                            <option value="full_screen" <?php selected($settings['hero_height'] ?? 'full_screen', 'full_screen'); ?>>
+                                <?php esc_html_e('Full Screen', 'music-project-core'); ?>
+                            </option>
+                        </select>
+
+                        <p class="description">
+                            <?php esc_html_e('Controls the visual height of the homepage hero section.', 'music-project-core'); ?>
+                        </p>
                     </td>
                 </tr>
 
