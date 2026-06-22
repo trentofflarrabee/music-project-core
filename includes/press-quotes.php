@@ -5,22 +5,29 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Register Press Quotes custom post type.
+ * Register Quotes / Testimonials custom post type.
  */
 function mpc_register_press_quote_post_type() {
-    $labels = [
-        'name'               => __('Press Quotes', 'music-project-core'),
-        'singular_name'      => __('Press Quote', 'music-project-core'),
-        'add_new'            => __('Add New Quote', 'music-project-core'),
-        'add_new_item'       => __('Add New Press Quote', 'music-project-core'),
-        'edit_item'          => __('Edit Press Quote', 'music-project-core'),
-        'new_item'           => __('New Press Quote', 'music-project-core'),
-        'view_item'          => __('View Press Quote', 'music-project-core'),
-        'search_items'       => __('Search Press Quotes', 'music-project-core'),
-        'not_found'          => __('No press quotes found.', 'music-project-core'),
-        'not_found_in_trash' => __('No press quotes found in Trash.', 'music-project-core'),
-        'menu_name'          => __('Press Quotes', 'music-project-core'),
-    ];
+$labels = [
+    'name'                  => __('Quotes / Testimonials', 'music-project-core'),
+    'singular_name'         => __('Quote / Testimonial', 'music-project-core'),
+    'menu_name'             => __('Quotes / Testimonials', 'music-project-core'),
+    'name_admin_bar'        => __('Quote / Testimonial', 'music-project-core'),
+    'add_new'               => __('Add New', 'music-project-core'),
+    'add_new_item'          => __('Add New Quote / Testimonial', 'music-project-core'),
+    'new_item'              => __('New Quote / Testimonial', 'music-project-core'),
+    'edit_item'             => __('Edit Quote / Testimonial', 'music-project-core'),
+    'view_item'             => __('View Quote / Testimonial', 'music-project-core'),
+    'all_items'             => __('All Quotes / Testimonials', 'music-project-core'),
+    'search_items'          => __('Search Quotes / Testimonials', 'music-project-core'),
+    'parent_item_colon'     => __('Parent Quotes / Testimonials:', 'music-project-core'),
+    'not_found'             => __('No quotes or testimonials found.', 'music-project-core'),
+    'not_found_in_trash'    => __('No quotes or testimonials found in Trash.', 'music-project-core'),
+    'featured_image'        => __('Quote / Testimonial Image', 'music-project-core'),
+    'set_featured_image'    => __('Set quote/testimonial image', 'music-project-core'),
+    'remove_featured_image' => __('Remove quote/testimonial image', 'music-project-core'),
+    'use_featured_image'    => __('Use as quote/testimonial image', 'music-project-core'),
+];
 
     register_post_type('mpc_press_quote', [
         'labels' => $labels,
@@ -43,7 +50,7 @@ add_action('init', 'mpc_register_press_quote_post_type');
 function mpc_add_press_quote_meta_boxes() {
     add_meta_box(
         'mpc_press_quote_details',
-        __('Press Quote Details', 'music-project-core'),
+        __('Quote / Testimonial Details', 'music-project-core'),
         'mpc_render_press_quote_meta_box',
         'mpc_press_quote',
         'normal',
@@ -68,7 +75,7 @@ function mpc_render_press_quote_meta_box($post) {
         <tr>
             <th scope="row">
                 <label for="mpc_press_quote_text">
-                    <?php esc_html_e('Quote Text', 'music-project-core'); ?>
+                    <?php esc_html_e('Quote / Testimonial', 'music-project-core'); ?>
                 </label>
             </th>
             <td>
@@ -85,7 +92,7 @@ function mpc_render_press_quote_meta_box($post) {
         <tr>
             <th scope="row">
                 <label for="mpc_press_quote_source_name">
-                    <?php esc_html_e('Source Name', 'music-project-core'); ?>
+                    <?php esc_html_e('Source / Client', 'music-project-core'); ?>
                 </label>
             </th>
             <td>
@@ -95,8 +102,7 @@ function mpc_render_press_quote_meta_box($post) {
                     name="mpc_press_quote_source_name"
                     class="regular-text"
                     value="<?php echo esc_attr($source_name); ?>"
-                    placeholder="<?php esc_attr_e('Pitchfork, Stereogum, Local Blog, etc.', 'music-project-core'); ?>"
-                >
+placeholder="<?php esc_attr_e('Client name, venue, publication, blog, etc.', 'music-project-core'); ?>"                >
             </td>
         </tr>
 
@@ -120,7 +126,7 @@ function mpc_render_press_quote_meta_box($post) {
 
         <tr>
             <th scope="row">
-                <?php esc_html_e('Homepage Featured Quote', 'music-project-core'); ?>
+                <?php esc_html_e('Featured Quote / Testimonial', 'music-project-core'); ?>
             </th>
             <td>
                 <label>
@@ -130,8 +136,7 @@ function mpc_render_press_quote_meta_box($post) {
                         value="1"
                         <?php checked('1', $featured); ?>
                     >
-                    <?php esc_html_e('Feature this quote on the homepage', 'music-project-core'); ?>
-                </label>
+<?php esc_html_e('Feature this quote/testimonial on the homepage', 'music-project-core'); ?>                </label>
 
                 <p class="description">
                     <?php esc_html_e('If multiple quotes are featured, the first by order/date will be used for now.', 'music-project-core'); ?>
@@ -188,7 +193,7 @@ function mpc_save_press_quote_meta($post_id) {
 add_action('save_post_mpc_press_quote', 'mpc_save_press_quote_meta');
 
 /**
- * Get the featured homepage press quote.
+ * Get the featured homepage quote/testimonial.
  */
 function mpc_get_featured_press_quote() {
     $quotes = get_posts([
@@ -227,10 +232,10 @@ function mpc_press_quote_admin_columns($columns) {
     $new_columns = [];
 
     $new_columns['cb'] = $columns['cb'];
-    $new_columns['title'] = 'Quote Title';
-    $new_columns['quote_text'] = 'Quote';
-    $new_columns['quote_source'] = 'Source';
-    $new_columns['quote_featured'] = 'Featured';
+$new_columns['title'] = __('Title', 'music-project-core');
+$new_columns['quote_text'] = __('Quote / Testimonial', 'music-project-core');
+$new_columns['quote_source'] = __('Source / Client', 'music-project-core');
+$new_columns['quote_featured'] = __('Featured', 'music-project-core');
     $new_columns['date'] = $columns['date'];
 
     return $new_columns;
@@ -290,10 +295,13 @@ function mpc_press_quote_admin_filters($post_type) {
         : '';
     ?>
     <select name="mpc_quote_featured_filter">
-        <option value="">All Quotes</option>
-        <option value="featured" <?php selected($current, 'featured'); ?>>Featured Only</option>
-        <option value="not_featured" <?php selected($current, 'not_featured'); ?>>Not Featured</option>
-    </select>
+<option value=""><?php esc_html_e('All Quotes / Testimonials', 'music-project-core'); ?></option>
+<option value="featured" <?php selected($current, 'featured'); ?>>
+    <?php esc_html_e('Featured Only', 'music-project-core'); ?>
+</option>
+<option value="not_featured" <?php selected($current, 'not_featured'); ?>>
+    <?php esc_html_e('Not Featured', 'music-project-core'); ?>
+</option>    </select>
     <?php
 }
 add_action('restrict_manage_posts', 'mpc_press_quote_admin_filters');
@@ -377,7 +385,7 @@ function mpc_press_quote_auto_title($post_id, $post, $update) {
 
     $new_title = $title_parts
         ? implode(' — ', $title_parts)
-        : 'Press Quote #' . $post_id;
+        : 'Quote / Testimonial #' . $post_id;
 
     remove_action('save_post_mpc_press_quote', 'mpc_press_quote_auto_title', 20);
 

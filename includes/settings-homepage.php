@@ -109,9 +109,19 @@ function mpc_get_homepage_defaults() {
         'hero_layout' => 'split',
         'hero_overlay_opacity' => 45,
         'hero_text' => 'A reusable WordPress theme for bands, artists, and music projects.',
+        
         'hero_overlay_style' => 'side',
-        'hero_content_position' => 'bottom_left',   
+
+        // Legacy position setting. Keep for backward compatibility.
+        'hero_content_position' => 'bottom_left',
+
+        // Hero V2 placement settings.
+        'hero_content_horizontal' => '',
+        'hero_content_vertical' => '',
+        'hero_text_align' => 'auto',
+
         'hero_mobile_image_id' => 0,
+        
         'hero_desktop_video_id' => 0,
         'hero_cta_text' => '',
         'hero_cta_url' => '',
@@ -229,38 +239,70 @@ function mpc_sanitize_homepage_settings($input) {
 
     $output['section_visibility'] = $section_visibility;
 
-    // Hero.
-    $allowed_hero_layouts = ['split', 'full_bleed'];
+// Hero.
+$allowed_hero_layouts = ['split', 'full_bleed'];
 
-    // Hero.
-    $allowed_hero_layouts = ['split', 'full_bleed'];
+$output['hero_layout'] = isset($input['hero_layout'])
+    ? sanitize_key($input['hero_layout'])
+    : $defaults['hero_layout'];
 
-    $output['hero_layout'] = isset($input['hero_layout'])
-        ? sanitize_key($input['hero_layout'])
-        : 'split';
+if (!in_array($output['hero_layout'], $allowed_hero_layouts, true)) {
+    $output['hero_layout'] = $defaults['hero_layout'];
+}
 
-    if (!in_array($output['hero_layout'], $allowed_hero_layouts, true)) {
-        $output['hero_layout'] = 'split';
-    }
-    
-    $allowed_hero_overlay_styles = ['side', 'bottom', 'center', 'even'];
-    $allowed_hero_content_positions = ['bottom_left', 'center_left', 'bottom_center', 'center_center'];
+$allowed_hero_overlay_styles = ['side', 'bottom', 'center', 'even'];
 
-    $output['hero_overlay_style'] = isset($input['hero_overlay_style'])
-        ? sanitize_key($input['hero_overlay_style'])
-        : 'side';
+$output['hero_overlay_style'] = isset($input['hero_overlay_style'])
+    ? sanitize_key($input['hero_overlay_style'])
+    : $defaults['hero_overlay_style'];
 
-    if (!in_array($output['hero_overlay_style'], $allowed_hero_overlay_styles, true)) {
-        $output['hero_overlay_style'] = 'side';
-    }
+if (!in_array($output['hero_overlay_style'], $allowed_hero_overlay_styles, true)) {
+    $output['hero_overlay_style'] = $defaults['hero_overlay_style'];
+}
 
-    $output['hero_content_position'] = isset($input['hero_content_position'])
-        ? sanitize_key($input['hero_content_position'])
-        : 'bottom_left';
+// Legacy content position. Keep saving this for backward compatibility.
+$allowed_hero_content_positions = [
+    'bottom_left',
+    'center_left',
+    'bottom_center',
+    'center_center',
+];
 
-    if (!in_array($output['hero_content_position'], $allowed_hero_content_positions, true)) {
-        $output['hero_content_position'] = 'bottom_left';
-    } 
+$output['hero_content_position'] = isset($input['hero_content_position'])
+    ? sanitize_key($input['hero_content_position'])
+    : $defaults['hero_content_position'];
+
+if (!in_array($output['hero_content_position'], $allowed_hero_content_positions, true)) {
+    $output['hero_content_position'] = $defaults['hero_content_position'];
+}
+
+// Hero V2 placement.
+$allowed_hero_content_horizontal = ['left', 'center', 'right'];
+$hero_content_horizontal = isset($input['hero_content_horizontal'])
+    ? sanitize_key($input['hero_content_horizontal'])
+    : '';
+
+$output['hero_content_horizontal'] = in_array($hero_content_horizontal, $allowed_hero_content_horizontal, true)
+    ? $hero_content_horizontal
+    : '';
+
+$allowed_hero_content_vertical = ['top', 'center', 'bottom'];
+$hero_content_vertical = isset($input['hero_content_vertical'])
+    ? sanitize_key($input['hero_content_vertical'])
+    : '';
+
+$output['hero_content_vertical'] = in_array($hero_content_vertical, $allowed_hero_content_vertical, true)
+    ? $hero_content_vertical
+    : '';
+
+$allowed_hero_text_alignments = ['auto', 'left', 'center', 'right'];
+$hero_text_align = isset($input['hero_text_align'])
+    ? sanitize_key($input['hero_text_align'])
+    : $defaults['hero_text_align'];
+
+$output['hero_text_align'] = in_array($hero_text_align, $allowed_hero_text_alignments, true)
+    ? $hero_text_align
+    : $defaults['hero_text_align'];
 
     $output['hero_overlay_opacity'] = isset($input['hero_overlay_opacity'])
     ? min(100, max(0, absint($input['hero_overlay_opacity'])))
@@ -791,32 +833,137 @@ function mpc_render_homepage_settings_page() {
                     </td>
                 </tr>
 
-                <tr class="mpc-hero-full-bleed-field">
+<?php
+$legacy_content_position = $settings['hero_content_position'] ?? 'bottom_left';
+
+$legacy_position_map = [
+    'bottom_left' => [
+        'horizontal' => 'left',
+        'vertical' => 'bottom',
+    ],
+    'center_left' => [
+        'horizontal' => 'left',
+        'vertical' => 'center',
+    ],
+    'bottom_center' => [
+        'horizontal' => 'center',
+        'vertical' => 'bottom',
+    ],
+    'center_center' => [
+        'horizontal' => 'center',
+        'vertical' => 'center',
+    ],
+];
+
+$legacy_position = $legacy_position_map[$legacy_content_position] ?? $legacy_position_map['bottom_left'];
+
+$hero_content_horizontal = $settings['hero_content_horizontal'] ?? '';
+$hero_content_vertical = $settings['hero_content_vertical'] ?? '';
+$hero_text_align = $settings['hero_text_align'] ?? 'auto';
+
+if (!in_array($hero_content_horizontal, ['left', 'center', 'right'], true)) {
+    $hero_content_horizontal = $legacy_position['horizontal'];
+}
+
+if (!in_array($hero_content_vertical, ['top', 'center', 'bottom'], true)) {
+    $hero_content_vertical = $legacy_position['vertical'];
+}
+
+if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
+    $hero_text_align = 'auto';
+}
+?>
+
+<input
+    type="hidden"
+    name="mpc_homepage_settings[hero_content_position]"
+    value="<?php echo esc_attr($legacy_content_position); ?>"
+>
+
+<tr class="mpc-hero-full-bleed-field">
+    <th scope="row">
+        <label for="mpc_homepage_hero_content_horizontal">
+            <?php esc_html_e('Full-Bleed Horizontal Position', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <select
+            id="mpc_homepage_hero_content_horizontal"
+            name="mpc_homepage_settings[hero_content_horizontal]"
+        >
+            <option value="left" <?php selected($hero_content_horizontal, 'left'); ?>>
+                <?php esc_html_e('Left', 'music-project-core'); ?>
+            </option>
+            <option value="center" <?php selected($hero_content_horizontal, 'center'); ?>>
+                <?php esc_html_e('Center', 'music-project-core'); ?>
+            </option>
+            <option value="right" <?php selected($hero_content_horizontal, 'right'); ?>>
+                <?php esc_html_e('Right', 'music-project-core'); ?>
+            </option>
+        </select>
+
+        <p class="description">
+            <?php esc_html_e('Controls where the hero content block sits horizontally in full-bleed layout.', 'music-project-core'); ?>
+        </p>
+    </td>
+</tr>
+
+<tr class="mpc-hero-full-bleed-field">
+    <th scope="row">
+        <label for="mpc_homepage_hero_content_vertical">
+            <?php esc_html_e('Full-Bleed Vertical Position', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <select
+            id="mpc_homepage_hero_content_vertical"
+            name="mpc_homepage_settings[hero_content_vertical]"
+        >
+            <option value="top" <?php selected($hero_content_vertical, 'top'); ?>>
+                <?php esc_html_e('Top', 'music-project-core'); ?>
+            </option>
+            <option value="center" <?php selected($hero_content_vertical, 'center'); ?>>
+                <?php esc_html_e('Center', 'music-project-core'); ?>
+            </option>
+            <option value="bottom" <?php selected($hero_content_vertical, 'bottom'); ?>>
+                <?php esc_html_e('Bottom', 'music-project-core'); ?>
+            </option>
+        </select>
+
+        <p class="description">
+            <?php esc_html_e('Controls where the hero content block sits vertically in full-bleed layout.', 'music-project-core'); ?>
+        </p>
+    </td>
+</tr>
+
+                <tr>
                     <th scope="row">
-                        <label for="mpc_homepage_hero_content_position"><?php esc_html_e('Full-Bleed Hero Content Position', 'music-project-core'); ?></label>
+                        <label for="mpc_homepage_hero_text_align">
+                            <?php esc_html_e('Hero Text Alignment', 'music-project-core'); ?>
+                        </label>
                     </th>
                     <td>
                         <select
-                            id="mpc_homepage_hero_content_position"
-                            name="mpc_homepage_settings[hero_content_position]"
+                            id="mpc_homepage_hero_text_align"
+                            name="mpc_homepage_settings[hero_text_align]"
                         >
-            <option value="bottom_left" <?php selected($settings['hero_content_position'] ?? 'bottom_left', 'bottom_left'); ?>>
-                <?php esc_html_e('Bottom Left', 'music-project-core'); ?>
-            </option>
-            <option value="center_left" <?php selected($settings['hero_content_position'] ?? 'bottom_left', 'center_left'); ?>>
-                <?php esc_html_e('Center Left', 'music-project-core'); ?>
-            </option>
-            <option value="bottom_center" <?php selected($settings['hero_content_position'] ?? 'bottom_left', 'bottom_center'); ?>>
-                <?php esc_html_e('Bottom Center', 'music-project-core'); ?>
-            </option>
-            <option value="center_center" <?php selected($settings['hero_content_position'] ?? 'bottom_left', 'center_center'); ?>>
-                <?php esc_html_e('Center Center', 'music-project-core'); ?>
-            </option>
+                            <option value="auto" <?php selected($hero_text_align, 'auto'); ?>>
+                                <?php esc_html_e('Auto', 'music-project-core'); ?>
+                            </option>
+                            <option value="left" <?php selected($hero_text_align, 'left'); ?>>
+                                <?php esc_html_e('Left', 'music-project-core'); ?>
+                            </option>
+                            <option value="center" <?php selected($hero_text_align, 'center'); ?>>
+                                <?php esc_html_e('Center', 'music-project-core'); ?>
+                            </option>
+                            <option value="right" <?php selected($hero_text_align, 'right'); ?>>
+                                <?php esc_html_e('Right', 'music-project-core'); ?>
+                            </option>
                         </select>
 
-        <p class="description">
-            <?php esc_html_e('Only applies when Hero Layout is set to Full Bleed.', 'music-project-core'); ?>
-        </p>
+                        <p class="description">
+                            <?php esc_html_e('Auto matches the horizontal position. You can override it manually.', 'music-project-core'); ?>
+                        </p>
                     </td>
                 </tr>
 
