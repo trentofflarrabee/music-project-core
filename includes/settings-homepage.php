@@ -765,7 +765,7 @@ function mpc_render_homepage_settings_page() {
     <div class="wrap">
         <h1><?php esc_html_e('Music Project Homepage', 'music-project-core'); ?></h1>
 
-        <form method="post" action="options.php">
+        <form method="post" action="options.php" class="mpc-homepage-settings-form">
             <?php settings_fields('mpc_homepage_settings_group'); ?>
 
             <?php
@@ -2108,7 +2108,22 @@ mpc_admin_panel_open(
 
 <?php mpc_admin_panel_close(); ?>
 
-<?php submit_button(__('Save Homepage Settings', 'music-project-core')); ?>
+            <div class="mpc-sticky-submit">
+                <div class="mpc-sticky-submit__inner">
+                    <?php
+                    submit_button(
+                        __('Save Homepage Settings', 'music-project-core'),
+                        'primary',
+                        'submit',
+                        false
+                    );
+                    ?>
+
+                    <span class="mpc-sticky-submit__status" aria-live="polite">
+                        <?php esc_html_e('Unsaved changes', 'music-project-core'); ?>
+                    </span>
+                </div>
+            </div>
         </form>
     </div>
 

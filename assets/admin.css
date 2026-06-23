@@ -233,3 +233,51 @@
 .mpc-admin-panel__body h3 {
     margin-top: 1.5rem;
 }
+
+/* Sticky save bar */
+
+.mpc-sticky-submit {
+    position: sticky;
+    bottom: 0;
+    z-index: 50;
+    margin-top: 24px;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding: 12px 20px;
+    background: rgba(240, 240, 241, 0.96);
+    border-top: 1px solid #c3c4c7;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(8px);
+}
+
+.mpc-sticky-submit__inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mpc-sticky-submit .button-primary {
+    margin: 0;
+}
+
+.mpc-sticky-submit__status {
+    display: none;
+    color: #8a6d00;
+    font-weight: 600;
+}
+
+.mpc-homepage-settings-form.is-dirty .mpc-sticky-submit__status {
+    display: inline-flex;
+}
+
+@media (max-width: 782px) {
+    .mpc-sticky-submit {
+        margin-left: -10px;
+        margin-right: -10px;
+        padding: 12px 10px;
+    }
+
+    .mpc-sticky-submit__inner {
+        justify-content: space-between;
+    }
+}

@@ -233,12 +233,39 @@ function initSectionManager() {
     updateOrderInput();
 }
 
+function initStickySubmit() {
+    const form = document.querySelector('.mpc-homepage-settings-form');
+
+    if (!form) {
+        return;
+    }
+
+    let isDirty = false;
+
+    function markDirty() {
+        if (isDirty) {
+            return;
+        }
+
+        isDirty = true;
+        form.classList.add('is-dirty');
+    }
+
+    form.addEventListener('change', markDirty);
+    form.addEventListener('input', markDirty);
+
+    form.addEventListener('submit', function () {
+        form.classList.remove('is-dirty');
+    });
+}
+
     function initMPCAdmin() {
         initMediaUploader();
         initHeroAdminToggles();
         initFeaturedAdminToggles();
         initBlogAdminToggles();
         initSectionManager();
+        initStickySubmit();
         initAdminPanels();
     }
 
