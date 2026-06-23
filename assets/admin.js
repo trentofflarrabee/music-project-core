@@ -239,7 +239,42 @@ function initSectionManager() {
         initFeaturedAdminToggles();
         initBlogAdminToggles();
         initSectionManager();
+        initAdminPanels();
     }
 
     $(initMPCAdmin);
 })(jQuery);
+
+function initAdminPanels() {
+    const panels = document.querySelectorAll('.mpc-admin-panel[data-panel-id]');
+
+    if (!panels.length || !window.localStorage) {
+        return;
+    }
+
+    panels.forEach((panel) => {
+        const panelId = panel.getAttribute('data-panel-id');
+
+        if (!panelId) {
+            return;
+        }
+
+        const storageKey = 'mpc_admin_panel_' + panelId;
+        const savedState = window.localStorage.getItem(storageKey);
+
+        if (savedState === 'open') {
+            panel.setAttribute('open', '');
+        }
+
+        if (savedState === 'closed') {
+            panel.removeAttribute('open');
+        }
+
+        panel.addEventListener('toggle', () => {
+            window.localStorage.setItem(
+                storageKey,
+                panel.open ? 'open' : 'closed'
+            );
+        });
+    });
+}

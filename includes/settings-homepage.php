@@ -720,6 +720,37 @@ function mpc_render_media_field($field_name, $attachment_id, $media_type = 'imag
     <?php
 }
 
+function mpc_admin_panel_open($id, $title, $description = '', $open = false) {
+    ?>
+    <details
+        id="mpc-panel-<?php echo esc_attr($id); ?>"
+        class="mpc-admin-panel"
+        data-panel-id="<?php echo esc_attr($id); ?>"
+        <?php echo $open ? 'open' : ''; ?>
+    >
+        <summary class="mpc-admin-panel__summary">
+            <span class="mpc-admin-panel__title">
+                <?php echo esc_html($title); ?>
+            </span>
+
+            <?php if ($description) : ?>
+                <span class="mpc-admin-panel__description">
+                    <?php echo esc_html($description); ?>
+                </span>
+            <?php endif; ?>
+        </summary>
+
+        <div class="mpc-admin-panel__body">
+    <?php
+}
+
+function mpc_admin_panel_close() {
+    ?>
+        </div>
+    </details>
+    <?php
+}
+
 /**
  * Render Homepage settings page.
  */
@@ -738,38 +769,42 @@ function mpc_render_homepage_settings_page() {
             <?php settings_fields('mpc_homepage_settings_group'); ?>
 
             <?php
-                $section_definitions = mpc_get_homepage_section_definitions();
-                $section_order = mpc_get_homepage_section_order();
-                $section_visibility = mpc_get_homepage_section_visibility();
-                ?>
+            $section_definitions = mpc_get_homepage_section_definitions();
+            $section_order = mpc_get_homepage_section_order();
+            $section_visibility = mpc_get_homepage_section_visibility();
+            ?>
 
-                <h2>Section Manager</h2>
+            <?php
+            mpc_admin_panel_open(
+                'section-manager',
+                __('Section Manager', 'music-project-core'),
+                __('Choose which homepage sections appear, and drag them into the order you want.', 'music-project-core'),
+                true
+            );
+            ?>
 
-                <p>
-                    Choose which homepage sections appear, and drag them into the order you want.
-                </p>
+            <div class="mpc-section-manager">
+                <input
+                    type="hidden"
+                    class="mpc-section-order-input"
+                    name="mpc_homepage_settings[section_order]"
+                    value="<?php echo esc_attr(implode(',', $section_order)); ?>"
+                >
 
-                <div class="mpc-section-manager">
-                    <input
-                        type="hidden"
-                        class="mpc-section-order-input"
-                        name="mpc_homepage_settings[section_order]"
-                        value="<?php echo esc_attr(implode(',', $section_order)); ?>"
-                    >
+                <ul class="mpc-section-list">
+                    <?php foreach ($section_order as $section) : ?>
+                        <?php
+                        if (!isset($section_definitions[$section])) {
+                            continue;
+                        }
 
-                    <ul class="mpc-section-list">
-                        <?php foreach ($section_order as $section) : ?>
-                            <?php
-                            if (!isset($section_definitions[$section])) {
-                                continue;
-                            }
+                        $definition = $section_definitions[$section];
+                        ?>
 
-                            $definition = $section_definitions[$section];
-                            ?>
-                            <li class="mpc-section-list__item" draggable="true" data-section="<?php echo esc_attr($section); ?>">
-                                <span class="mpc-section-list__handle" aria-hidden="true">↕</span>
+                        <li class="mpc-section-list__item" data-section="<?php echo esc_attr($section); ?>">
+                            <span class="mpc-section-list__handle" aria-hidden="true">↕</span>
 
-                                <label class="mpc-section-list__label">
+                            <label class="mpc-section-list__label">
                                 <input
                                     type="checkbox"
                                     name="mpc_homepage_settings[section_visibility][<?php echo esc_attr($section); ?>]"
@@ -777,17 +812,26 @@ function mpc_render_homepage_settings_page() {
                                     <?php checked(!empty($section_visibility[$section]), true); ?>
                                 >
 
-                                    <span>
-                                        <strong><?php echo esc_html($definition['label']); ?></strong>
-                                        <small><?php echo esc_html($definition['description']); ?></small>
-                                    </span>
-                                </label>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                </div>
+                                <span>
+                                    <strong><?php echo esc_html($definition['label']); ?></strong>
+                                    <small><?php echo esc_html($definition['description']); ?></small>
+                                </span>
+                            </label>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
 
-            <h2><?php esc_html_e('Hero Section', 'music-project-core'); ?></h2>
+            <?php mpc_admin_panel_close(); ?>
+
+            <?php
+            mpc_admin_panel_open(
+                'hero',
+                __('Hero Section', 'music-project-core'),
+                __('Homepage hero content, media, layout, height, overlay, and positioning.', 'music-project-core'),
+                true
+            );
+            ?>
 
             <table class="form-table" role="presentation">
                 <tr>
@@ -810,7 +854,9 @@ function mpc_render_homepage_settings_page() {
 
                 <tr>
                     <th scope="row">
-                        <label for="mpc_homepage_hero_layout">Hero Layout</label>
+                        <label for="mpc_homepage_hero_layout">
+                            <?php esc_html_e('Hero Layout', 'music-project-core'); ?>
+                        </label>
                     </th>
                     <td>
                         <select
@@ -819,25 +865,25 @@ function mpc_render_homepage_settings_page() {
                             name="mpc_homepage_settings[hero_layout]"
                         >
                             <option value="split" <?php selected($settings['hero_layout'], 'split'); ?>>
-                                Split Media / Text
+                                <?php esc_html_e('Split Media / Text', 'music-project-core'); ?>
                             </option>
                             <option value="full_bleed" <?php selected($settings['hero_layout'], 'full_bleed'); ?>>
-                                Full-Bleed Media
+                                <?php esc_html_e('Full-Bleed Media', 'music-project-core'); ?>
                             </option>
                         </select>
 
                         <p class="description">
-                            Split shows media beside the text. Full-Bleed places text over a large background image or video.
+                            <?php esc_html_e('Split shows media beside the text. Full-Bleed places text over a large background image or video.', 'music-project-core'); ?>
                         </p>
 
                         <div class="mpc-admin-helper mpc-admin-helper--split">
-                            <strong>Split Media / Text:</strong>
-                            Best for a traditional landing section with clear text and a framed image or video.
+                            <strong><?php esc_html_e('Split Media / Text:', 'music-project-core'); ?></strong>
+                            <?php esc_html_e('Best for a traditional landing section with clear text and a framed image or video.', 'music-project-core'); ?>
                         </div>
 
                         <div class="mpc-admin-helper mpc-admin-helper--full-bleed">
-                            <strong>Full-Bleed Media:</strong>
-                            Best for a cinematic hero. Uses desktop video when available; otherwise falls back to the hero image.
+                            <strong><?php esc_html_e('Full-Bleed Media:', 'music-project-core'); ?></strong>
+                            <?php esc_html_e('Best for a cinematic hero. Uses desktop video when available; otherwise falls back to the hero image.', 'music-project-core'); ?>
                         </div>
                     </td>
                 </tr>
@@ -870,9 +916,11 @@ function mpc_render_homepage_settings_page() {
                     </td>
                 </tr>
 
-                <tr class="mpc-conditional-row mpc-hero-full-bleed-row">
+                <tr class="mpc-conditional-row mpc-hero-full-bleed-row mpc-hero-full-bleed-field">
                     <th scope="row">
-                        <label for="mpc_homepage_hero_overlay_opacity">Hero Overlay Strength</label>
+                        <label for="mpc_homepage_hero_overlay_opacity">
+                            <?php esc_html_e('Hero Overlay Strength', 'music-project-core'); ?>
+                        </label>
                     </th>
                     <td>
                         <input
@@ -888,14 +936,16 @@ function mpc_render_homepage_settings_page() {
                         <output><?php echo esc_html($settings['hero_overlay_opacity']); ?></output>
 
                         <p class="description">
-                            Controls the darkness of the full-bleed hero overlay. Lower numbers show more image/video.
+                            <?php esc_html_e('Controls the darkness of the full-bleed hero overlay. Lower numbers show more image/video.', 'music-project-core'); ?>
                         </p>
                     </td>
                 </tr>
 
-                <tr class="mpc-conditional-row mpc-hero-full-bleed-row">
+                <tr class="mpc-conditional-row mpc-hero-full-bleed-row mpc-hero-full-bleed-field">
                     <th scope="row">
-                        <label for="mpc_homepage_hero_overlay_style">Hero Overlay Style</label>
+                        <label for="mpc_homepage_hero_overlay_style">
+                            <?php esc_html_e('Hero Overlay Style', 'music-project-core'); ?>
+                        </label>
                     </th>
                     <td>
                         <select
@@ -903,127 +953,131 @@ function mpc_render_homepage_settings_page() {
                             name="mpc_homepage_settings[hero_overlay_style]"
                         >
                             <option value="side" <?php selected($settings['hero_overlay_style'], 'side'); ?>>
-                                Side Gradient
+                                <?php esc_html_e('Side Gradient', 'music-project-core'); ?>
                             </option>
                             <option value="bottom" <?php selected($settings['hero_overlay_style'], 'bottom'); ?>>
-                                Bottom Gradient
+                                <?php esc_html_e('Bottom Gradient', 'music-project-core'); ?>
                             </option>
                             <option value="center" <?php selected($settings['hero_overlay_style'], 'center'); ?>>
-                                Center Vignette
+                                <?php esc_html_e('Center Vignette', 'music-project-core'); ?>
                             </option>
                             <option value="even" <?php selected($settings['hero_overlay_style'], 'even'); ?>>
-                                Even Wash
+                                <?php esc_html_e('Even Wash', 'music-project-core'); ?>
                             </option>
                         </select>
 
                         <p class="description">
-                            Controls the direction/style of the full-bleed hero overlay.
+                            <?php esc_html_e('Controls the direction/style of the full-bleed hero overlay.', 'music-project-core'); ?>
                         </p>
                     </td>
                 </tr>
 
-<?php
-$legacy_content_position = $settings['hero_content_position'] ?? 'bottom_left';
+                <?php
+                $legacy_content_position = $settings['hero_content_position'] ?? 'bottom_left';
 
-$legacy_position_map = [
-    'bottom_left' => [
-        'horizontal' => 'left',
-        'vertical' => 'bottom',
-    ],
-    'center_left' => [
-        'horizontal' => 'left',
-        'vertical' => 'center',
-    ],
-    'bottom_center' => [
-        'horizontal' => 'center',
-        'vertical' => 'bottom',
-    ],
-    'center_center' => [
-        'horizontal' => 'center',
-        'vertical' => 'center',
-    ],
-];
+                $legacy_position_map = [
+                    'bottom_left' => [
+                        'horizontal' => 'left',
+                        'vertical' => 'bottom',
+                    ],
+                    'center_left' => [
+                        'horizontal' => 'left',
+                        'vertical' => 'center',
+                    ],
+                    'bottom_center' => [
+                        'horizontal' => 'center',
+                        'vertical' => 'bottom',
+                    ],
+                    'center_center' => [
+                        'horizontal' => 'center',
+                        'vertical' => 'center',
+                    ],
+                ];
 
-$legacy_position = $legacy_position_map[$legacy_content_position] ?? $legacy_position_map['bottom_left'];
+                $legacy_position = $legacy_position_map[$legacy_content_position] ?? $legacy_position_map['bottom_left'];
 
-$hero_content_horizontal = $settings['hero_content_horizontal'] ?? '';
-$hero_content_vertical = $settings['hero_content_vertical'] ?? '';
-$hero_text_align = $settings['hero_text_align'] ?? 'auto';
+                $hero_content_horizontal = $settings['hero_content_horizontal'] ?? '';
+                $hero_content_vertical = $settings['hero_content_vertical'] ?? '';
+                $hero_text_align = $settings['hero_text_align'] ?? 'auto';
 
-if (!in_array($hero_content_horizontal, ['left', 'center', 'right'], true)) {
-    $hero_content_horizontal = $legacy_position['horizontal'];
-}
+                if (!in_array($hero_content_horizontal, ['left', 'center', 'right'], true)) {
+                    $hero_content_horizontal = $legacy_position['horizontal'];
+                }
 
-if (!in_array($hero_content_vertical, ['top', 'center', 'bottom'], true)) {
-    $hero_content_vertical = $legacy_position['vertical'];
-}
+                if (!in_array($hero_content_vertical, ['top', 'center', 'bottom'], true)) {
+                    $hero_content_vertical = $legacy_position['vertical'];
+                }
 
-if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
-    $hero_text_align = 'auto';
-}
-?>
+                if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
+                    $hero_text_align = 'auto';
+                }
+                ?>
 
-<input
-    type="hidden"
-    name="mpc_homepage_settings[hero_content_position]"
-    value="<?php echo esc_attr($legacy_content_position); ?>"
->
+                <tr style="display: none;">
+                    <td colspan="2">
+                        <input
+                            type="hidden"
+                            name="mpc_homepage_settings[hero_content_position]"
+                            value="<?php echo esc_attr($legacy_content_position); ?>"
+                        >
+                    </td>
+                </tr>
 
-<tr class="mpc-hero-full-bleed-field">
-    <th scope="row">
-        <label for="mpc_homepage_hero_content_horizontal">
-            <?php esc_html_e('Full-Bleed Horizontal Position', 'music-project-core'); ?>
-        </label>
-    </th>
-    <td>
-        <select
-            id="mpc_homepage_hero_content_horizontal"
-            name="mpc_homepage_settings[hero_content_horizontal]"
-        >
-            <option value="left" <?php selected($hero_content_horizontal, 'left'); ?>>
-                <?php esc_html_e('Left', 'music-project-core'); ?>
-            </option>
-            <option value="center" <?php selected($hero_content_horizontal, 'center'); ?>>
-                <?php esc_html_e('Center', 'music-project-core'); ?>
-            </option>
-            <option value="right" <?php selected($hero_content_horizontal, 'right'); ?>>
-                <?php esc_html_e('Right', 'music-project-core'); ?>
-            </option>
-        </select>
+                <tr class="mpc-conditional-row mpc-hero-full-bleed-row mpc-hero-full-bleed-field">
+                    <th scope="row">
+                        <label for="mpc_homepage_hero_content_horizontal">
+                            <?php esc_html_e('Full-Bleed Horizontal Position', 'music-project-core'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_hero_content_horizontal"
+                            name="mpc_homepage_settings[hero_content_horizontal]"
+                        >
+                            <option value="left" <?php selected($hero_content_horizontal, 'left'); ?>>
+                                <?php esc_html_e('Left', 'music-project-core'); ?>
+                            </option>
+                            <option value="center" <?php selected($hero_content_horizontal, 'center'); ?>>
+                                <?php esc_html_e('Center', 'music-project-core'); ?>
+                            </option>
+                            <option value="right" <?php selected($hero_content_horizontal, 'right'); ?>>
+                                <?php esc_html_e('Right', 'music-project-core'); ?>
+                            </option>
+                        </select>
 
-        <p class="description">
-            <?php esc_html_e('Controls where the hero content block sits horizontally in full-bleed layout.', 'music-project-core'); ?>
-        </p>
-    </td>
-</tr>
+                        <p class="description">
+                            <?php esc_html_e('Controls where the hero content block sits horizontally in full-bleed layout.', 'music-project-core'); ?>
+                        </p>
+                    </td>
+                </tr>
 
-<tr class="mpc-hero-full-bleed-field">
-    <th scope="row">
-        <label for="mpc_homepage_hero_content_vertical">
-            <?php esc_html_e('Full-Bleed Vertical Position', 'music-project-core'); ?>
-        </label>
-    </th>
-    <td>
-        <select
-            id="mpc_homepage_hero_content_vertical"
-            name="mpc_homepage_settings[hero_content_vertical]"
-        >
-            <option value="top" <?php selected($hero_content_vertical, 'top'); ?>>
-                <?php esc_html_e('Top', 'music-project-core'); ?>
-            </option>
-            <option value="center" <?php selected($hero_content_vertical, 'center'); ?>>
-                <?php esc_html_e('Center', 'music-project-core'); ?>
-            </option>
-            <option value="bottom" <?php selected($hero_content_vertical, 'bottom'); ?>>
-                <?php esc_html_e('Bottom', 'music-project-core'); ?>
-            </option>
-        </select>
+                <tr class="mpc-conditional-row mpc-hero-full-bleed-row mpc-hero-full-bleed-field">
+                    <th scope="row">
+                        <label for="mpc_homepage_hero_content_vertical">
+                            <?php esc_html_e('Full-Bleed Vertical Position', 'music-project-core'); ?>
+                        </label>
+                    </th>
+                    <td>
+                        <select
+                            id="mpc_homepage_hero_content_vertical"
+                            name="mpc_homepage_settings[hero_content_vertical]"
+                        >
+                            <option value="top" <?php selected($hero_content_vertical, 'top'); ?>>
+                                <?php esc_html_e('Top', 'music-project-core'); ?>
+                            </option>
+                            <option value="center" <?php selected($hero_content_vertical, 'center'); ?>>
+                                <?php esc_html_e('Center', 'music-project-core'); ?>
+                            </option>
+                            <option value="bottom" <?php selected($hero_content_vertical, 'bottom'); ?>>
+                                <?php esc_html_e('Bottom', 'music-project-core'); ?>
+                            </option>
+                        </select>
 
-        <p class="description">
-            <?php esc_html_e('Controls where the hero content block sits vertically in full-bleed layout.', 'music-project-core'); ?>
-        </p>
-    </td>
-</tr>
+                        <p class="description">
+                            <?php esc_html_e('Controls where the hero content block sits vertically in full-bleed layout.', 'music-project-core'); ?>
+                        </p>
+                    </td>
+                </tr>
 
                 <tr>
                     <th scope="row">
@@ -1058,7 +1112,9 @@ if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
 
                 <tr>
                     <th scope="row">
-                        <label for="hero_heading"><?php esc_html_e('Hero Heading', 'music-project-core'); ?></label>
+                        <label for="hero_heading">
+                            <?php esc_html_e('Hero Heading', 'music-project-core'); ?>
+                        </label>
                     </th>
                     <td>
                         <input
@@ -1073,7 +1129,9 @@ if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
 
                 <tr>
                     <th scope="row">
-                        <label for="hero_text"><?php esc_html_e('Hero Text', 'music-project-core'); ?></label>
+                        <label for="hero_text">
+                            <?php esc_html_e('Hero Text', 'music-project-core'); ?>
+                        </label>
                     </th>
                     <td>
                         <textarea
@@ -1091,6 +1149,7 @@ if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
                     </th>
                     <td>
                         <?php mpc_render_media_field('hero_mobile_image_id', $settings['hero_mobile_image_id'], 'image'); ?>
+
                         <p class="description">
                             <?php esc_html_e('Used for mobile and fallback display.', 'music-project-core'); ?>
                         </p>
@@ -1103,6 +1162,7 @@ if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
                     </th>
                     <td>
                         <?php mpc_render_media_field('hero_desktop_video_id', $settings['hero_desktop_video_id'], 'video'); ?>
+
                         <p class="description">
                             <?php esc_html_e('MP4 recommended. Used for desktop hero background/video area.', 'music-project-core'); ?>
                         </p>
@@ -1111,7 +1171,9 @@ if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
 
                 <tr>
                     <th scope="row">
-                        <label for="hero_cta_text"><?php esc_html_e('CTA Button Text', 'music-project-core'); ?></label>
+                        <label for="hero_cta_text">
+                            <?php esc_html_e('CTA Button Text', 'music-project-core'); ?>
+                        </label>
                     </th>
                     <td>
                         <input
@@ -1126,7 +1188,9 @@ if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
 
                 <tr>
                     <th scope="row">
-                        <label for="hero_cta_url"><?php esc_html_e('CTA Button URL', 'music-project-core'); ?></label>
+                        <label for="hero_cta_url">
+                            <?php esc_html_e('CTA Button URL', 'music-project-core'); ?>
+                        </label>
                     </th>
                     <td>
                         <input
@@ -1140,257 +1204,272 @@ if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
                 </tr>
             </table>
 
-            <hr>
+            <?php mpc_admin_panel_close(); ?>
+<?php
+mpc_admin_panel_open(
+    'featured-content',
+    __('Featured Content', 'music-project-core'),
+    __('Promo section for a release, video, announcement, or featured message.', 'music-project-core')
+);
+?>
 
-            <h2><?php esc_html_e('Featured Content', 'music-project-core'); ?></h2>
+<table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <?php esc_html_e('Enable Featured Content', 'music-project-core'); ?>
+        </th>
+        <td>
+            <label>
+                <input type="hidden" name="mpc_homepage_settings[featured_enabled]" value="0">
+                <input
+                    type="checkbox"
+                    name="mpc_homepage_settings[featured_enabled]"
+                    value="1"
+                    <?php checked(1, $settings['featured_enabled']); ?>
+                >
+                <?php esc_html_e('Show featured content section on homepage', 'music-project-core'); ?>
+            </label>
+        </td>
+    </tr>
 
-            <table class="form-table" role="presentation">
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Enable Featured Content', 'music-project-core'); ?>
-                    </th>
-                    <td>
-                        <label>
-                            <input type="hidden" name="mpc_homepage_settings[featured_enabled]" value="0">
-                            <input
-                                type="checkbox"
-                                name="mpc_homepage_settings[featured_enabled]"
-                                value="1"
-                                <?php checked(1, $settings['featured_enabled']); ?>
-                            >
-                            <?php esc_html_e('Show featured content section on homepage', 'music-project-core'); ?>
-                        </label>
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="featured_heading">
+                <?php esc_html_e('Section Heading', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="featured_heading"
+                name="mpc_homepage_settings[featured_heading]"
+                class="regular-text"
+                value="<?php echo esc_attr($settings['featured_heading']); ?>"
+            >
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="featured_heading"><?php esc_html_e('Section Heading', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="featured_heading"
-                            name="mpc_homepage_settings[featured_heading]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['featured_heading']); ?>"
-                        >
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_featured_layout">
+                <?php esc_html_e('Featured Layout', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_homepage_featured_layout"
+                name="mpc_homepage_settings[featured_layout]"
+            >
+                <option value="split_card" <?php selected($settings['featured_layout'], 'split_card'); ?>>
+                    <?php esc_html_e('Split Card', 'music-project-core'); ?>
+                </option>
+                <option value="media_left" <?php selected($settings['featured_layout'], 'media_left'); ?>>
+                    <?php esc_html_e('Media Left / Text Right', 'music-project-core'); ?>
+                </option>
+                <option value="media_right" <?php selected($settings['featured_layout'], 'media_right'); ?>>
+                    <?php esc_html_e('Text Left / Media Right', 'music-project-core'); ?>
+                </option>
+                <option value="stacked" <?php selected($settings['featured_layout'], 'stacked'); ?>>
+                    <?php esc_html_e('Stacked / Poster', 'music-project-core'); ?>
+                </option>
+            </select>
 
-                <tr>
-                    <th scope="row">
-                        <label for="mpc_homepage_featured_layout">Featured Layout</label>
-                    </th>
-                    <td>
-                        <select
-                            id="mpc_homepage_featured_layout"
-                            name="mpc_homepage_settings[featured_layout]"
-                        >
-                            <option value="split_card" <?php selected($settings['featured_layout'], 'split_card'); ?>>
-                                Split Card
-                            </option>
-                            <option value="media_left" <?php selected($settings['featured_layout'], 'media_left'); ?>>
-                                Media Left / Text Right
-                            </option>
-                            <option value="media_right" <?php selected($settings['featured_layout'], 'media_right'); ?>>
-                                Text Left / Media Right
-                            </option>
-                            <option value="stacked" <?php selected($settings['featured_layout'], 'stacked'); ?>>
-                                Stacked / Poster
-                            </option>
-                        </select>
+            <p class="description">
+                <?php esc_html_e('Controls the visual layout of the featured promo card.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                        <p class="description">
-                            Controls the visual layout of the featured promo card.
-                        </p>
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_featured_quote_position">
+                <?php esc_html_e('Optional Quote Position', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_homepage_featured_quote_position"
+                name="mpc_homepage_settings[featured_quote_position]"
+            >
+                <option value="hidden" <?php selected($settings['featured_quote_position'], 'hidden'); ?>>
+                    <?php esc_html_e('Hidden', 'music-project-core'); ?>
+                </option>
+                <option value="beside" <?php selected($settings['featured_quote_position'], 'beside'); ?>>
+                    <?php esc_html_e('Beside Featured Content', 'music-project-core'); ?>
+                </option>
+                <option value="below" <?php selected($settings['featured_quote_position'], 'below'); ?>>
+                    <?php esc_html_e('Below Featured Content', 'music-project-core'); ?>
+                </option>
+            </select>
 
-                <tr>
-                    <th scope="row">
-                        <label for="mpc_homepage_featured_quote_position">Quote Position</label>
-                    </th>
-                    <td>
-                        <select
-                            id="mpc_homepage_featured_quote_position"
-                            name="mpc_homepage_settings[featured_quote_position]"
-                        >
-                            <option value="beside" <?php selected($settings['featured_quote_position'], 'beside'); ?>>
-                                Beside Featured Content
-                            </option>
-                            <option value="below" <?php selected($settings['featured_quote_position'], 'below'); ?>>
-                                Below Featured Content
-                            </option>
-                            <option value="hidden" <?php selected($settings['featured_quote_position'], 'hidden'); ?>>
-                                Hidden
-                            </option>
-                        </select>
+            <p class="description">
+                <?php esc_html_e('Legacy option. For most sites, use the standalone Quotes / Testimonials homepage section instead.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                        <p class="description">
-                            Controls where the featured press quote appears.
-                        </p>
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="featured_label">
+                <?php esc_html_e('Featured Label', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="featured_label"
+                name="mpc_homepage_settings[featured_label]"
+                class="regular-text"
+                value="<?php echo esc_attr($settings['featured_label']); ?>"
+                placeholder="<?php esc_attr_e('Latest Release, New Video, Announcement, etc.', 'music-project-core'); ?>"
+            >
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="featured_label"><?php esc_html_e('Featured Label', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="featured_label"
-                            name="mpc_homepage_settings[featured_label]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['featured_label']); ?>"
-                            placeholder="<?php esc_attr_e('Latest Release, New Video, Announcement, etc.', 'music-project-core'); ?>"
-                        >
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="featured_title">
+                <?php esc_html_e('Featured Title', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="featured_title"
+                name="mpc_homepage_settings[featured_title]"
+                class="regular-text"
+                value="<?php echo esc_attr($settings['featured_title']); ?>"
+            >
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="featured_title"><?php esc_html_e('Featured Title', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="featured_title"
-                            name="mpc_homepage_settings[featured_title]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['featured_title']); ?>"
-                        >
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="featured_text">
+                <?php esc_html_e('Featured Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <textarea
+                id="featured_text"
+                name="mpc_homepage_settings[featured_text]"
+                class="large-text"
+                rows="4"
+            ><?php echo esc_textarea($settings['featured_text']); ?></textarea>
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="featured_text"><?php esc_html_e('Featured Text', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <textarea
-                            id="featured_text"
-                            name="mpc_homepage_settings[featured_text]"
-                            class="large-text"
-                            rows="4"
-                        ><?php echo esc_textarea($settings['featured_text']); ?></textarea>
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_featured_media_type">
+                <?php esc_html_e('Featured Media Type', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_homepage_featured_media_type"
+                class="mpc-featured-media-type-select"
+                name="mpc_homepage_settings[featured_media_type]"
+            >
+                <option value="image" <?php selected($settings['featured_media_type'], 'image'); ?>>
+                    <?php esc_html_e('Image / Artwork', 'music-project-core'); ?>
+                </option>
+                <option value="video" <?php selected($settings['featured_media_type'], 'video'); ?>>
+                    <?php esc_html_e('Video Embed', 'music-project-core'); ?>
+                </option>
+            </select>
 
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Featured Image', 'music-project-core'); ?>
-                    </th>
-                    <td>
-                        <?php mpc_render_media_field('featured_image_id', $settings['featured_image_id'], 'image'); ?>
-                        <p class="description">
-                            <?php esc_html_e('Used for the manual featured content card.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
+            <p class="description">
+                <?php esc_html_e('Choose whether the featured media area shows an uploaded image or a YouTube/Vimeo video.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="mpc_homepage_featured_media_type">Featured Media Type</label>
-                    </th>
-                    <td>
-                        <select
-                            id="mpc_homepage_featured_media_type"
-                            class="mpc-featured-media-type-select"
-                            name="mpc_homepage_settings[featured_media_type]"
-                        >
-                            <option value="image" <?php selected($settings['featured_media_type'], 'image'); ?>>
-                                Image / Artwork
-                            </option>
-                            <option value="video" <?php selected($settings['featured_media_type'], 'video'); ?>>
-                                Video Embed
-                            </option>
-                        </select>
+    <tr>
+        <th scope="row">
+            <?php esc_html_e('Featured Image', 'music-project-core'); ?>
+        </th>
+        <td>
+            <?php mpc_render_media_field('featured_image_id', $settings['featured_image_id'], 'image'); ?>
 
-                        <p class="description">
-                            Choose whether the featured media area shows an uploaded image or a YouTube/Vimeo video.
-                        </p>
-                    </td>
-                </tr>
+            <p class="description">
+                <?php esc_html_e('Used when Featured Media Type is set to Image / Artwork.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                <tr class="mpc-conditional-row mpc-featured-video-row">
-                    <th scope="row">
-                        <label for="mpc_homepage_featured_video_url">Featured Video URL</label>
-                    </th>
-                    <td>
-                        <input
-                            id="mpc_homepage_featured_video_url"
-                            class="regular-text"
-                            type="url"
-                            name="mpc_homepage_settings[featured_video_url]"
-                            value="<?php echo esc_url($settings['featured_video_url']); ?>"
-                            placeholder="https://www.youtube.com/watch?v=..."
-                        >
+    <tr class="mpc-conditional-row mpc-featured-video-row">
+        <th scope="row">
+            <label for="mpc_homepage_featured_video_url">
+                <?php esc_html_e('Featured Video URL', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                id="mpc_homepage_featured_video_url"
+                class="regular-text"
+                type="url"
+                name="mpc_homepage_settings[featured_video_url]"
+                value="<?php echo esc_url($settings['featured_video_url']); ?>"
+                placeholder="https://www.youtube.com/watch?v=..."
+            >
 
-                        <p class="description">
-                            Supports YouTube and Vimeo URLs only. Used when Featured Media Type is set to Video Embed.
-                        </p>
-                    </td>
-                </tr>
+            <p class="description">
+                <?php esc_html_e('Supports YouTube and Vimeo URLs only. Used when Featured Media Type is set to Video Embed.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="featured_cta_text"><?php esc_html_e('CTA Button Text', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="featured_cta_text"
-                            name="mpc_homepage_settings[featured_cta_text]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['featured_cta_text']); ?>"
-                            placeholder="<?php esc_attr_e('Listen Now, Watch Video, Read More, etc.', 'music-project-core'); ?>"
-                        >
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="featured_cta_text">
+                <?php esc_html_e('CTA Button Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="featured_cta_text"
+                name="mpc_homepage_settings[featured_cta_text]"
+                class="regular-text"
+                value="<?php echo esc_attr($settings['featured_cta_text']); ?>"
+                placeholder="<?php esc_attr_e('Listen Now, Watch Video, Read More, etc.', 'music-project-core'); ?>"
+            >
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="featured_cta_url"><?php esc_html_e('CTA Button URL', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="url"
-                            id="featured_cta_url"
-                            name="mpc_homepage_settings[featured_cta_url]"
-                            class="regular-text"
-                            value="<?php echo esc_url($settings['featured_cta_url']); ?>"
-                            placeholder="https://..."
-                        >
-                        <p class="description">
-                            <?php esc_html_e('Can be a streaming link, video link, internal /music URL, or any promo URL.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="featured_cta_url">
+                <?php esc_html_e('CTA Button URL', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="url"
+                id="featured_cta_url"
+                name="mpc_homepage_settings[featured_cta_url]"
+                class="regular-text"
+                value="<?php echo esc_url($settings['featured_cta_url']); ?>"
+                placeholder="https://..."
+            >
 
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Show Press Quote', 'music-project-core'); ?>
-                    </th>
-                    <td>
-                        <label>
-                            <input type="hidden" name="mpc_homepage_settings[featured_show_quote]" value="0">
-                            <input
-                                type="checkbox"
-                                name="mpc_homepage_settings[featured_show_quote]"
-                                value="1"
-                                <?php checked(1, $settings['featured_show_quote']); ?>
-                            >
-                            <?php esc_html_e('Show the featured press quote beside this content', 'music-project-core'); ?>
-                        </label>
-                    </td>
-                </tr>
-            </table>
+            <p class="description">
+                <?php esc_html_e('Can be a streaming link, video link, internal page URL, or any promo URL.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+</table>
 
-            <hr>
+<?php mpc_admin_panel_close(); ?>
 
-<h2><?php esc_html_e('Services', 'music-project-core'); ?></h2>
+<?php
+mpc_admin_panel_open(
+    'services',
+    __('Services', 'music-project-core'),
+    __('Text-based service cards for weddings, sessions, lessons, packages, or offerings.', 'music-project-core')
+);
+?>
 
 <table class="form-table" role="presentation">
     <tr>
@@ -1404,7 +1483,7 @@ if (!in_array($hero_text_align, ['auto', 'left', 'center', 'right'], true)) {
                 type="text"
                 id="mpc_homepage_services_heading"
                 name="mpc_homepage_settings[services_heading]"
-                value="<?php echo esc_attr($settings['services_heading'] ?? 'Services'); ?>"
+                value="<?php echo esc_attr($settings['services_heading'] ?? __('Services', 'music-project-core')); ?>"
                 class="regular-text"
             >
         </td>
@@ -1490,7 +1569,7 @@ $services_items = is_array($services_items) ? $services_items : [];
 $services_items = array_slice(array_pad($services_items, 8, $service_item_defaults), 0, 8);
 ?>
 
-<table class="widefat striped" style="max-width: 1100px;">
+<table class="widefat striped mpc-services-items-table" style="max-width: 1100px;">
     <thead>
         <tr>
             <th><?php esc_html_e('Heading', 'music-project-core'); ?></th>
@@ -1580,8 +1659,14 @@ $services_items = array_slice(array_pad($services_items, 8, $service_item_defaul
     </tr>
 </table>
 
-            <hr>
-<h2><?php esc_html_e('Quotes / Testimonials', 'music-project-core'); ?></h2>
+<?php mpc_admin_panel_close(); ?>
+<?php
+mpc_admin_panel_open(
+    'quotes',
+    __('Quotes / Testimonials', 'music-project-core'),
+    __('Standalone social proof section using saved quotes or testimonials.', 'music-project-core')
+);
+?>
 
 <table class="form-table" role="presentation">
     <tr>
@@ -1638,6 +1723,10 @@ $services_items = array_slice(array_pad($services_items, 8, $service_item_defaul
                     <?php esc_html_e('Featured First', 'music-project-core'); ?>
                 </option>
             </select>
+
+            <p class="description">
+                <?php esc_html_e('Controls how quotes/testimonials are displayed on the homepage.', 'music-project-core'); ?>
+            </p>
         </td>
     </tr>
 
@@ -1658,6 +1747,10 @@ $services_items = array_slice(array_pad($services_items, 8, $service_item_defaul
                 step="1"
                 class="small-text"
             >
+
+            <p class="description">
+                <?php esc_html_e('Single Featured Quote layout will only show one quote.', 'music-project-core'); ?>
+            </p>
         </td>
     </tr>
 
@@ -1710,280 +1803,312 @@ $services_items = array_slice(array_pad($services_items, 8, $service_item_defaul
         </td>
     </tr>
 </table>
-            <hr>
 
-            <h2><?php esc_html_e('Blog Section', 'music-project-core'); ?></h2>
+<?php mpc_admin_panel_close(); ?>
 
-            <table class="form-table" role="presentation">
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Enable Blog Section', 'music-project-core'); ?>
-                    </th>
-                    <td>
-                        <label>
-                            <input type="hidden" name="mpc_homepage_settings[blog_enabled]" value="0">
-                            <input
-                                type="checkbox"
-                                name="mpc_homepage_settings[blog_enabled]"
-                                value="1"
-                                <?php checked(1, $settings['blog_enabled']); ?>
-                            >
-                            <?php esc_html_e('Show blog section on homepage', 'music-project-core'); ?>
-                        </label>
-                    </td>
-                </tr>
+           <?php
+mpc_admin_panel_open(
+    'blog',
+    __('Blog / News', 'music-project-core'),
+    __('Recent posts, featured article layout, and homepage blog display settings.', 'music-project-core')
+);
+?>
 
-                <tr>
-                    <th scope="row">
-                        <label for="blog_heading"><?php esc_html_e('Section Heading', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="blog_heading"
-                            name="mpc_homepage_settings[blog_heading]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['blog_heading']); ?>"
-                        >
-                    </td>
-                </tr>
+<table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <?php esc_html_e('Enable Blog Section', 'music-project-core'); ?>
+        </th>
+        <td>
+            <label>
+                <input type="hidden" name="mpc_homepage_settings[blog_enabled]" value="0">
+                <input
+                    type="checkbox"
+                    name="mpc_homepage_settings[blog_enabled]"
+                    value="1"
+                    <?php checked(1, $settings['blog_enabled']); ?>
+                >
+                <?php esc_html_e('Show blog section on homepage', 'music-project-core'); ?>
+            </label>
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="mpc_homepage_blog_layout">Blog / News Layout</label>
-                    </th>
-                    <td>
-                        <select
-                            id="mpc_homepage_blog_layout"
-                            class="mpc-blog-layout-select"
-                            name="mpc_homepage_settings[blog_layout]"
-                        >
-                            <option value="grid" <?php selected($settings['blog_layout'], 'grid'); ?>>
-                                Grid
-                            </option>
-                            <option value="featured_first" <?php selected($settings['blog_layout'], 'featured_first'); ?>>
-                                Featured First
-                            </option>
-                            <option value="compact" <?php selected($settings['blog_layout'], 'compact'); ?>>
-                                Compact List
-                            </option>
-                        </select>
+    <tr>
+        <th scope="row">
+            <label for="blog_heading">
+                <?php esc_html_e('Section Heading', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="blog_heading"
+                name="mpc_homepage_settings[blog_heading]"
+                class="regular-text"
+                value="<?php echo esc_attr($settings['blog_heading']); ?>"
+            >
+        </td>
+    </tr>
 
-                        <p class="description">
-                            Featured First is best for editorial posts, song deep-dives, studio dispatches, or evergreen updates.
-                        </p>
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_blog_layout">
+                <?php esc_html_e('Blog / News Layout', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_homepage_blog_layout"
+                class="mpc-blog-layout-select"
+                name="mpc_homepage_settings[blog_layout]"
+            >
+                <option value="grid" <?php selected($settings['blog_layout'], 'grid'); ?>>
+                    <?php esc_html_e('Grid', 'music-project-core'); ?>
+                </option>
+                <option value="featured_first" <?php selected($settings['blog_layout'], 'featured_first'); ?>>
+                    <?php esc_html_e('Featured First', 'music-project-core'); ?>
+                </option>
+                <option value="compact" <?php selected($settings['blog_layout'], 'compact'); ?>>
+                    <?php esc_html_e('Compact List', 'music-project-core'); ?>
+                </option>
+            </select>
 
-                <tr class="mpc-conditional-row mpc-blog-featured-first-row">
-                    <th scope="row">
-                        <label for="mpc_homepage_blog_featured_source">Featured Post Source</label>
-                    </th>
-                    <td>
-                        <select
-                            id="mpc_homepage_blog_featured_source"
-                            class="mpc-blog-featured-source-select"
-                            name="mpc_homepage_settings[blog_featured_source]"
-                        >
-                            <option value="latest" <?php selected($settings['blog_featured_source'], 'latest'); ?>>
-                                Latest Post
-                            </option>
-                            <option value="manual" <?php selected($settings['blog_featured_source'], 'manual'); ?>>
-                                Manually Selected Post
-                            </option>
-                        </select>
+            <p class="description">
+                <?php esc_html_e('Featured First is best for editorial posts, song deep-dives, studio dispatches, or evergreen updates.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                        <p class="description">
-                            Choose whether the large featured card uses the latest post or a specific selected post.
-                        </p>
-                    </td>
-                </tr>
+    <tr class="mpc-conditional-row mpc-blog-featured-first-row">
+        <th scope="row">
+            <label for="mpc_homepage_blog_featured_source">
+                <?php esc_html_e('Featured Post Source', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_homepage_blog_featured_source"
+                class="mpc-blog-featured-source-select"
+                name="mpc_homepage_settings[blog_featured_source]"
+            >
+                <option value="latest" <?php selected($settings['blog_featured_source'], 'latest'); ?>>
+                    <?php esc_html_e('Latest Post', 'music-project-core'); ?>
+                </option>
+                <option value="manual" <?php selected($settings['blog_featured_source'], 'manual'); ?>>
+                    <?php esc_html_e('Manually Selected Post', 'music-project-core'); ?>
+                </option>
+            </select>
 
-                <tr class="mpc-conditional-row mpc-blog-featured-first-row mpc-blog-manual-featured-row">
-                    <th scope="row">
-                        <label for="mpc_homepage_blog_featured_post_id">Featured Post</label>
-                    </th>
-                    <td>
-                        <?php
-                        $blog_posts_for_select = get_posts([
-                            'post_type' => 'post',
-                            'post_status' => ['publish', 'draft', 'private'],
-                            'posts_per_page' => 100,
-                            'orderby' => 'date',
-                            'order' => 'DESC',
-                        ]);
-                        ?>
+            <p class="description">
+                <?php esc_html_e('Choose whether the large featured card uses the latest post or a specific selected post.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                        <select
-                            id="mpc_homepage_blog_featured_post_id"
-                            name="mpc_homepage_settings[blog_featured_post_id]"
-                        >
-                            <option value="0">Select a post</option>
+    <tr class="mpc-conditional-row mpc-blog-featured-first-row mpc-blog-manual-featured-row">
+        <th scope="row">
+            <label for="mpc_homepage_blog_featured_post_id">
+                <?php esc_html_e('Featured Post', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <?php
+            $blog_posts_for_select = get_posts([
+                'post_type' => 'post',
+                'post_status' => ['publish', 'draft', 'private'],
+                'posts_per_page' => 100,
+                'orderby' => 'date',
+                'order' => 'DESC',
+            ]);
+            ?>
 
-                            <?php foreach ($blog_posts_for_select as $blog_post_option) : ?>
-                                <option
-                                    value="<?php echo esc_attr($blog_post_option->ID); ?>"
-                                    <?php selected((int) $settings['blog_featured_post_id'], $blog_post_option->ID); ?>
-                                >
-                                    <?php echo esc_html(get_the_title($blog_post_option)); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
+            <select
+                id="mpc_homepage_blog_featured_post_id"
+                name="mpc_homepage_settings[blog_featured_post_id]"
+            >
+                <option value="0">
+                    <?php esc_html_e('Select a post', 'music-project-core'); ?>
+                </option>
 
-                        <p class="description">
-                            Useful for pinning a song deep-dive, studio dispatch, announcement, or evergreen article.
-                        </p>
-                    </td>
-                </tr>
+                <?php foreach ($blog_posts_for_select as $blog_post_option) : ?>
+                    <option
+                        value="<?php echo esc_attr($blog_post_option->ID); ?>"
+                        <?php selected((int) $settings['blog_featured_post_id'], $blog_post_option->ID); ?>
+                    >
+                        <?php echo esc_html(get_the_title($blog_post_option)); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
 
-                <tr class="mpc-conditional-row mpc-blog-featured-first-row">
-                    <th scope="row">
-                        <label for="mpc_homepage_blog_additional_posts">Additional Posts</label>
-                    </th>
-                    <td>
-                        <input
-                            id="mpc_homepage_blog_additional_posts"
-                            type="number"
-                            min="0"
-                            max="6"
-                            name="mpc_homepage_settings[blog_additional_posts]"
-                            value="<?php echo esc_attr($settings['blog_additional_posts']); ?>"
-                        >
+            <p class="description">
+                <?php esc_html_e('Useful for pinning a song deep-dive, studio dispatch, announcement, or evergreen article.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                        <p class="description">
-                            Number of smaller posts shown after the featured post.
-                        </p>
-                    </td>
-                </tr>
+    <tr class="mpc-conditional-row mpc-blog-featured-first-row">
+        <th scope="row">
+            <label for="mpc_homepage_blog_additional_posts">
+                <?php esc_html_e('Additional Posts', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                id="mpc_homepage_blog_additional_posts"
+                type="number"
+                min="0"
+                max="6"
+                name="mpc_homepage_settings[blog_additional_posts]"
+                value="<?php echo esc_attr($settings['blog_additional_posts']); ?>"
+            >
 
-                <tr>
-                    <th scope="row">Display Options</th>
-                    <td>
-                        <input
-                            type="hidden"
-                            name="mpc_homepage_settings[blog_show_images]"
-                            value="0"
-                        >
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="mpc_homepage_settings[blog_show_images]"
-                                value="1"
-                                <?php checked($settings['blog_show_images'], 1); ?>
-                            >
-                            Show featured images
-                        </label>
+            <p class="description">
+                <?php esc_html_e('Number of smaller posts shown after the featured post.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                        <br>
+    <tr>
+        <th scope="row">
+            <?php esc_html_e('Display Options', 'music-project-core'); ?>
+        </th>
+        <td>
+            <input
+                type="hidden"
+                name="mpc_homepage_settings[blog_show_images]"
+                value="0"
+            >
+            <label>
+                <input
+                    type="checkbox"
+                    name="mpc_homepage_settings[blog_show_images]"
+                    value="1"
+                    <?php checked($settings['blog_show_images'], 1); ?>
+                >
+                <?php esc_html_e('Show featured images', 'music-project-core'); ?>
+            </label>
 
-                        <input
-                            type="hidden"
-                            name="mpc_homepage_settings[blog_show_dates]"
-                            value="0"
-                        >
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="mpc_homepage_settings[blog_show_dates]"
-                                value="1"
-                                <?php checked($settings['blog_show_dates'], 1); ?>
-                            >
-                            Show dates
-                        </label>
+            <br>
 
-                        <br>
+            <input
+                type="hidden"
+                name="mpc_homepage_settings[blog_show_dates]"
+                value="0"
+            >
+            <label>
+                <input
+                    type="checkbox"
+                    name="mpc_homepage_settings[blog_show_dates]"
+                    value="1"
+                    <?php checked($settings['blog_show_dates'], 1); ?>
+                >
+                <?php esc_html_e('Show dates', 'music-project-core'); ?>
+            </label>
 
-                        <input
-                            type="hidden"
-                            name="mpc_homepage_settings[blog_show_excerpts]"
-                            value="0"
-                        >
-                        <label>
-                            <input
-                                type="checkbox"
-                                name="mpc_homepage_settings[blog_show_excerpts]"
-                                value="1"
-                                <?php checked($settings['blog_show_excerpts'], 1); ?>
-                            >
-                            Show excerpts
-                        </label>
-                    </td>
-                </tr>
+            <br>
 
+            <input
+                type="hidden"
+                name="mpc_homepage_settings[blog_show_excerpts]"
+                value="0"
+            >
+            <label>
+                <input
+                    type="checkbox"
+                    name="mpc_homepage_settings[blog_show_excerpts]"
+                    value="1"
+                    <?php checked($settings['blog_show_excerpts'], 1); ?>
+                >
+                <?php esc_html_e('Show excerpts', 'music-project-core'); ?>
+            </label>
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="blog_posts_per_page"><?php esc_html_e('Number of Posts', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="number"
-                            id="blog_posts_per_page"
-                            name="mpc_homepage_settings[blog_posts_per_page]"
-                            class="small-text"
-                            min="1"
-                            max="12"
-                            value="<?php echo esc_attr($settings['blog_posts_per_page']); ?>"
-                        >
-                        <p class="description">
-                            <?php esc_html_e('How many recent posts should appear on the homepage. Maximum 12.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="blog_posts_per_page">
+                <?php esc_html_e('Number of Posts', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="number"
+                id="blog_posts_per_page"
+                name="mpc_homepage_settings[blog_posts_per_page]"
+                class="small-text"
+                min="1"
+                max="12"
+                value="<?php echo esc_attr($settings['blog_posts_per_page']); ?>"
+            >
 
-                <tr>
-                    <th scope="row">
-                        <label for="blog_read_more_text"><?php esc_html_e('Post Link Text', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="blog_read_more_text"
-                            name="mpc_homepage_settings[blog_read_more_text]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['blog_read_more_text']); ?>"
-                            placeholder="<?php esc_attr_e('Read More', 'music-project-core'); ?>"
-                        >
-                    </td>
-                </tr>
+            <p class="description">
+                <?php esc_html_e('How many recent posts should appear on the homepage. Maximum 12.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="blog_view_all_text"><?php esc_html_e('View All Button Text', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="blog_view_all_text"
-                            name="mpc_homepage_settings[blog_view_all_text]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['blog_view_all_text']); ?>"
-                            placeholder="<?php esc_attr_e('View All Posts', 'music-project-core'); ?>"
-                        >
-                    </td>
-                </tr>
+    <tr>
+        <th scope="row">
+            <label for="blog_read_more_text">
+                <?php esc_html_e('Post Link Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="blog_read_more_text"
+                name="mpc_homepage_settings[blog_read_more_text]"
+                class="regular-text"
+                value="<?php echo esc_attr($settings['blog_read_more_text']); ?>"
+                placeholder="<?php esc_attr_e('Read More', 'music-project-core'); ?>"
+            >
+        </td>
+    </tr>
 
-                <tr>
-                    <th scope="row">
-                        <label for="blog_view_all_url"><?php esc_html_e('View All Button URL', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="blog_view_all_url"
-                            name="mpc_homepage_settings[blog_view_all_url]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['blog_view_all_url']); ?>"
-                            placeholder="/blog"
-                        >
-                        <p class="description">
-                            <?php esc_html_e('Usually /blog or the URL of your posts page.', 'music-project-core'); ?>
-                        </p>
-                    </td>
-                </tr>
-            </table>
+    <tr>
+        <th scope="row">
+            <label for="blog_view_all_text">
+                <?php esc_html_e('View All Button Text', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="blog_view_all_text"
+                name="mpc_homepage_settings[blog_view_all_text]"
+                class="regular-text"
+                value="<?php echo esc_attr($settings['blog_view_all_text']); ?>"
+                placeholder="<?php esc_attr_e('View All Posts', 'music-project-core'); ?>"
+            >
+        </td>
+    </tr>
 
-            <?php submit_button(__('Save Homepage Settings', 'music-project-core')); ?>
+    <tr>
+        <th scope="row">
+            <label for="blog_view_all_url">
+                <?php esc_html_e('View All Button URL', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="blog_view_all_url"
+                name="mpc_homepage_settings[blog_view_all_url]"
+                class="regular-text"
+                value="<?php echo esc_attr($settings['blog_view_all_url']); ?>"
+                placeholder="/blog"
+            >
+
+            <p class="description">
+                <?php esc_html_e('Usually /blog or the URL of your posts page.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+</table>
+
+<?php mpc_admin_panel_close(); ?>
+
+<?php submit_button(__('Save Homepage Settings', 'music-project-core')); ?>
         </form>
     </div>
 

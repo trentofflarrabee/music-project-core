@@ -163,3 +163,73 @@
         max-width: 100%;
     }
 }
+
+/* Homepage admin panels */
+
+.mpc-admin-panel {
+    margin: 16px 0;
+    border: 1px solid #c3c4c7;
+    border-radius: 6px;
+    background: #fff;
+    overflow: hidden;
+}
+
+.mpc-admin-panel__summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 1rem;
+    align-items: center;
+    padding: 14px 16px;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.mpc-admin-panel__summary::-webkit-details-marker {
+    display: none;
+}
+
+.mpc-admin-panel__summary::after {
+    content: "▾";
+    color: #646970;
+    font-size: 1rem;
+    transform: rotate(-90deg);
+    transition: transform 160ms ease;
+}
+
+.mpc-admin-panel[open] .mpc-admin-panel__summary::after {
+    transform: rotate(0deg);
+}
+
+.mpc-admin-panel__summary:hover {
+    background: #f6f7f7;
+}
+
+.mpc-admin-panel__title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1d2327;
+}
+
+.mpc-admin-panel__description {
+    grid-column: 1 / -1;
+    color: #646970;
+    font-size: 0.875rem;
+}
+
+.mpc-admin-panel__body {
+    padding: 0 16px 18px;
+    border-top: 1px solid #dcdcde;
+}
+
+.mpc-admin-panel__body .form-table {
+    margin-top: 0;
+}
+
+.mpc-admin-panel__body .form-table th {
+    padding-left: 0;
+}
+
+.mpc-admin-panel__body h3 {
+    margin-top: 1.5rem;
+}
