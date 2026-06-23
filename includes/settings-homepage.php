@@ -7,28 +7,32 @@ if (!defined('ABSPATH')) {
 function mpc_get_homepage_section_definitions() {
     return [
         'hero' => [
-            'label' => 'Hero',
-            'description' => 'Main landing section with heading, media, CTA, and socials.',
+            'label' => __('Hero', 'music-project-core'),
+            'description' => __('Main landing section with heading, media, CTA, and socials.', 'music-project-core'),
         ],
         'featured-content' => [
-            'label' => 'Featured Content',
-            'description' => 'Promo section for a release, video, announcement, or quote.',
+            'label' => __('Featured Content', 'music-project-core'),
+            'description' => __('Promo section for a release, video, announcement, or featured message.', 'music-project-core'),
         ],
         'services' => [
-            'label' => 'Services',
-            'description' => 'List of services offered.',
+            'label' => __('Services', 'music-project-core'),
+            'description' => __('List of services offered.', 'music-project-core'),
+        ],
+        'quotes' => [
+            'label' => __('Quotes / Testimonials', 'music-project-core'),
+            'description' => __('Customer testimonials, client feedback, press quotes, or other social proof.', 'music-project-core'),
         ],
         'shows' => [
-            'label' => 'Shows',
-            'description' => 'Tour dates or live show embed.',
+            'label' => __('Shows', 'music-project-core'),
+            'description' => __('Tour dates or live show embed.', 'music-project-core'),
         ],
         'blog' => [
-            'label' => 'Blog / News',
-            'description' => 'Recent posts from the site blog.',
+            'label' => __('Blog / News', 'music-project-core'),
+            'description' => __('Recent posts from the site blog.', 'music-project-core'),
         ],
         'newsletter' => [
-            'label' => 'Newsletter',
-            'description' => 'Signup form or newsletter embed.',
+            'label' => __('Newsletter', 'music-project-core'),
+            'description' => __('Signup form or newsletter embed.', 'music-project-core'),
         ],
     ];
 }
@@ -136,9 +140,9 @@ function mpc_get_homepage_defaults() {
         'featured_image_id' => 0,
         'featured_cta_text' => '',
         'featured_cta_url' => '',
-        'featured_show_quote' => 1,
+        'featured_show_quote' => 0,
         'featured_layout' => 'split_card',
-        'featured_quote_position' => 'beside',
+        'featured_quote_position' => 'hidden',
         'featured_media_type' => 'image',
         'featured_video_url' => '',
 
@@ -150,6 +154,14 @@ function mpc_get_homepage_defaults() {
         'services_cta_text' => '',
         'services_cta_url' => '',
         'services_items' => [],
+
+        // Quotes / Testimonials.
+        'quotes_heading' => __('Kind Words', 'music-project-core'),
+        'quotes_intro' => '',
+        'quotes_layout' => 'grid',
+        'quotes_count' => 3,
+        'quotes_featured_only' => 1,
+        'quotes_background_tone' => 'surface',
 
         // Blog.
         'blog_enabled' => 1,
@@ -251,6 +263,16 @@ if (!in_array($output['hero_layout'], $allowed_hero_layouts, true)) {
     $output['hero_layout'] = $defaults['hero_layout'];
 }
 
+        $allowed_hero_heights = ['compact', 'standard', 'full_screen'];
+
+$output['hero_height'] = isset($input['hero_height'])
+    ? sanitize_key($input['hero_height'])
+    : $defaults['hero_height'];
+
+if (!in_array($output['hero_height'], $allowed_hero_heights, true)) {
+    $output['hero_height'] = $defaults['hero_height'];
+}
+
 $allowed_hero_overlay_styles = ['side', 'bottom', 'center', 'even'];
 
 $output['hero_overlay_style'] = isset($input['hero_overlay_style'])
@@ -336,16 +358,6 @@ $output['hero_text_align'] = in_array($hero_text_align, $allowed_hero_text_align
         : '';   
 
 
-        $allowed_hero_heights = ['compact', 'standard', 'full_screen'];
-
-$output['hero_height'] = isset($input['hero_height'])
-    ? sanitize_key($input['hero_height'])
-    : $defaults['hero_height'];
-
-if (!in_array($output['hero_height'], $allowed_hero_heights, true)) {
-    $output['hero_height'] = $defaults['hero_height'];
-}
-
     // Featured Content.
     $output['featured_enabled'] = !empty($input['featured_enabled']) ? 1 : 0;
 
@@ -398,13 +410,13 @@ if (!in_array($output['hero_height'], $allowed_hero_heights, true)) {
         'hidden',
     ];
 
-    $output['featured_quote_position'] = isset($input['featured_quote_position'])
-        ? sanitize_key($input['featured_quote_position'])
-        : 'beside';
+$output['featured_quote_position'] = isset($input['featured_quote_position'])
+    ? sanitize_key($input['featured_quote_position'])
+    : $defaults['featured_quote_position'];
 
-    if (!in_array($output['featured_quote_position'], $allowed_featured_quote_positions, true)) {
-        $output['featured_quote_position'] = 'beside';
-    }
+if (!in_array($output['featured_quote_position'], $allowed_featured_quote_positions, true)) {
+    $output['featured_quote_position'] = $defaults['featured_quote_position'];
+}
 
     /**
      * Keep old featured_show_quote setting in sync for backward compatibility.
@@ -424,6 +436,43 @@ if (!in_array($output['hero_height'], $allowed_hero_heights, true)) {
     $output['featured_video_url'] = isset($input['featured_video_url'])
         ? mpc_sanitize_featured_video_url($input['featured_video_url'])
         : '';
+
+// Quotes / Testimonials.
+$output['quotes_heading'] = isset($input['quotes_heading'])
+    ? sanitize_text_field($input['quotes_heading'])
+    : $defaults['quotes_heading'];
+
+$output['quotes_intro'] = isset($input['quotes_intro'])
+    ? sanitize_textarea_field($input['quotes_intro'])
+    : $defaults['quotes_intro'];
+
+$allowed_quotes_layouts = ['single', 'grid', 'featured_first'];
+
+$quotes_layout = isset($input['quotes_layout'])
+    ? sanitize_key($input['quotes_layout'])
+    : $defaults['quotes_layout'];
+
+$output['quotes_layout'] = in_array($quotes_layout, $allowed_quotes_layouts, true)
+    ? $quotes_layout
+    : $defaults['quotes_layout'];
+
+$quotes_count = isset($input['quotes_count'])
+    ? absint($input['quotes_count'])
+    : absint($defaults['quotes_count']);
+
+$output['quotes_count'] = min(12, max(1, $quotes_count));
+
+$output['quotes_featured_only'] = !empty($input['quotes_featured_only']) ? 1 : 0;
+
+$allowed_quotes_background_tones = ['default', 'surface', 'contrast'];
+
+$quotes_background_tone = isset($input['quotes_background_tone'])
+    ? sanitize_key($input['quotes_background_tone'])
+    : $defaults['quotes_background_tone'];
+
+$output['quotes_background_tone'] = in_array($quotes_background_tone, $allowed_quotes_background_tones, true)
+    ? $quotes_background_tone
+    : $defaults['quotes_background_tone'];
 
     // Blog.
     $output['blog_enabled'] = !empty($input['blog_enabled']) ? 1 : 0;
@@ -603,13 +652,13 @@ function mpc_enqueue_admin_assets($hook) {
 
     wp_enqueue_media();
 
-    wp_enqueue_script(
-        'mpc-admin',
-        MPC_URL . 'assets/admin.js',
-        ['jquery'],
-        MPC_VERSION,
-        true
-    );
+wp_enqueue_script(
+    'mpc-admin',
+    MPC_URL . 'assets/admin.js',
+    ['jquery', 'jquery-ui-sortable'],
+    MPC_VERSION,
+    true
+);
 
     wp_enqueue_style(
         'mpc-admin',
@@ -1531,6 +1580,136 @@ $services_items = array_slice(array_pad($services_items, 8, $service_item_defaul
     </tr>
 </table>
 
+            <hr>
+<h2><?php esc_html_e('Quotes / Testimonials', 'music-project-core'); ?></h2>
+
+<table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_quotes_heading">
+                <?php esc_html_e('Section Heading', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="text"
+                id="mpc_homepage_quotes_heading"
+                name="mpc_homepage_settings[quotes_heading]"
+                value="<?php echo esc_attr($settings['quotes_heading'] ?? __('Kind Words', 'music-project-core')); ?>"
+                class="regular-text"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_quotes_intro">
+                <?php esc_html_e('Section Intro', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <textarea
+                id="mpc_homepage_quotes_intro"
+                name="mpc_homepage_settings[quotes_intro]"
+                rows="3"
+                class="large-text"
+            ><?php echo esc_textarea($settings['quotes_intro'] ?? ''); ?></textarea>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_quotes_layout">
+                <?php esc_html_e('Layout', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_homepage_quotes_layout"
+                name="mpc_homepage_settings[quotes_layout]"
+            >
+                <option value="single" <?php selected($settings['quotes_layout'] ?? 'grid', 'single'); ?>>
+                    <?php esc_html_e('Single Featured Quote', 'music-project-core'); ?>
+                </option>
+                <option value="grid" <?php selected($settings['quotes_layout'] ?? 'grid', 'grid'); ?>>
+                    <?php esc_html_e('Grid', 'music-project-core'); ?>
+                </option>
+                <option value="featured_first" <?php selected($settings['quotes_layout'] ?? 'grid', 'featured_first'); ?>>
+                    <?php esc_html_e('Featured First', 'music-project-core'); ?>
+                </option>
+            </select>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_quotes_count">
+                <?php esc_html_e('Number of Quotes', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <input
+                type="number"
+                id="mpc_homepage_quotes_count"
+                name="mpc_homepage_settings[quotes_count]"
+                value="<?php echo esc_attr($settings['quotes_count'] ?? 3); ?>"
+                min="1"
+                max="12"
+                step="1"
+                class="small-text"
+            >
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <?php esc_html_e('Quote Source', 'music-project-core'); ?>
+        </th>
+        <td>
+            <label>
+                <input
+                    type="checkbox"
+                    name="mpc_homepage_settings[quotes_featured_only]"
+                    value="1"
+                    <?php checked(!empty($settings['quotes_featured_only'])); ?>
+                >
+                <?php esc_html_e('Only show featured quotes/testimonials', 'music-project-core'); ?>
+            </label>
+
+            <p class="description">
+                <?php esc_html_e('Featured quotes are managed under Music Project → Quotes / Testimonials.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_homepage_quotes_background_tone">
+                <?php esc_html_e('Background Tone', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_homepage_quotes_background_tone"
+                name="mpc_homepage_settings[quotes_background_tone]"
+            >
+                <option value="default" <?php selected($settings['quotes_background_tone'] ?? 'surface', 'default'); ?>>
+                    <?php esc_html_e('Default', 'music-project-core'); ?>
+                </option>
+                <option value="surface" <?php selected($settings['quotes_background_tone'] ?? 'surface', 'surface'); ?>>
+                    <?php esc_html_e('Surface', 'music-project-core'); ?>
+                </option>
+                <option value="contrast" <?php selected($settings['quotes_background_tone'] ?? 'surface', 'contrast'); ?>>
+                    <?php esc_html_e('Contrast', 'music-project-core'); ?>
+                </option>
+            </select>
+
+            <p class="description">
+                <?php esc_html_e('Use Contrast when you want the quotes section to visually stand apart from the surrounding homepage sections.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+</table>
             <hr>
 
             <h2><?php esc_html_e('Blog Section', 'music-project-core'); ?></h2>

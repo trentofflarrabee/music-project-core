@@ -1,11 +1,17 @@
 (function ($) {
     'use strict';
 
-    function setVisible(elements, shouldShow) {
-        elements.forEach((element) => {
-            element.style.display = shouldShow ? '' : 'none';
-        });
+function setVisible(elements, shouldShow) {
+    if (!elements) {
+        return;
     }
+
+    Array.from(elements).forEach((element) => {
+        if (element && element.style) {
+            element.style.display = shouldShow ? '' : 'none';
+        }
+    });
+}
 
     function initMediaUploader() {
         $(document).on('click', '.mpc-media-upload', function (event) {
@@ -174,77 +180,58 @@ toggleFullBleedOnlyFields();
         updateBlogFields();
     }
 
-    function initSectionManager() {
-        const list = document.querySelector('.mpc-section-list');
-        const orderInput = document.querySelector('.mpc-section-order-input');
+function initSectionManager() {
+    const list = $('.mpc-section-list');
+    const orderInput = $('.mpc-section-order-input');
 
-        if (!list || !orderInput) {
-            return;
-        }
+    console.log('[MPC] Section Manager init', {
+        listFound: list.length,
+        orderInputFound: orderInput.length,
+        sortableLoaded: !!$.fn.sortable
+    });
 
-        let draggedItem = null;
-
-        function updateOrderInput() {
-            const sections = Array.from(list.querySelectorAll('[data-section]'))
-                .map((item) => item.getAttribute('data-section'))
-                .filter(Boolean);
-
-            orderInput.value = sections.join(',');
-        }
-
-        list.addEventListener('dragstart', function (event) {
-            const item = event.target.closest('.mpc-section-list__item');
-
-            if (!item) {
-                return;
-            }
-
-            draggedItem = item;
-            item.classList.add('is-dragging');
-
-            if (event.dataTransfer) {
-                event.dataTransfer.effectAllowed = 'move';
-                event.dataTransfer.setData('text/plain', item.getAttribute('data-section'));
-            }
-        });
-
-        list.addEventListener('dragend', function () {
-            if (draggedItem) {
-                draggedItem.classList.remove('is-dragging');
-            }
-
-            draggedItem = null;
-            updateOrderInput();
-        });
-
-        list.addEventListener('dragover', function (event) {
-            event.preventDefault();
-
-            if (!draggedItem) {
-                return;
-            }
-
-            const targetItem = event.target.closest('.mpc-section-list__item');
-
-            if (!targetItem || targetItem === draggedItem) {
-                return;
-            }
-
-            const targetRect = targetItem.getBoundingClientRect();
-            const shouldInsertAfter = event.clientY > targetRect.top + targetRect.height / 2;
-
-            if (shouldInsertAfter) {
-                targetItem.after(draggedItem);
-            } else {
-                targetItem.before(draggedItem);
-            }
-
-            updateOrderInput();
-        });
-
-        list.addEventListener('change', updateOrderInput);
-        updateOrderInput();
+    if (!list.length || !orderInput.length) {
+        return;
     }
+
+    function updateOrderInput() {
+        const sections = [];
+
+        list.find('[data-section]').each(function () {
+            const section = $(this).attr('data-section');
+
+            if (section) {
+                sections.push(section);
+            }
+        });
+
+        orderInput.val(sections.join(','));
+
+        console.log('[MPC] Section order:', orderInput.val());
+    }
+
+    if (!$.fn.sortable) {
+        console.warn('[MPC] jQuery UI Sortable is not loaded.');
+        updateOrderInput();
+        return;
+    }
+
+    list.sortable({
+        items: '.mpc-section-list__item',
+        axis: 'y',
+        tolerance: 'pointer',
+        cursor: 'move',
+        opacity: 0.85,
+        update: updateOrderInput,
+        stop: updateOrderInput
+    });
+
+    list.disableSelection();
+
+    list.on('change', 'input, select, textarea', updateOrderInput);
+
+    updateOrderInput();
+}
 
     function initMPCAdmin() {
         initMediaUploader();
