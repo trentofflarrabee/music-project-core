@@ -162,6 +162,7 @@ function mpc_get_homepage_defaults() {
         'quotes_count' => 3,
         'quotes_featured_only' => 1,
         'quotes_background_tone' => 'surface',
+        'quotes_show_attribution' => 1,
 
         // Blog.
         'blog_enabled' => 1,
@@ -374,7 +375,7 @@ $output['hero_text_align'] = in_array($hero_text_align, $allowed_hero_text_align
         : '';
 
     $output['featured_text'] = isset($input['featured_text'])
-        ? sanitize_textarea_field($input['featured_text'])
+        ? wp_kses_post($input['featured_text'])
         : '';
 
     $output['featured_image_id'] = isset($input['featured_image_id'])
@@ -464,6 +465,8 @@ $output['quotes_count'] = min(12, max(1, $quotes_count));
 
 $output['quotes_featured_only'] = !empty($input['quotes_featured_only']) ? 1 : 0;
 
+$output['quotes_show_attribution'] = !empty($input['quotes_show_attribution']) ? 1 : 0;
+
 $allowed_quotes_background_tones = ['default', 'surface', 'contrast'];
 
 $quotes_background_tone = isset($input['quotes_background_tone'])
@@ -547,7 +550,7 @@ $output['quotes_background_tone'] = in_array($quotes_background_tone, $allowed_q
         : $defaults['services_heading'];
 
     $output['services_intro'] = isset($input['services_intro'])
-        ? sanitize_textarea_field($input['services_intro'])
+        ? wp_kses_post($input['services_intro'])
         : $defaults['services_intro'];
 
     $allowed_services_layouts = ['grid', 'featured_first', 'compact'];
@@ -581,7 +584,7 @@ $output['quotes_background_tone'] = in_array($quotes_background_tone, $allowed_q
     if (!empty($input['services_items']) && is_array($input['services_items'])) {
         foreach ($input['services_items'] as $item) {
             $title = isset($item['title']) ? sanitize_text_field($item['title']) : '';
-            $description = isset($item['description']) ? sanitize_textarea_field($item['description']) : '';
+            $description = isset($item['description']) ? wp_kses_post($item['description']) : '';
             $link_text = isset($item['link_text']) ? sanitize_text_field($item['link_text']) : '';
             $link_url = isset($item['link_url']) ? esc_url_raw($item['link_url']) : '';
 
@@ -749,6 +752,25 @@ function mpc_admin_panel_close() {
         </div>
     </details>
     <?php
+}
+
+// HTML editor?
+function mpc_render_homepage_rich_text_editor($editor_id, $textarea_name, $value = '', $rows = 5) {
+    wp_editor(
+        $value,
+        $editor_id,
+        [
+            'textarea_name' => $textarea_name,
+            'textarea_rows' => $rows,
+            'media_buttons' => false,
+            'teeny' => true,
+            'quicktags' => true,
+            'tinymce' => [
+                'toolbar1' => 'bold,italic,bullist,numlist,link,unlink,undo,redo',
+                'toolbar2' => '',
+            ],
+        ]
+    );
 }
 
 /**
@@ -1350,12 +1372,14 @@ mpc_admin_panel_open(
             </label>
         </th>
         <td>
-            <textarea
-                id="featured_text"
-                name="mpc_homepage_settings[featured_text]"
-                class="large-text"
-                rows="4"
-            ><?php echo esc_textarea($settings['featured_text']); ?></textarea>
+            <?php
+            mpc_render_homepage_rich_text_editor(
+                'mpc_featured_text_editor',
+                'mpc_homepage_settings[featured_text]',
+                $settings['featured_text'] ?? '',
+                6
+            );
+            ?>
         </td>
     </tr>
 
@@ -1496,12 +1520,14 @@ mpc_admin_panel_open(
             </label>
         </th>
         <td>
-            <textarea
-                id="mpc_homepage_services_intro"
-                name="mpc_homepage_settings[services_intro]"
-                rows="3"
-                class="large-text"
-            ><?php echo esc_textarea($settings['services_intro'] ?? ''); ?></textarea>
+            <?php
+            mpc_render_homepage_rich_text_editor(
+                'mpc_services_intro_editor',
+                'mpc_homepage_settings[services_intro]',
+                $settings['services_intro'] ?? '',
+                5
+            );
+            ?>
         </td>
     </tr>
 
@@ -1771,6 +1797,33 @@ mpc_admin_panel_open(
 
             <p class="description">
                 <?php esc_html_e('Featured quotes are managed under Music Project → Quotes / Testimonials.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <?php esc_html_e('Attribution', 'music-project-core'); ?>
+        </th>
+        <td>
+            <input
+                type="hidden"
+                name="mpc_homepage_settings[quotes_show_attribution]"
+                value="0"
+            >
+
+            <label>
+                <input
+                    type="checkbox"
+                    name="mpc_homepage_settings[quotes_show_attribution]"
+                    value="1"
+                    <?php checked(!empty($settings['quotes_show_attribution'])); ?>
+                >
+                <?php esc_html_e('Show quote/testimonial attribution', 'music-project-core'); ?>
+            </label>
+
+            <p class="description">
+                <?php esc_html_e('Shows the source/client and context below each quote when available.', 'music-project-core'); ?>
             </p>
         </td>
     </tr>
