@@ -23,6 +23,10 @@ function mpc_get_theme_style_defaults() {
         'header_text_color' => '#f5f5f5',
         'header_border_color' => '#1f1f1f',
 
+        // Site chrome behavior.
+        'header_behavior' => 'standard',
+        'brand_display' => 'logo_name',
+
         'mobile_nav_background_color' => '#000000',
         'mobile_nav_text_color' => '#f5f5f5',
         'mobile_nav_border_color' => '#242424',
@@ -31,6 +35,8 @@ function mpc_get_theme_style_defaults() {
         'footer_text_color' => '#f5f5f5',
         'footer_muted_color' => '#b8b8b8',
         'footer_border_color' => '#1f1f1f',
+
+
 
         // Typography.
         'google_fonts_url' => '',
@@ -201,6 +207,37 @@ function mpc_sanitize_theme_style_settings($input) {
 
         $output[$field] = $value ?: $defaults[$field];
     }
+
+    // Site chrome behavior.
+$allowed_header_behaviors = [
+    'standard',
+    'sticky',
+    'transparent',
+    'transparent_scroll',
+];
+
+$header_behavior = isset($input['header_behavior'])
+    ? sanitize_key($input['header_behavior'])
+    : $defaults['header_behavior'];
+
+$output['header_behavior'] = in_array($header_behavior, $allowed_header_behaviors, true)
+    ? $header_behavior
+    : $defaults['header_behavior'];
+
+$allowed_brand_displays = [
+    'logo_name',
+    'logo_only',
+    'name_only',
+    'hidden',
+];
+
+$brand_display = isset($input['brand_display'])
+    ? sanitize_key($input['brand_display'])
+    : $defaults['brand_display'];
+
+$output['brand_display'] = in_array($brand_display, $allowed_brand_displays, true)
+    ? $brand_display
+    : $defaults['brand_display'];
 
     // Typography.
     $output['google_fonts_url'] = isset($input['google_fonts_url'])
@@ -720,10 +757,72 @@ function mpc_render_theme_style_settings_page() {
 <h2><?php esc_html_e('Site Chrome', 'music-project-core'); ?></h2>
 
 <p>
-    <?php esc_html_e('Controls the header, mobile navigation overlay, and footer colors.', 'music-project-core'); ?>
+    <?php esc_html_e('Controls the header, navbar behavior, mobile navigation overlay, branding display, and footer colors.', 'music-project-core'); ?>
 </p>
 
 <table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_header_behavior">
+                <?php esc_html_e('Header Behavior', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_theme_style_header_behavior"
+                name="mpc_theme_style_settings[header_behavior]"
+            >
+                <option value="standard" <?php selected($settings['header_behavior'] ?? 'standard', 'standard'); ?>>
+                    <?php esc_html_e('Standard', 'music-project-core'); ?>
+                </option>
+                <option value="sticky" <?php selected($settings['header_behavior'] ?? 'standard', 'sticky'); ?>>
+                    <?php esc_html_e('Sticky', 'music-project-core'); ?>
+                </option>
+                <option value="transparent" <?php selected($settings['header_behavior'] ?? 'standard', 'transparent'); ?>>
+                    <?php esc_html_e('Transparent Over Hero', 'music-project-core'); ?>
+                </option>
+                <option value="transparent_scroll" <?php selected($settings['header_behavior'] ?? 'standard', 'transparent_scroll'); ?>>
+                    <?php esc_html_e('Transparent, Solid On Scroll', 'music-project-core'); ?>
+                </option>
+            </select>
+
+            <p class="description">
+                <?php esc_html_e('Transparent modes apply to the homepage hero only. Inner pages use the normal solid header.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_brand_display">
+                <?php esc_html_e('Brand Display', 'music-project-core'); ?>
+            </label>
+        </th>
+        <td>
+            <select
+                id="mpc_theme_style_brand_display"
+                name="mpc_theme_style_settings[brand_display]"
+            >
+                <option value="logo_name" <?php selected($settings['brand_display'] ?? 'logo_name', 'logo_name'); ?>>
+                    <?php esc_html_e('Logo + Site Name', 'music-project-core'); ?>
+                </option>
+                <option value="logo_only" <?php selected($settings['brand_display'] ?? 'logo_name', 'logo_only'); ?>>
+                    <?php esc_html_e('Logo Only', 'music-project-core'); ?>
+                </option>
+                <option value="name_only" <?php selected($settings['brand_display'] ?? 'logo_name', 'name_only'); ?>>
+                    <?php esc_html_e('Site Name Only', 'music-project-core'); ?>
+                </option>
+                <option value="hidden" <?php selected($settings['brand_display'] ?? 'logo_name', 'hidden'); ?>>
+                    <?php esc_html_e('Hidden', 'music-project-core'); ?>
+                </option>
+            </select>
+
+            <p class="description">
+                <?php esc_html_e('Controls how the site brand appears in the header.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+
     <tr>
         <th scope="row">
             <label for="mpc_theme_style_header_background_color">
@@ -884,7 +983,6 @@ function mpc_render_theme_style_settings_page() {
         </td>
     </tr>
 </table>
-
 <hr>
 
         <h2><?php esc_html_e('Typography', 'music-project-core'); ?></h2>
