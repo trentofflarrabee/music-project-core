@@ -38,17 +38,31 @@ function mpc_get_theme_style_defaults() {
 
 
 
-        // Typography.
+        // Typography font library.
         'google_fonts_url' => '',
-        'font_heading' => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+
         'font_body' => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        'font_heading' => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
         'font_accent' => 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        'font_quote' => '',
+
+        // Typography role assignments.
+        'font_role_body' => 'body',
+        'font_role_heading' => 'heading',
+        'font_role_hero_heading' => 'heading',
+        'font_role_nav' => 'accent',
+        'font_role_button' => 'accent',
+        'font_role_accent' => 'accent',
+        'font_role_quote' => 'quote',
+
+        // Heading presentation.
         'heading_text_transform' => 'none',
         'heading_letter_spacing' => '-0.04em',
         'heading_alignment_scope' => 'none',
+
         'hero_heading_color' => '#ffffff',
-        'hero_lead_color'   => '#f5f5f5',
-        'hero_text_shadow'  => 'subtle',
+        'hero_lead_color' => '#f5f5f5',
+        'hero_text_shadow' => 'subtle',
         'hero_text_shadow_color' => '#000000',
 
         // Design tokens.
@@ -330,9 +344,36 @@ $output['brand_display'] = in_array($brand_display, $allowed_brand_displays, tru
             : $defaults['border_strength'];
 
 
-    $output['font_quote'] = isset($input['font_quote'])
-        ? sanitize_text_field($input['font_quote'])
-        : '';
+        $output['font_quote'] = isset($input['font_quote'])
+            ? mpc_sanitize_font_family($input['font_quote'])
+            : $defaults['font_quote'];
+            // Typography role assignments.
+        $allowed_font_roles = [
+            'body',
+            'heading',
+            'accent',
+            'quote',
+        ];
+
+        $font_role_fields = [
+            'font_role_body',
+            'font_role_heading',
+            'font_role_hero_heading',
+            'font_role_nav',
+            'font_role_button',
+            'font_role_accent',
+            'font_role_quote',
+        ];
+
+        foreach ($font_role_fields as $field) {
+            $role = isset($input[$field])
+                ? sanitize_key($input[$field])
+                : $defaults[$field];
+
+            $output[$field] = in_array($role, $allowed_font_roles, true)
+                ? $role
+                : $defaults[$field];
+        }
 
     // Texture.
     $output['texture_enabled'] = !empty($input['texture_enabled']) ? 1 : 0;
@@ -367,6 +408,59 @@ $output['brand_display'] = in_array($brand_display, $allowed_brand_displays, tru
     $output['texture_apply_sections'] = !empty($input['texture_apply_sections']) ? 1 : 0;
 
     return $output;
+}
+
+/**
+ * Render a typography font-assignment select.
+ */
+function mpc_render_font_assignment_select(
+    $setting_key,
+    $label,
+    $settings,
+    $description = ''
+) {
+    $choices = [
+        'body' => __('Body Font', 'music-project-core'),
+        'heading' => __('Display Font', 'music-project-core'),
+        'accent' => __('Accent / UI Font', 'music-project-core'),
+        'quote' => __('Quote Font', 'music-project-core'),
+    ];
+
+    $value = isset($settings[$setting_key])
+        ? sanitize_key($settings[$setting_key])
+        : 'body';
+
+    ?>
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_<?php echo esc_attr($setting_key); ?>">
+                <?php echo esc_html($label); ?>
+            </label>
+        </th>
+
+        <td>
+            <select
+                id="mpc_theme_style_<?php echo esc_attr($setting_key); ?>"
+                name="mpc_theme_style_settings[<?php echo esc_attr($setting_key); ?>]"
+            >
+                <?php foreach ($choices as $choice_value => $choice_label) : ?>
+                    <option
+                        value="<?php echo esc_attr($choice_value); ?>"
+                        <?php selected($value, $choice_value); ?>
+                    >
+                        <?php echo esc_html($choice_label); ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+
+            <?php if ($description) : ?>
+                <p class="description">
+                    <?php echo esc_html($description); ?>
+                </p>
+            <?php endif; ?>
+        </td>
+    </tr>
+    <?php
 }
 
 /**
@@ -985,146 +1079,276 @@ function mpc_render_theme_style_settings_page() {
 </table>
 <hr>
 
-        <h2><?php esc_html_e('Typography', 'music-project-core'); ?></h2>
+<h2><?php esc_html_e('Typography', 'music-project-core'); ?></h2>
 
-        <table class="form-table" role="presentation">
-            <tr>
-                <th scope="row">
-                    <label
-                        for="google_fonts_url"><?php esc_html_e('Google Fonts Stylesheet URL', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="url" id="google_fonts_url" name="mpc_theme_style_settings[google_fonts_url]"
-                        class="large-text" value="<?php echo esc_url($settings['google_fonts_url']); ?>"
-                        placeholder="https://fonts.googleapis.com/css2?family=...">
-                    <p class="description">
-                        <?php esc_html_e('Optional. Paste the Google Fonts stylesheet URL only, not the full <link> tag.', 'music-project-core'); ?>
-                    </p>
-                </td>
-            </tr>
+<p>
+    <?php esc_html_e('Define your available fonts, then assign them to different typography roles across the site.', 'music-project-core'); ?>
+</p>
 
-            <tr>
-                <th scope="row">
-                    <label for="font_heading"><?php esc_html_e('Heading Font Family', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="text" id="font_heading" name="mpc_theme_style_settings[font_heading]"
-                        class="large-text" value="<?php echo esc_attr($settings['font_heading']); ?>">
-                    <p class="description">
-                        <?php esc_html_e('Example: "Oswald", Impact, sans-serif', 'music-project-core'); ?>
-                    </p>
-                </td>
-            </tr>
+<h3><?php esc_html_e('Font Library', 'music-project-core'); ?></h3>
 
-            <tr>
-                <th scope="row">
-                    <label for="font_body"><?php esc_html_e('Body Font Family', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="text" id="font_body" name="mpc_theme_style_settings[font_body]" class="large-text"
-                        value="<?php echo esc_attr($settings['font_body']); ?>">
-                    <p class="description">
-                        <?php esc_html_e('Example: "Lora", Georgia, serif', 'music-project-core'); ?>
-                    </p>
-                </td>
-            </tr>
+<table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <label for="google_fonts_url">
+                <?php esc_html_e('Google Fonts Stylesheet URL', 'music-project-core'); ?>
+            </label>
+        </th>
 
-            <tr>
-                <th scope="row">
-                    <label for="font_accent"><?php esc_html_e('Accent Font Family', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="text" id="font_accent" name="mpc_theme_style_settings[font_accent]" class="large-text"
-                        value="<?php echo esc_attr($settings['font_accent']); ?>">
-                    <p class="description">
-                        <?php esc_html_e('Used for labels, nav, social links, and small accent text.', 'music-project-core'); ?>
-                    </p>
-                </td>
-            </tr>
+        <td>
+            <input
+                type="url"
+                id="google_fonts_url"
+                name="mpc_theme_style_settings[google_fonts_url]"
+                class="large-text"
+                value="<?php echo esc_url($settings['google_fonts_url'] ?? ''); ?>"
+                placeholder="https://fonts.googleapis.com/css2?family=..."
+            >
 
-            <tr>
-                <th scope="row">
-                    <label for="mpc_theme_style_font_quote">Quote Font</label>
-                </th>
-                <td>
-                    <input id="mpc_theme_style_font_quote" class="regular-text" type="text"
-                        name="mpc_theme_style_settings[font_quote]"
-                        value="<?php echo esc_attr($settings['font_quote']); ?>"
-                        placeholder='"Playfair Display", serif'>
+            <p class="description">
+                <?php esc_html_e('Optional. Paste the Google Fonts stylesheet URL only, not the full link tag.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                    <p class="description">
-                        Optional font family for press quotes. Leave blank to use the heading font.
-                    </p>
-                </td>
-            </tr>
+    <tr>
+        <th scope="row">
+            <label for="font_body">
+                <?php esc_html_e('Body Font', 'music-project-core'); ?>
+            </label>
+        </th>
 
-            <tr>
-                <th scope="row">
-                    <label
-                        for="heading_text_transform"><?php esc_html_e('Heading Text Transform', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <select id="heading_text_transform" name="mpc_theme_style_settings[heading_text_transform]">
-                        <option value="none" <?php selected($settings['heading_text_transform'], 'none'); ?>>
-                            <?php esc_html_e('None', 'music-project-core'); ?>
-                        </option>
-                        <option value="uppercase" <?php selected($settings['heading_text_transform'], 'uppercase'); ?>>
-                            <?php esc_html_e('Uppercase', 'music-project-core'); ?>
-                        </option>
-                        <option value="lowercase" <?php selected($settings['heading_text_transform'], 'lowercase'); ?>>
-                            <?php esc_html_e('Lowercase', 'music-project-core'); ?>
-                        </option>
-                        <option value="capitalize"
-                            <?php selected($settings['heading_text_transform'], 'capitalize'); ?>>
-                            <?php esc_html_e('Capitalize', 'music-project-core'); ?>
-                        </option>
-                    </select>
-                </td>
-            </tr>
+        <td>
+            <input
+                type="text"
+                id="font_body"
+                name="mpc_theme_style_settings[font_body]"
+                class="large-text"
+                value="<?php echo esc_attr($settings['font_body'] ?? ''); ?>"
+            >
 
-            <tr>
-                <th scope="row">
-                    <label
-                        for="heading_letter_spacing"><?php esc_html_e('Heading Letter Spacing', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="text" id="heading_letter_spacing"
-                        name="mpc_theme_style_settings[heading_letter_spacing]" class="regular-text"
-                        value="<?php echo esc_attr($settings['heading_letter_spacing']); ?>" placeholder="-0.04em">
-                    <p class="description">
-                        <?php esc_html_e('Use values like -0.04em, 0.02em, 1px, etc.', 'music-project-core'); ?>
-                    </p>
-                </td>
-            </tr>
+            <p class="description">
+                <?php esc_html_e('Example: "Lora", Georgia, serif', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-            <tr>
-                <th scope="row">
-                    <label for="mpc_theme_style_heading_alignment_scope">
-                        <?php esc_html_e('Heading Alignment', 'music-project-core'); ?>
-                    </label>
-                </th>
-                <td>
-                    <select id="mpc_theme_style_heading_alignment_scope"
-                        name="mpc_theme_style_settings[heading_alignment_scope]">
-                        <option value="none" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'none'); ?>>
-                            <?php esc_html_e('Default', 'music-project-core'); ?>
-                        </option>
+    <tr>
+        <th scope="row">
+            <label for="font_heading">
+                <?php esc_html_e('Display Font', 'music-project-core'); ?>
+            </label>
+        </th>
 
-                        <option value="home" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'home'); ?>>
-                            <?php esc_html_e('Center homepage headings', 'music-project-core'); ?>
-                        </option>
+        <td>
+            <input
+                type="text"
+                id="font_heading"
+                name="mpc_theme_style_settings[font_heading]"
+                class="large-text"
+                value="<?php echo esc_attr($settings['font_heading'] ?? ''); ?>"
+            >
 
-                        <option value="all" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'all'); ?>>
-                            <?php esc_html_e('Center all headings', 'music-project-core'); ?>
-                        </option>
-                    </select>
+            <p class="description">
+                <?php esc_html_e('Usually used for headings and prominent display text. Example: "Oswald", Impact, sans-serif', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
 
-                    <p class="description">
-                        <?php esc_html_e('Choose whether headings keep the default layout, center only on homepage sections, or center across the whole site.', 'music-project-core'); ?>
-                    </p>
-                </td>
-            </tr>
-        </table>
+    <tr>
+        <th scope="row">
+            <label for="font_accent">
+                <?php esc_html_e('Accent / UI Font', 'music-project-core'); ?>
+            </label>
+        </th>
+
+        <td>
+            <input
+                type="text"
+                id="font_accent"
+                name="mpc_theme_style_settings[font_accent]"
+                class="large-text"
+                value="<?php echo esc_attr($settings['font_accent'] ?? ''); ?>"
+            >
+
+            <p class="description">
+                <?php esc_html_e('Useful for navigation, buttons, metadata, labels, and other interface text.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_font_quote">
+                <?php esc_html_e('Quote Font', 'music-project-core'); ?>
+            </label>
+        </th>
+
+        <td>
+            <input
+                id="mpc_theme_style_font_quote"
+                class="large-text"
+                type="text"
+                name="mpc_theme_style_settings[font_quote]"
+                value="<?php echo esc_attr($settings['font_quote'] ?? ''); ?>"
+                placeholder='"Playfair Display", Georgia, serif'
+            >
+
+            <p class="description">
+                <?php esc_html_e('Optional. Leave blank to make the Quote Font slot use the Display Font.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+</table>
+
+<h3><?php esc_html_e('Font Assignments', 'music-project-core'); ?></h3>
+
+<p>
+    <?php esc_html_e('Choose which font from the library should style each part of the site.', 'music-project-core'); ?>
+</p>
+
+<table class="form-table" role="presentation">
+    <?php
+    mpc_render_font_assignment_select(
+        'font_role_body',
+        __('Body Text', 'music-project-core'),
+        $settings,
+        __('Paragraphs, long-form content, descriptions, and general text.', 'music-project-core')
+    );
+
+    mpc_render_font_assignment_select(
+        'font_role_heading',
+        __('Headings', 'music-project-core'),
+        $settings,
+        __('Page titles, section headings, card headings, and article headings.', 'music-project-core')
+    );
+
+    mpc_render_font_assignment_select(
+        'font_role_hero_heading',
+        __('Hero Heading', 'music-project-core'),
+        $settings,
+        __('The main homepage hero heading and site-status headline.', 'music-project-core')
+    );
+
+    mpc_render_font_assignment_select(
+        'font_role_nav',
+        __('Navigation / Branding', 'music-project-core'),
+        $settings,
+        __('Header and footer menus, site name, and navigation controls.', 'music-project-core')
+    );
+
+    mpc_render_font_assignment_select(
+        'font_role_button',
+        __('Buttons / CTAs', 'music-project-core'),
+        $settings,
+        __('Buttons, calls to action, read-more links, and pagination controls.', 'music-project-core')
+    );
+
+    mpc_render_font_assignment_select(
+        'font_role_accent',
+        __('Accent / UI Text', 'music-project-core'),
+        $settings,
+        __('Dates, metadata, labels, social links, quote attribution, and eyebrow text.', 'music-project-core')
+    );
+
+    mpc_render_font_assignment_select(
+        'font_role_quote',
+        __('Quotes / Testimonials', 'music-project-core'),
+        $settings,
+        __('Testimonials, press quotes, pull quotes, and content blockquotes.', 'music-project-core')
+    );
+    ?>
+</table>
+
+<h3><?php esc_html_e('Heading Presentation', 'music-project-core'); ?></h3>
+
+<table class="form-table" role="presentation">
+    <tr>
+        <th scope="row">
+            <label for="heading_text_transform">
+                <?php esc_html_e('Heading Text Transform', 'music-project-core'); ?>
+            </label>
+        </th>
+
+        <td>
+            <select
+                id="heading_text_transform"
+                name="mpc_theme_style_settings[heading_text_transform]"
+            >
+                <option value="none" <?php selected($settings['heading_text_transform'] ?? 'none', 'none'); ?>>
+                    <?php esc_html_e('None', 'music-project-core'); ?>
+                </option>
+
+                <option value="uppercase" <?php selected($settings['heading_text_transform'] ?? 'none', 'uppercase'); ?>>
+                    <?php esc_html_e('Uppercase', 'music-project-core'); ?>
+                </option>
+
+                <option value="lowercase" <?php selected($settings['heading_text_transform'] ?? 'none', 'lowercase'); ?>>
+                    <?php esc_html_e('Lowercase', 'music-project-core'); ?>
+                </option>
+
+                <option value="capitalize" <?php selected($settings['heading_text_transform'] ?? 'none', 'capitalize'); ?>>
+                    <?php esc_html_e('Capitalize', 'music-project-core'); ?>
+                </option>
+            </select>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="heading_letter_spacing">
+                <?php esc_html_e('Heading Letter Spacing', 'music-project-core'); ?>
+            </label>
+        </th>
+
+        <td>
+            <input
+                type="text"
+                id="heading_letter_spacing"
+                name="mpc_theme_style_settings[heading_letter_spacing]"
+                class="regular-text"
+                value="<?php echo esc_attr($settings['heading_letter_spacing'] ?? '-0.04em'); ?>"
+                placeholder="-0.04em"
+            >
+
+            <p class="description">
+                <?php esc_html_e('Use values like -0.04em, 0.02em, 1px, etc.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_heading_alignment_scope">
+                <?php esc_html_e('Heading Alignment', 'music-project-core'); ?>
+            </label>
+        </th>
+
+        <td>
+            <select
+                id="mpc_theme_style_heading_alignment_scope"
+                name="mpc_theme_style_settings[heading_alignment_scope]"
+            >
+                <option value="none" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'none'); ?>>
+                    <?php esc_html_e('Default', 'music-project-core'); ?>
+                </option>
+
+                <option value="home" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'home'); ?>>
+                    <?php esc_html_e('Center homepage headings', 'music-project-core'); ?>
+                </option>
+
+                <option value="all" <?php selected($settings['heading_alignment_scope'] ?? 'none', 'all'); ?>>
+                    <?php esc_html_e('Center all headings', 'music-project-core'); ?>
+                </option>
+            </select>
+
+            <p class="description">
+                <?php esc_html_e('Choose whether headings keep the default layout, center only on homepage sections, or center across the whole site.', 'music-project-core'); ?>
+            </p>
+        </td>
+    </tr>
+</table>
+
 
         <hr>
 
