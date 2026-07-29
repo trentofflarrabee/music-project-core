@@ -1,173 +1,472 @@
 (() => {
-    const config = window.MPCBandsintownShows || {};
+    const containers = Array.from(
+        document.querySelectorAll('.mpc-bandsintown-events')
+    );
 
-    const ARTIST_NAME = config.artistName || '';
-    const APP_ID = config.appId || '';
-    const SIGNUP_TARGET = config.signupTarget || '#signup';
-
-    const container = document.getElementById('mpc-bandsintown-events');
-
-    if (!container) {
-        console.warn('[Bandsintown] Missing events container. No shows will render.');
+    if (!containers.length) {
         return;
     }
 
-    const escapeHtml = (s) => String(s ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+    const strings = window.MPCBandsintownShowsL10n || {};
+    const requestCache = new Map();
 
-    const refreshAOS = () => {
-        if (window.AOS && typeof window.AOS.refreshHard === 'function') {
-            window.AOS.refreshHard();
+    const getString = (key, fallback) => {
+        const value = strings[key];
+
+        return typeof value === 'string' && value
+            ? value
+            : fallback;
+    };
+
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    /**
+     * Normalize a URL before inserting it into generated markup.
+     *
+     * Relative URLs resolve against the current site. Event-provider links
+     * permit only HTTP and HTTPS. Signup links may also be page fragments
+     * or mailto links.
+     */
+    const getSafeUrl = (
+        value,
+        {
+            allowHash = false,
+            allowMailto = false,
+        } = {}
+    ) => {
+        const candidate = String(value ?? '').trim();
+
+        if (!candidate) {
+            return '';
+        }
+
+        if (
+            allowHash
+            && /^#[A-Za-z][A-Za-z0-9_:.-]*$/.test(candidate)
+        ) {
+            return candidate;
+        }
+
+        try {
+            const url = new URL(
+                candidate,
+                window.location.href
+            );
+
+            const allowedProtocols = [
+                'http:',
+                'https:',
+            ];
+
+            if (allowMailto) {
+                allowedProtocols.push('mailto:');
+            }
+
+            return allowedProtocols.includes(url.protocol)
+                ? url.href
+                : '';
+        } catch (error) {
+            return '';
         }
     };
 
-    const renderLoading = () => {
+    const setContainerContent = (container, html) => {
+        container.innerHTML = html;
+        container.setAttribute('aria-busy', 'false');
+    };
+
+    const getSignupLink = (container) => {
+        const signupUrl = getSafeUrl(
+            container.dataset.signupTarget,
+            {
+                allowHash: true,
+                allowMailto: true,
+            }
+        );
+
+        if (!signupUrl) {
+            return '';
+        }
+
+        return `
+            <a
+                href="${escapeHtml(signupUrl)}"
+                class="show-btn show-btn--primary btn btn-dark"
+            >
+                ${escapeHtml(
+                    getString(
+                        'emailUpdates',
+                        'Get Email Updates'
+                    )
+                )}
+            </a>
+        `;
+    };
+
+    const renderLoading = (container) => {
+        container.setAttribute('aria-busy', 'true');
+
         container.innerHTML = `
             <div class="shows-empty">
-                <p class="fs-300">Loading shows…</p>
+                <p class="fs-300">
+                    ${escapeHtml(
+                        getString(
+                            'loading',
+                            'Loading shows…'
+                        )
+                    )}
+                </p>
             </div>
         `;
     };
 
-    const renderEmpty = () => {
-        container.innerHTML = `
-            <div class="shows-empty" data-aos="fade-up" data-aos-delay="100">
-                <p class="fs-300">Nothing on the calendar just yet.</p>
-                <p class="fs-300">Join the mailing list and be the first to hear about new dates.</p>
-                <a href="${escapeHtml(SIGNUP_TARGET)}" class="show-btn show-btn--primary btn btn-dark">Get Email Updates</a>
-            </div>
-        `;
+    const renderEmpty = (container) => {
+        setContainerContent(
+            container,
+            `
+                <div class="shows-empty">
+                    <p class="fs-300">
+                        <strong>
+                            ${escapeHtml(
+                                getString(
+                                    'emptyTitle',
+                                    'Nothing on the calendar just yet.'
+                                )
+                            )}
+                        </strong>
+                    </p>
 
-        refreshAOS();
+                    <p class="fs-300">
+                        ${escapeHtml(
+                            getString(
+                                'emptyText',
+                                'Join the mailing list for new dates.'
+                            )
+                        )}
+                    </p>
+
+                    ${getSignupLink(container)}
+                </div>
+            `
+        );
     };
 
-    const renderError = () => {
-        container.innerHTML = `
-            <div class="shows-empty" data-aos="fade-up" data-aos-delay="100">
-                <p class="fs-300">Sorry — something went wrong while loading shows.</p>
-                <p class="fs-300">Try again later, or follow us for updates.</p>
-                <a href="${escapeHtml(SIGNUP_TARGET)}" class="show-btn show-btn--primary btn btn-dark">Get Email Updates</a>
-            </div>
-        `;
+    const renderError = (container) => {
+        setContainerContent(
+            container,
+            `
+                <div class="shows-empty">
+                    <p class="fs-300">
+                        <strong>
+                            ${escapeHtml(
+                                getString(
+                                    'errorTitle',
+                                    'Shows are temporarily unavailable.'
+                                )
+                            )}
+                        </strong>
+                    </p>
 
-        refreshAOS();
+                    <p class="fs-300">
+                        ${escapeHtml(
+                            getString(
+                                'errorText',
+                                'Please try again later.'
+                            )
+                        )}
+                    </p>
+
+                    ${getSignupLink(container)}
+                </div>
+            `
+        );
     };
 
-    const toLocalDateBits = (isoDatetime) => {
-        const dt = new Date(isoDatetime);
+    const getLocalDateParts = (isoDatetime) => {
+        const date = new Date(isoDatetime);
 
-        if (Number.isNaN(dt.getTime())) {
+        if (Number.isNaN(date.getTime())) {
             return {
                 month: '',
                 day: '',
                 localDate: '',
-                localTime: ''
+                localTime: '',
             };
         }
 
-        return {
-            month: dt.toLocaleString('en-US', { month: 'short' }),
-            day: dt.getDate(),
-            localDate: dt.toLocaleDateString([], {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric'
-            }),
-            localTime: dt.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit'
-            })
-        };
+        const locale = getString(
+            'locale',
+            document.documentElement.lang || undefined
+        );
+
+        try {
+            return {
+                month: date.toLocaleString(
+                    locale,
+                    {
+                        month: 'short',
+                    }
+                ),
+                day: date.toLocaleString(
+                    locale,
+                    {
+                        day: 'numeric',
+                    }
+                ),
+                localDate: date.toLocaleDateString(
+                    locale,
+                    {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                    }
+                ),
+                localTime: date.toLocaleTimeString(
+                    locale,
+                    {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                    }
+                ),
+            };
+        } catch (error) {
+            return {
+                month: date.toLocaleString(
+                    undefined,
+                    {
+                        month: 'short',
+                    }
+                ),
+                day: date.getDate(),
+                localDate: date.toLocaleDateString(),
+                localTime: date.toLocaleTimeString(
+                    undefined,
+                    {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                    }
+                ),
+            };
+        }
     };
 
-    async function loadEventsWithCTAs() {
-        renderLoading();
+    const requestEvents = (artist, appId) => {
+        const cacheKey = `${artist}\u0000${appId}`;
 
-        if (!ARTIST_NAME || !APP_ID) {
-            console.warn('[Bandsintown] Missing artist name or app ID.');
-            renderError();
+        if (requestCache.has(cacheKey)) {
+            return requestCache.get(cacheKey);
+        }
+
+        const endpoint = new URL(
+            `https://rest.bandsintown.com/artists/${encodeURIComponent(
+                artist
+            )}/events`
+        );
+
+        endpoint.searchParams.set('date', 'upcoming');
+        endpoint.searchParams.set('app_id', appId);
+
+        const request = fetch(
+            endpoint.toString(),
+            {
+                credentials: 'omit',
+                headers: {
+                    Accept: 'application/json',
+                },
+            }
+        ).then((response) => {
+            if (!response.ok) {
+                throw new Error(
+                    `Bandsintown request failed: ${response.status}`
+                );
+            }
+
+            return response.json();
+        });
+
+        requestCache.set(cacheKey, request);
+
+        return request;
+    };
+
+    const renderEvents = (container, events) => {
+        const cards = events.map((event) => {
+            const venue = event && event.venue
+                ? event.venue
+                : {};
+
+            const venueName = venue.name
+                || getString('venueTba', 'Venue TBA');
+
+            const city = venue.city
+                ? `${venue.city}${
+                    venue.region
+                        ? `, ${venue.region}`
+                        : ''
+                }`
+                : '';
+
+            const {
+                month,
+                day,
+                localDate,
+                localTime,
+            } = getLocalDateParts(event.datetime);
+
+            const eventUrl = getSafeUrl(event.url);
+            const offers = Array.isArray(event.offers)
+                ? event.offers
+                : [];
+
+            let ctaLabel = getString(
+                'notifyMe',
+                'Notify Me'
+            );
+
+            let ctaUrl = eventUrl;
+
+            if (eventUrl) {
+                const url = new URL(eventUrl);
+
+                if (
+                    offers.some(
+                        (offer) => (
+                            offer
+                            && offer.status === 'sold_out'
+                        )
+                    )
+                ) {
+                    ctaLabel = getString(
+                        'waitlist',
+                        'Waitlist'
+                    );
+
+                    url.searchParams.set(
+                        'waitlist',
+                        'true'
+                    );
+                } else if (offers.length) {
+                    ctaLabel = getString(
+                        'rsvp',
+                        'RSVP'
+                    );
+
+                    url.searchParams.set(
+                        'trigger',
+                        'rsvp_going'
+                    );
+                } else {
+                    url.searchParams.set(
+                        'trigger',
+                        'notify_me'
+                    );
+                }
+
+                ctaUrl = url.href;
+            }
+
+            const eventLink = ctaUrl
+                ? `
+                    <a
+                        href="${escapeHtml(ctaUrl)}"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        ${escapeHtml(ctaLabel)}
+                    </a>
+                `
+                : '';
+
+            return `
+                <article class="event-card spotify-style mpc-event-card">
+                    <div
+                        class="event-date"
+                        aria-hidden="true"
+                    >
+                        <span class="month">
+                            ${escapeHtml(month)}
+                        </span>
+
+                        <span class="day">
+                            ${escapeHtml(day)}
+                        </span>
+                    </div>
+
+                    <div class="event-body">
+                        <h3>
+                            ${escapeHtml(venueName)}
+                        </h3>
+
+                        <div class="event-meta">
+                            ${
+                                city
+                                    ? `
+                                        <span class="city">
+                                            ${escapeHtml(city)}
+                                        </span>
+                                    `
+                                    : ''
+                            }
+
+                            <span class="time">
+                                ${escapeHtml(localDate)}
+                                ${
+                                    localTime
+                                        ? ` · ${escapeHtml(localTime)}`
+                                        : ''
+                                }
+                            </span>
+                        </div>
+
+                        ${eventLink}
+                    </div>
+                </article>
+            `;
+        });
+
+        setContainerContent(
+            container,
+            `<div class="events-list">${cards.join('')}</div>`
+        );
+    };
+
+    const loadContainer = async (container) => {
+        const artist = String(
+            container.dataset.artist || ''
+        ).trim();
+
+        const appId = String(
+            container.dataset.appId || ''
+        ).trim();
+
+        if (!artist || !appId) {
+            renderError(container);
             return;
         }
 
-        try {
-            const artistEnc = encodeURIComponent(ARTIST_NAME);
+        renderLoading(container);
 
-            const evRes = await fetch(
-                `https://rest.bandsintown.com/artists/${artistEnc}/events?date=upcoming&app_id=${encodeURIComponent(APP_ID)}`
+        try {
+            const events = await requestEvents(
+                artist,
+                appId
             );
 
-            if (!evRes.ok) {
-                throw new Error(`Events API error: ${evRes.status} ${evRes.statusText}`);
-            }
-
-            const events = await evRes.json();
-
-            if (!Array.isArray(events) || events.length === 0) {
-                renderEmpty();
+            if (!Array.isArray(events) || !events.length) {
+                renderEmpty(container);
                 return;
             }
 
-            let html = '<div class="events-list">';
-
-            for (const ev of events) {
-                const venue = ev.venue || {};
-                const venueName = venue.name || 'Venue TBA';
-                const city = venue.city
-                    ? `${venue.city}${venue.region ? ', ' + venue.region : ''}`
-                    : '';
-
-                const { month, day, localDate, localTime } = toLocalDateBits(ev.datetime);
-                const evUrl = ev.url || '#';
-
-                let ctaLabel = 'Notify Me';
-                let ctaUrl = `${evUrl}${evUrl.includes('?') ? '&' : '?'}trigger=notify_me`;
-
-                if (Array.isArray(ev.offers) && ev.offers.length > 0) {
-                    if (ev.offers.some((offer) => offer && offer.status === 'sold_out')) {
-                        ctaLabel = 'Waitlist';
-                        ctaUrl = `${evUrl}${evUrl.includes('?') ? '&' : '?'}waitlist=true`;
-                    } else {
-                        ctaLabel = 'RSVP';
-                        ctaUrl = `${evUrl}${evUrl.includes('?') ? '&' : '?'}trigger=rsvp_going`;
-                    }
-                }
-
-                html += `
-                    <div class="event-card spotify-style">
-                        <div class="event-date" aria-hidden="true">
-                            <span class="month">${escapeHtml(month)}</span>
-                            <span class="day">${escapeHtml(day)}</span>
-                        </div>
-
-                        <div class="event-body">
-                            <h3>${escapeHtml(venueName)}</h3>
-
-                            <div class="event-meta">
-                                <span class="city">${escapeHtml(city)}</span>
-                                <span class="time">${escapeHtml(localDate)} · ${escapeHtml(localTime)}</span>
-                            </div>
-
-                            <a href="${escapeHtml(ctaUrl)}" target="_blank" rel="noopener">
-                                ${escapeHtml(ctaLabel)}
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }
-
-            html += '</div>';
-
-            container.innerHTML = html;
-            refreshAOS();
-        } catch (err) {
-            console.error('[Bandsintown] Error:', err);
-            renderError();
+            renderEvents(container, events);
+        } catch (error) {
+            renderError(container);
         }
-    }
+    };
 
-    loadEventsWithCTAs();
+    containers.forEach(loadContainer);
 })();

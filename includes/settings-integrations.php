@@ -77,6 +77,81 @@ function mpc_sanitize_embed_content($content) {
 }
 
 /**
+ * Render trusted integration content.
+ *
+ * Supported input:
+ *
+ * - WordPress shortcodes.
+ * - Trusted widget or embed markup.
+ * - A single URL supported by WordPress oEmbed.
+ *
+ * Content is sanitized when settings are saved. Administrators with the
+ * unfiltered_html capability may intentionally save provider scripts.
+ *
+ * @param string $content Stored integration content.
+ * @param string $context Integration context, such as shows or newsletter.
+ * @return string
+ */
+function mpc_render_integration_content($content, $context = 'general') {
+    $content = trim((string) $content);
+    $context = sanitize_key((string) $context);
+
+    if ($content === '') {
+        return '';
+    }
+
+    $rendered = '';
+
+    /*
+     * A URL on its own is treated as an oEmbed candidate. When WordPress
+     * cannot embed it, retain a safe link instead of displaying a raw URL.
+     */
+    if (preg_match('#^https?://[^\s]+$#i', $content)) {
+        $url = esc_url_raw($content);
+
+        if ($url && wp_http_validate_url($url)) {
+            $oembed = wp_oembed_get($url);
+
+            if ($oembed) {
+                $rendered = $oembed;
+            } else {
+                $rendered = sprintf(
+                    '<p class="mpc-integration-link"><a href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a></p>',
+                    esc_url($url),
+                    esc_html__(
+                        'View provider content',
+                        'music-project-core'
+                    )
+                );
+            }
+        }
+    }
+
+    if ($rendered === '') {
+        $rendered = do_shortcode(
+            shortcode_unautop($content)
+        );
+    }
+
+    /**
+     * Filter rendered integration content.
+     *
+     * This provides an optional extension point for integrations that need
+     * custom handling without making them hard dependencies of Core or Base.
+     *
+     * @param string $rendered Rendered output.
+     * @param string $content  Original stored content.
+     * @param string $context  Integration context.
+     */
+    return (string) apply_filters(
+        'mpc_render_integration_content',
+        $rendered,
+        $content,
+        $context
+    );
+}
+
+/**
  * Sanitize integration settings.
  */
 function mpc_sanitize_integrations_settings($input) {
@@ -198,9 +273,14 @@ function mpc_render_integrations_settings_page() {
     <div class="wrap">
         <h1><?php esc_html_e('Music Project Integrations', 'music-project-core'); ?></h1>
 
-        <p>
-            <?php esc_html_e('Use these fields for provider-agnostic embeds and shortcodes. This can be Bandsintown, Mailchimp, ConvertKit, Substack, Songkick, Seated, or any other trusted provider.', 'music-project-core'); ?>
-        </p>
+<p>
+    <?php
+    esc_html_e(
+        'Use provider shortcodes, trusted widget/embed code, or a URL supported by WordPress oEmbed. Music Project does not require a specific events or newsletter provider.',
+        'music-project-core'
+    );
+    ?>
+</p>
 
         <p>
             <?php
@@ -285,12 +365,22 @@ function mpc_render_integrations_settings_page() {
 
                 <tr>
                     <th scope="row">
-                        <?php esc_html_e('Newsletter Shortcode / Embed', 'music-project-core'); ?>
+                        <?php
+                        esc_html_e(
+                            'Newsletter Shortcode, Embed, or URL',
+                            'music-project-core'
+                        );
+                        ?>                    
                     </th>
                     <td>
                         <?php mpc_render_embed_textarea('newsletter_embed', $settings['newsletter_embed']); ?>
                         <p class="description">
-                            <?php esc_html_e('Paste any trusted newsletter or mailing list shortcode/embed code.', 'music-project-core'); ?>
+                            <?php
+                            esc_html_e(
+                                'Paste a trusted form shortcode, widget/embed code, or supported oEmbed URL from your newsletter provider.',
+                                'music-project-core'
+                            );
+                            ?>
                         </p>
                     </td>
                 </tr>

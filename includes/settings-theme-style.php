@@ -65,14 +65,12 @@ function mpc_get_theme_style_defaults() {
         'hero_text_shadow' => 'subtle',
         'hero_text_shadow_color' => '#000000',
 
-        // Design tokens.
-        'corner_style' => 'rounded',
-        'card_shadow_style' => 'standard',
-        'border_strength' => 'subtle',
+// Design tokens.
+'corner_style'      => 'rounded',
+'card_shadow_style' => 'standard',
+'border_strength'   => 'subtle',
 
-        'font_quote' => '',
-
-        // Texture.
+// Texture.
         'texture_enabled' => 0,
         'texture_image_id' => 0,
         'texture_opacity' => '0.08',
