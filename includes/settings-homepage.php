@@ -82,16 +82,103 @@ function mpc_get_homepage_section_order() {
     return mpc_normalize_homepage_section_order($order);
 }
 
-function mpc_get_homepage_section_visibility() {
-    $settings = mpc_get_homepage_settings();
+/**
+ * Build homepage visibility from legacy per-section settings.
+ *
+ * This is used only when a saved canonical section_visibility map does not
+ * yet exist. It preserves behavior for sites created before Section Manager.
+ *
+ * @return array
+ */
+function mpc_get_legacy_homepage_section_visibility() {
+    $visibility = mpc_get_homepage_section_default_visibility();
 
-    $visibility = isset($settings['section_visibility']) && is_array($settings['section_visibility'])
-        ? $settings['section_visibility']
-        : [];
+    $homepage_settings = get_option('mpc_homepage_settings', []);
 
-    return wp_parse_args($visibility, mpc_get_homepage_section_default_visibility());
+    if (!is_array($homepage_settings)) {
+        $homepage_settings = [];
+    }
+
+    $integration_settings = get_option('mpc_integrations_settings', []);
+
+    if (!is_array($integration_settings)) {
+        $integration_settings = [];
+    }
+
+    $homepage_legacy_map = [
+        'hero'             => 'hero_enabled',
+        'featured-content' => 'featured_enabled',
+        'blog'             => 'blog_enabled',
+    ];
+
+    foreach ($homepage_legacy_map as $section => $legacy_key) {
+        if (array_key_exists($legacy_key, $homepage_settings)) {
+            $visibility[$section] = !empty(
+                $homepage_settings[$legacy_key]
+            ) ? 1 : 0;
+        }
+    }
+
+    $integration_legacy_map = [
+        'shows'      => 'shows_enabled',
+        'newsletter' => 'newsletter_enabled',
+    ];
+
+    foreach ($integration_legacy_map as $section => $legacy_key) {
+        if (array_key_exists($legacy_key, $integration_settings)) {
+            $visibility[$section] = !empty(
+                $integration_settings[$legacy_key]
+            ) ? 1 : 0;
+        }
+    }
+
+    return $visibility;
 }
 
+/**
+ * Get normalized homepage section visibility.
+ *
+ * The Section Manager map is canonical. Legacy enable settings are consulted
+ * only when the canonical map has never been saved or is malformed.
+ *
+ * @return array
+ */
+function mpc_get_homepage_section_visibility() {
+    $saved = get_option('mpc_homepage_settings', []);
+
+    if (!is_array($saved)) {
+        $saved = [];
+    }
+
+    if (
+        empty($saved['section_visibility'])
+        || !is_array($saved['section_visibility'])
+    ) {
+        return mpc_get_legacy_homepage_section_visibility();
+    }
+
+    $defaults = mpc_get_homepage_section_default_visibility();
+    $visibility = [];
+
+    foreach (array_keys($defaults) as $section) {
+        if (array_key_exists($section, $saved['section_visibility'])) {
+            $visibility[$section] = !empty(
+                $saved['section_visibility'][$section]
+            ) ? 1 : 0;
+        } else {
+            $visibility[$section] = $defaults[$section];
+        }
+    }
+
+    return $visibility;
+}
+
+/**
+ * Determine whether a homepage section is visible.
+ *
+ * @param string $section Section identifier.
+ * @return bool
+ */
 function mpc_is_homepage_section_visible($section) {
     $section = sanitize_key($section);
     $visibility = mpc_get_homepage_section_visibility();
@@ -198,6 +285,22 @@ function mpc_get_homepage_settings() {
  * Get one homepage setting.
  */
 function mpc_get_homepage_setting($key, $default = '') {
+    /*
+     * Preserve legacy public keys while making Section Manager the canonical
+     * visibility source.
+     */
+    $legacy_visibility_keys = [
+        'hero_enabled'     => 'hero',
+        'featured_enabled' => 'featured-content',
+        'blog_enabled'     => 'blog',
+    ];
+
+    if (isset($legacy_visibility_keys[$key])) {
+        return mpc_is_homepage_section_visible(
+            $legacy_visibility_keys[$key]
+        ) ? 1 : 0;
+    }
+
     $settings = mpc_get_homepage_settings();
 
     return isset($settings[$key]) ? $settings[$key] : $default;
@@ -332,7 +435,11 @@ $output['hero_text_align'] = in_array($hero_text_align, $allowed_hero_text_align
     ? min(100, max(0, absint($input['hero_overlay_opacity'])))
     : 45;
 
-    $output['hero_enabled'] = !empty($input['hero_enabled']) ? 1 : 0;
+    /*
+    * Legacy mirror retained for older theme versions and integrations.
+    * Section Manager is the canonical source.
+    */
+    $output['hero_enabled'] = $section_visibility['hero'];
 
     $output['hero_heading'] = isset($input['hero_heading'])
         ? sanitize_text_field($input['hero_heading'])
@@ -360,7 +467,10 @@ $output['hero_text_align'] = in_array($hero_text_align, $allowed_hero_text_align
 
 
     // Featured Content.
-    $output['featured_enabled'] = !empty($input['featured_enabled']) ? 1 : 0;
+    /*
+    * Legacy mirror retained for backward compatibility.
+    */
+    $output['featured_enabled'] = $section_visibility['featured-content'];
 
     $output['featured_heading'] = isset($input['featured_heading'])
         ? sanitize_text_field($input['featured_heading'])
@@ -478,7 +588,10 @@ $output['quotes_background_tone'] = in_array($quotes_background_tone, $allowed_q
     : $defaults['quotes_background_tone'];
 
     // Blog.
-    $output['blog_enabled'] = !empty($input['blog_enabled']) ? 1 : 0;
+    /*
+    * Legacy mirror retained for backward compatibility.
+    */
+    $output['blog_enabled'] = $section_visibility['blog'];
 
     $output['blog_heading'] = isset($input['blog_heading'])
         ? sanitize_text_field($input['blog_heading'])
@@ -659,7 +772,7 @@ wp_enqueue_script(
     'mpc-admin',
     MPC_URL . 'assets/admin.js',
     ['jquery', 'jquery-ui-sortable'],
-    MPC_VERSION,
+    mpc_get_asset_version('assets/admin.js'),
     true
 );
 
@@ -667,7 +780,7 @@ wp_enqueue_script(
         'mpc-admin',
         MPC_URL . 'assets/admin.css',
         [],
-        MPC_VERSION
+        mpc_get_asset_version('assets/admin.css')
     );
 }
 add_action('admin_enqueue_scripts', 'mpc_enqueue_admin_assets');
@@ -741,6 +854,19 @@ function mpc_admin_panel_open($id, $title, $description = '', $open = false) {
                     <?php echo esc_html($description); ?>
                 </span>
             <?php endif; ?>
+
+            <span
+                class="mpc-admin-panel__toggle"
+                aria-hidden="true"
+            >
+                <span class="mpc-admin-panel__toggle-label mpc-admin-panel__toggle-label--closed">
+                    <?php esc_html_e('Expand', 'music-project-core'); ?>
+                </span>
+
+                <span class="mpc-admin-panel__toggle-label mpc-admin-panel__toggle-label--open">
+                    <?php esc_html_e('Collapse', 'music-project-core'); ?>
+                </span>
+            </span>
         </summary>
 
         <div class="mpc-admin-panel__body">
@@ -856,23 +982,7 @@ function mpc_render_homepage_settings_page() {
             ?>
 
             <table class="form-table" role="presentation">
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Enable Hero', 'music-project-core'); ?>
-                    </th>
-                    <td>
-                        <label>
-                            <input type="hidden" name="mpc_homepage_settings[hero_enabled]" value="0">
-                            <input
-                                type="checkbox"
-                                name="mpc_homepage_settings[hero_enabled]"
-                                value="1"
-                                <?php checked(1, $settings['hero_enabled']); ?>
-                            >
-                            <?php esc_html_e('Show hero section on homepage', 'music-project-core'); ?>
-                        </label>
-                    </td>
-                </tr>
+
 
                 <tr>
                     <th scope="row">
@@ -1173,7 +1283,12 @@ function mpc_render_homepage_settings_page() {
                         <?php mpc_render_media_field('hero_mobile_image_id', $settings['hero_mobile_image_id'], 'image'); ?>
 
                         <p class="description">
-                            <?php esc_html_e('Used for mobile and fallback display.', 'music-project-core'); ?>
+                            <?php
+                            esc_html_e(
+                                'Used on mobile and as the fallback when desktop video is unavailable or reduced motion is preferred.',
+                                'music-project-core'
+                            );
+                            ?>
                         </p>
                     </td>
                 </tr>
@@ -1236,23 +1351,7 @@ mpc_admin_panel_open(
 ?>
 
 <table class="form-table" role="presentation">
-    <tr>
-        <th scope="row">
-            <?php esc_html_e('Enable Featured Content', 'music-project-core'); ?>
-        </th>
-        <td>
-            <label>
-                <input type="hidden" name="mpc_homepage_settings[featured_enabled]" value="0">
-                <input
-                    type="checkbox"
-                    name="mpc_homepage_settings[featured_enabled]"
-                    value="1"
-                    <?php checked(1, $settings['featured_enabled']); ?>
-                >
-                <?php esc_html_e('Show featured content section on homepage', 'music-project-core'); ?>
-            </label>
-        </td>
-    </tr>
+
 
     <tr>
         <th scope="row">
@@ -1868,23 +1967,7 @@ mpc_admin_panel_open(
 ?>
 
 <table class="form-table" role="presentation">
-    <tr>
-        <th scope="row">
-            <?php esc_html_e('Enable Blog Section', 'music-project-core'); ?>
-        </th>
-        <td>
-            <label>
-                <input type="hidden" name="mpc_homepage_settings[blog_enabled]" value="0">
-                <input
-                    type="checkbox"
-                    name="mpc_homepage_settings[blog_enabled]"
-                    value="1"
-                    <?php checked(1, $settings['blog_enabled']); ?>
-                >
-                <?php esc_html_e('Show blog section on homepage', 'music-project-core'); ?>
-            </label>
-        </td>
-    </tr>
+
 
     <tr>
         <th scope="row">

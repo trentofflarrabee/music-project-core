@@ -193,35 +193,127 @@ function mpc_save_press_quote_meta($post_id) {
 add_action('save_post_mpc_press_quote', 'mpc_save_press_quote_meta');
 
 /**
+ * Get the first non-empty quote meta value from a list of keys.
+ *
+ * This supports current and legacy meta keys without modifying stored data.
+ *
+ * @param int      $post_id Quote post ID.
+ * @param string[] $keys    Meta keys in priority order.
+ * @return mixed
+ */
+function mpc_get_press_quote_meta_value($post_id, $keys) {
+    foreach ($keys as $key) {
+        $value = get_post_meta($post_id, $key, true);
+
+        if ($value !== '' && $value !== null) {
+            return $value;
+        }
+    }
+
+    return '';
+}
+
+/**
+ * Get normalized data for a quote/testimonial.
+ *
+ * Current meta keys are checked first, followed by known legacy keys.
+ *
+ * @param int|WP_Post $quote Quote post ID or post object.
+ * @return array|null Normalized quote data, or null for an invalid post.
+ */
+function mpc_get_press_quote_data($quote) {
+    $quote = get_post($quote);
+
+    if (!$quote instanceof WP_Post || $quote->post_type !== 'mpc_press_quote') {
+        return null;
+    }
+
+    $text = mpc_get_press_quote_meta_value(
+        $quote->ID,
+        [
+            '_mpc_press_quote_text',
+            '_mpc_quote_text',
+        ]
+    );
+
+    if ($text === '') {
+        $text = get_the_excerpt($quote);
+
+        if ($text === '') {
+            $text = wp_strip_all_tags($quote->post_content);
+        }
+    }
+
+    $source_name = mpc_get_press_quote_meta_value(
+        $quote->ID,
+        [
+            '_mpc_press_quote_source_name',
+            '_mpc_press_quote_source',
+            '_mpc_press_quote_client',
+            '_mpc_quote_source',
+        ]
+    );
+
+    $context = mpc_get_press_quote_meta_value(
+        $quote->ID,
+        [
+            '_mpc_press_quote_context',
+            '_mpc_press_quote_publication',
+            '_mpc_press_quote_role',
+            '_mpc_quote_context',
+        ]
+    );
+
+    $featured_value = mpc_get_press_quote_meta_value(
+        $quote->ID,
+        [
+            '_mpc_press_quote_featured',
+        ]
+    );
+
+    $featured = in_array(
+        strtolower((string) $featured_value),
+        ['1', 'yes', 'true', 'on'],
+        true
+    );
+
+    return [
+        'id'          => $quote->ID,
+        'title'       => get_the_title($quote),
+        'text'        => (string) $text,
+        'source_name' => (string) $source_name,
+        'source_url'  => (string) get_post_meta(
+            $quote->ID,
+            '_mpc_press_quote_source_url',
+            true
+        ),
+        'context'     => (string) $context,
+        'featured'    => $featured,
+    ];
+}
+
+/**
  * Get the featured homepage quote/testimonial.
  */
 function mpc_get_featured_press_quote() {
     $quotes = get_posts([
-        'post_type' => 'mpc_press_quote',
-        'post_status' => 'publish',
+        'post_type'      => 'mpc_press_quote',
+        'post_status'    => 'publish',
         'posts_per_page' => 1,
-        'meta_key' => '_mpc_press_quote_featured',
-        'meta_value' => '1',
-        'orderby' => [
+        'meta_key'       => '_mpc_press_quote_featured',
+        'meta_value'     => '1',
+        'orderby'        => [
             'menu_order' => 'ASC',
-            'date' => 'DESC',
+            'date'       => 'DESC',
         ],
-        'no_found_rows' => true,
+        'no_found_rows'  => true,
     ]);
 
     if (empty($quotes)) {
         return null;
     }
 
-    $quote = $quotes[0];
-
-    return [
-        'id' => $quote->ID,
-        'title' => get_the_title($quote),
-        'text' => get_post_meta($quote->ID, '_mpc_press_quote_text', true),
-        'source_name' => get_post_meta($quote->ID, '_mpc_press_quote_source_name', true),
-        'source_url' => get_post_meta($quote->ID, '_mpc_press_quote_source_url', true),
-    ];
+    return mpc_get_press_quote_data($quotes[0]);
 }
 
 /**

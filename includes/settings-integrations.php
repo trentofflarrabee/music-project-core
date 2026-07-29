@@ -37,6 +37,24 @@ function mpc_get_integrations_settings() {
  * Get one integration setting.
  */
 function mpc_get_integration_setting($key, $default = '') {
+    /*
+     * Keep the old integration enable keys available while making Homepage
+     * Section Manager the canonical visibility source.
+     */
+    $legacy_visibility_keys = [
+        'shows_enabled'      => 'shows',
+        'newsletter_enabled' => 'newsletter',
+    ];
+
+    if (
+        isset($legacy_visibility_keys[$key])
+        && function_exists('mpc_is_homepage_section_visible')
+    ) {
+        return mpc_is_homepage_section_visible(
+            $legacy_visibility_keys[$key]
+        ) ? 1 : 0;
+    }
+
     $settings = mpc_get_integrations_settings();
 
     return isset($settings[$key]) ? $settings[$key] : $default;
@@ -62,10 +80,43 @@ function mpc_sanitize_embed_content($content) {
  * Sanitize integration settings.
  */
 function mpc_sanitize_integrations_settings($input) {
+    $input = is_array($input) ? $input : [];
     $defaults = mpc_get_integrations_defaults();
+    $current = get_option('mpc_integrations_settings', []);
+
+    if (!is_array($current)) {
+        $current = [];
+    }
+
     $output = [];
 
-    $output['shows_enabled'] = !empty($input['shows_enabled']) ? 1 : 0;
+    /*
+     * These keys remain stored for compatibility, but their value now mirrors
+     * Homepage Section Manager rather than a second admin checkbox.
+     */
+    if (function_exists('mpc_is_homepage_section_visible')) {
+        $output['shows_enabled'] = mpc_is_homepage_section_visible(
+            'shows'
+        ) ? 1 : 0;
+
+        $output['newsletter_enabled'] = mpc_is_homepage_section_visible(
+            'newsletter'
+        ) ? 1 : 0;
+    } else {
+        $output['shows_enabled'] = array_key_exists(
+            'shows_enabled',
+            $current
+        )
+            ? (!empty($current['shows_enabled']) ? 1 : 0)
+            : $defaults['shows_enabled'];
+
+        $output['newsletter_enabled'] = array_key_exists(
+            'newsletter_enabled',
+            $current
+        )
+            ? (!empty($current['newsletter_enabled']) ? 1 : 0)
+            : $defaults['newsletter_enabled'];
+    }
 
     $output['shows_heading'] = isset($input['shows_heading'])
         ? sanitize_text_field($input['shows_heading'])
@@ -74,8 +125,6 @@ function mpc_sanitize_integrations_settings($input) {
     $output['shows_embed'] = isset($input['shows_embed'])
         ? mpc_sanitize_embed_content($input['shows_embed'])
         : '';
-
-    $output['newsletter_enabled'] = !empty($input['newsletter_enabled']) ? 1 : 0;
 
     $output['newsletter_heading'] = isset($input['newsletter_heading'])
         ? sanitize_text_field($input['newsletter_heading'])
@@ -153,29 +202,22 @@ function mpc_render_integrations_settings_page() {
             <?php esc_html_e('Use these fields for provider-agnostic embeds and shortcodes. This can be Bandsintown, Mailchimp, ConvertKit, Substack, Songkick, Seated, or any other trusted provider.', 'music-project-core'); ?>
         </p>
 
+        <p>
+            <?php
+            esc_html_e(
+                'Homepage visibility is controlled under Music Project → Homepage → Section Manager.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+
         <form method="post" action="options.php">
             <?php settings_fields('mpc_integrations_settings_group'); ?>
 
             <h2><?php esc_html_e('Shows / Events', 'music-project-core'); ?></h2>
 
             <table class="form-table" role="presentation">
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Enable Shows Section', 'music-project-core'); ?>
-                    </th>
-                    <td>
-                        <label>
-                            <input type="hidden" name="mpc_integrations_settings[shows_enabled]" value="0">
-                            <input
-                                type="checkbox"
-                                name="mpc_integrations_settings[shows_enabled]"
-                                value="1"
-                                <?php checked(1, $settings['shows_enabled']); ?>
-                            >
-                            <?php esc_html_e('Show the Shows section on the homepage', 'music-project-core'); ?>
-                        </label>
-                    </td>
-                </tr>
+
 
                 <tr>
                     <th scope="row">
@@ -210,23 +252,7 @@ function mpc_render_integrations_settings_page() {
             <h2><?php esc_html_e('Newsletter / Mailing List', 'music-project-core'); ?></h2>
 
             <table class="form-table" role="presentation">
-                <tr>
-                    <th scope="row">
-                        <?php esc_html_e('Enable Newsletter Section', 'music-project-core'); ?>
-                    </th>
-                    <td>
-                        <label>
-                            <input type="hidden" name="mpc_integrations_settings[newsletter_enabled]" value="0">
-                            <input
-                                type="checkbox"
-                                name="mpc_integrations_settings[newsletter_enabled]"
-                                value="1"
-                                <?php checked(1, $settings['newsletter_enabled']); ?>
-                            >
-                            <?php esc_html_e('Show the Newsletter section on the homepage', 'music-project-core'); ?>
-                        </label>
-                    </td>
-                </tr>
+
 
                 <tr>
                     <th scope="row">

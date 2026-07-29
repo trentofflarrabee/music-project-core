@@ -502,20 +502,20 @@ function mpc_enqueue_theme_style_admin_assets() {
 
     wp_enqueue_media();
 
-    wp_enqueue_script(
-        'mpc-admin',
-        MPC_URL . 'assets/admin.js',
-        ['jquery'],
-        MPC_VERSION,
-        true
-    );
+wp_enqueue_script(
+    'mpc-admin',
+    MPC_URL . 'assets/admin.js',
+    ['jquery'],
+    mpc_get_asset_version('assets/admin.js'),
+    true
+);
 
-    wp_enqueue_style(
-        'mpc-admin',
-        MPC_URL . 'assets/admin.css',
-        [],
-        MPC_VERSION
-    );
+wp_enqueue_style(
+    'mpc-admin',
+    MPC_URL . 'assets/admin.css',
+    [],
+    mpc_get_asset_version('assets/admin.css')
+);
 }
 add_action('admin_enqueue_scripts', 'mpc_enqueue_theme_style_admin_assets');
 
@@ -881,7 +881,12 @@ function mpc_render_theme_style_settings_page() {
             </select>
 
             <p class="description">
-                <?php esc_html_e('Transparent modes apply to the homepage hero only. Inner pages use the normal solid header.', 'music-project-core'); ?>
+                <?php
+                esc_html_e(
+                    'Transparent modes apply to the homepage hero only. Inner pages use a solid sticky header. Choose Standard for a non-sticky header.',
+                    'music-project-core'
+                );
+                ?>            
             </p>
         </td>
     </tr>

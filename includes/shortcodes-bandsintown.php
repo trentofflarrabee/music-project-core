@@ -19,13 +19,13 @@ function mpc_bandsintown_shows_shortcode($atts = []) {
         'mpc_bandsintown_shows'
     );
 
-    wp_enqueue_script(
-        'mpc-bandsintown-shows',
-        MPC_URL . 'assets/bandsintown-shows.js',
-        [],
-        MPC_VERSION,
-        true
-    );
+wp_enqueue_script(
+    'mpc-bandsintown-shows',
+    MPC_URL . 'assets/bandsintown-shows.js',
+    [],
+    mpc_get_asset_version('assets/bandsintown-shows.js'),
+    true
+);
 
     wp_localize_script(
         'mpc-bandsintown-shows',
