@@ -46,3 +46,4 @@ require_once MPC_PATH . 'includes/press-quotes.php';
 require_once MPC_PATH . 'includes/settings-theme-style.php';
 require_once MPC_PATH . 'includes/settings-footer.php';
 require_once MPC_PATH . 'includes/settings-site-status.php';
+require_once MPC_PATH . 'includes/migrations.php';
