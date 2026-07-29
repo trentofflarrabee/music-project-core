@@ -84,8 +84,12 @@
    ========================================================= */
 
 .mpc-section-manager {
-    max-width: 820px;
+    max-width: 900px;
     margin: 1rem 0 2rem;
+}
+
+.mpc-section-manager__instructions {
+    margin: 0 0 1rem;
 }
 
 .mpc-section-list {
@@ -93,45 +97,75 @@
     gap: 0.65rem;
     margin: 0;
     padding: 0;
+    list-style: none;
 }
 
 .mpc-section-list__item {
-    display: flex;
-    align-items: center;
+    display: grid;
+    grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        auto;
     gap: 0.85rem;
+    align-items: center;
     margin: 0;
     padding: 0.85rem 1rem;
     border: 1px solid #dcdcde;
     border-radius: 8px;
     background: #fff;
-    cursor: grab;
 }
 
 .mpc-section-list__item:hover {
     border-color: #8c8f94;
 }
 
-.mpc-section-list__item.is-dragging {
-    opacity: 0.55;
+.mpc-section-list__item.is-dragging,
+.mpc-section-list__item.ui-sortable-helper {
+    opacity: 0.75;
     cursor: grabbing;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+.mpc-section-list .ui-sortable-placeholder {
+    min-height: 68px;
+    border: 2px dashed #72aee6;
+    border-radius: 8px;
+    background: #f0f6fc;
+    visibility: visible !important;
 }
 
 .mpc-section-list__handle {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
     color: #646970;
     font-size: 1.1rem;
     line-height: 1;
+    cursor: grab;
     user-select: none;
+}
+
+.mpc-section-list__handle:hover {
+    background: #f0f0f1;
+    color: #1d2327;
 }
 
 .mpc-section-list__label {
     display: flex;
     align-items: flex-start;
     gap: 0.75rem;
-    width: 100%;
+    min-width: 0;
 }
 
 .mpc-section-list__label input {
+    flex: 0 0 auto;
     margin-top: 0.2rem;
+}
+
+.mpc-section-list__content {
+    min-width: 0;
 }
 
 .mpc-section-list__label strong {
@@ -145,6 +179,28 @@
     color: #646970;
 }
 
+.mpc-section-list__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}
+
+.mpc-section-list__move {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.mpc-section-list__move:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+
+.mpc-section-list__move:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
 
 /* =========================================================
    SMALL SCREEN ADMIN TWEAKS
@@ -152,15 +208,45 @@
 
 @media (max-width: 782px) {
     .mpc-section-list__item {
-        align-items: flex-start;
+        grid-template-columns:
+            auto
+            minmax(0, 1fr);
+        align-items: start;
     }
 
     .mpc-section-list__handle {
-        padding-top: 0.2rem;
+        margin-top: 0.1rem;
+    }
+
+    .mpc-section-list__controls {
+        grid-column: 2;
+        justify-content: flex-start;
+    }
+
+    .mpc-section-list__move {
+        min-height: 36px;
     }
 
     .mpc-media-preview img {
         max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .mpc-section-list__move-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .mpc-section-list__move {
+        justify-content: center;
+        min-width: 40px;
     }
 }
 
@@ -350,5 +436,241 @@
 
     .mpc-sticky-submit__inner {
         justify-content: space-between;
+    }
+}
+
+/* =========================================================
+   SERVICES REPEATER
+   ========================================================= */
+
+.mpc-services-editor {
+    max-width: 1000px;
+    margin: 1.5rem 0 2rem;
+}
+
+.mpc-services-editor__toolbar {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.mpc-services-editor__heading {
+    margin: 0 0 0.35rem;
+}
+
+.mpc-services-editor__toolbar .description {
+    max-width: 720px;
+    margin: 0.25rem 0 0;
+}
+
+.mpc-services-editor__add {
+    flex: 0 0 auto;
+}
+
+.mpc-services-editor__list {
+    display: grid;
+    gap: 1rem;
+}
+
+.mpc-services-editor__list.is-empty {
+    min-height: 0;
+}
+
+.mpc-service-item {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid #c3c4c7;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.mpc-service-item.is-dragging,
+.mpc-service-item.ui-sortable-helper {
+    opacity: 0.8;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+}
+
+.mpc-service-item--placeholder {
+    min-height: 180px;
+    border: 2px dashed #72aee6;
+    background: #f0f6fc;
+    visibility: visible !important;
+}
+
+.mpc-service-item__header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #dcdcde;
+    background: #f6f7f7;
+}
+
+.mpc-service-item__handle {
+    display: inline-grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #646970;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: grab;
+}
+
+.mpc-service-item__handle:hover {
+    border-color: #c3c4c7;
+    background: #fff;
+    color: #1d2327;
+}
+
+.mpc-service-item__handle:focus-visible,
+.mpc-service-item__controls .button:focus-visible,
+.mpc-services-editor__add:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+
+.mpc-service-item__title {
+    margin: 0;
+    color: #1d2327;
+    font-size: 1rem;
+}
+
+.mpc-service-item__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: flex-end;
+}
+
+.mpc-service-item__move {
+    display: inline-flex !important;
+    gap: 0.35rem;
+    align-items: center;
+}
+
+.mpc-service-item__move:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.mpc-service-item__remove {
+    color: #b32d2e !important;
+}
+
+.mpc-service-item__remove:hover,
+.mpc-service-item__remove:focus {
+    border-color: #b32d2e !important;
+    color: #8a2424 !important;
+}
+
+.mpc-service-item__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.25rem;
+    padding: 1rem;
+}
+
+.mpc-service-item__field {
+    display: grid;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.mpc-service-item__field--description {
+    grid-column: 1 / -1;
+}
+
+.mpc-service-item__field label {
+    color: #1d2327;
+    font-weight: 600;
+}
+
+.mpc-service-item__field input,
+.mpc-service-item__field textarea {
+    width: 100%;
+    max-width: none;
+}
+
+.mpc-services-editor__empty {
+    margin: 0;
+    padding: 1.25rem;
+    border: 1px dashed #c3c4c7;
+    border-radius: 8px;
+    background: #f6f7f7;
+    color: #646970;
+    text-align: center;
+}
+
+.mpc-services-editor__footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.75rem;
+}
+
+.mpc-services-editor__count {
+    margin: 0;
+    color: #646970;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 782px) {
+    .mpc-services-editor__toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .mpc-services-editor__add {
+        width: fit-content;
+    }
+
+    .mpc-service-item__header {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .mpc-service-item__controls {
+        grid-column: 2;
+        justify-content: flex-start;
+    }
+
+    .mpc-service-item__fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .mpc-service-item__field--description {
+        grid-column: auto;
+    }
+}
+
+@media (max-width: 520px) {
+    .mpc-service-item__header {
+        padding: 0.75rem;
+    }
+
+    .mpc-service-item__fields {
+        padding: 0.75rem;
+    }
+
+    .mpc-service-item__move span:last-child {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .mpc-service-item__move {
+        justify-content: center;
+        min-width: 38px;
     }
 }

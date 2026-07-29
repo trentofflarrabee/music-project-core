@@ -181,24 +181,72 @@ toggleFullBleedOnlyFields();
     }
 
 function initSectionManager() {
-    const list = $('.mpc-section-list');
-    const orderInput = $('.mpc-section-order-input');
+    const manager = $('.mpc-section-manager');
+    const list = manager.find('.mpc-section-list');
+    const orderInput = manager.find('.mpc-section-order-input');
+    const status = manager.find('.mpc-section-manager__status');
 
-    console.log('[MPC] Section Manager init', {
-        listFound: list.length,
-        orderInputFound: orderInput.length,
-        sortableLoaded: !!$.fn.sortable
-    });
-
-    if (!list.length || !orderInput.length) {
+    if (
+        !manager.length
+        || !list.length
+        || !orderInput.length
+    ) {
         return;
     }
 
-    function updateOrderInput() {
+    const movedTemplate = manager.attr(
+        'data-moved-template'
+    ) || '%1$s moved to position %2$d of %3$d.';
+
+    /**
+     * Get the current ordered collection of section rows.
+     *
+     * @returns {JQuery}
+     */
+    function getItems() {
+        return list.children(
+            '.mpc-section-list__item'
+        );
+    }
+
+    /**
+     * Keep the first and last movement controls disabled appropriately.
+     */
+    function updateMoveButtons() {
+        const items = getItems();
+        const lastIndex = items.length - 1;
+
+        items.each(function (index) {
+            const item = $(this);
+
+            item.find(
+                '.mpc-section-list__move--up'
+            ).prop(
+                'disabled',
+                index === 0
+            );
+
+            item.find(
+                '.mpc-section-list__move--down'
+            ).prop(
+                'disabled',
+                index === lastIndex
+            );
+        });
+    }
+
+    /**
+     * Synchronize the hidden setting with the visible list order.
+     *
+     * @param {boolean} markDirty Whether to mark the settings form changed.
+     */
+    function updateOrderInput(markDirty = false) {
         const sections = [];
 
-        list.find('[data-section]').each(function () {
-            const section = $(this).attr('data-section');
+        getItems().each(function () {
+            const section = $(this).attr(
+                'data-section'
+            );
 
             if (section) {
                 sections.push(section);
@@ -206,31 +254,637 @@ function initSectionManager() {
         });
 
         orderInput.val(sections.join(','));
+        updateMoveButtons();
 
-        console.log('[MPC] Section order:', orderInput.val());
+        if (markDirty) {
+            const inputElement = orderInput.get(0);
+
+            if (inputElement) {
+                inputElement.dispatchEvent(
+                    new Event(
+                        'input',
+                        {
+                            bubbles: true,
+                        }
+                    )
+                );
+            }
+        }
     }
 
-    if (!$.fn.sortable) {
-        console.warn('[MPC] jQuery UI Sortable is not loaded.');
-        updateOrderInput();
+    /**
+     * Announce a completed movement to assistive technology.
+     *
+     * @param {HTMLElement} item Moved section row.
+     */
+    function announceMovement(item) {
+        if (!item || !status.length) {
+            return;
+        }
+
+        const items = getItems();
+        const position = items.index(item);
+        const label = item.getAttribute(
+            'data-section-label'
+        ) || item.getAttribute('data-section') || '';
+
+        if (position < 0 || !label) {
+            return;
+        }
+
+        const message = movedTemplate
+            .replace('%1$s', label)
+            .replace('%2$d', String(position + 1))
+            .replace('%3$d', String(items.length));
+
+        /*
+         * Clearing first ensures repeated movements of the same item are
+         * announced reliably.
+         */
+        status.text('');
+
+        window.setTimeout(() => {
+            status.text(message);
+        }, 20);
+    }
+
+    /**
+     * Reorder using the explicit keyboard-accessible controls.
+     */
+    list.on(
+        'click',
+        '.mpc-section-list__move',
+        function (event) {
+            event.preventDefault();
+
+            const button = $(this);
+
+            if (button.prop('disabled')) {
+                return;
+            }
+
+            const item = button.closest(
+                '.mpc-section-list__item'
+            );
+
+            const direction = button.attr(
+                'data-direction'
+            );
+
+            let target;
+
+            if (direction === 'up') {
+                target = item.prev(
+                    '.mpc-section-list__item'
+                );
+
+                if (!target.length) {
+                    return;
+                }
+
+                item.insertBefore(target);
+            } else if (direction === 'down') {
+                target = item.next(
+                    '.mpc-section-list__item'
+                );
+
+                if (!target.length) {
+                    return;
+                }
+
+                item.insertAfter(target);
+            } else {
+                return;
+            }
+
+            updateOrderInput(true);
+            announceMovement(item.get(0));
+
+            /*
+             * Keep focus on the same movement control while another movement
+             * in that direction remains possible. At the boundary, move
+             * focus to the opposite control for the same section.
+             */
+            window.requestAnimationFrame(() => {
+                const sameButton = item.find(
+                    `.mpc-section-list__move--${direction}`
+                );
+
+                if (!sameButton.prop('disabled')) {
+                    sameButton.trigger('focus');
+                    return;
+                }
+
+                const oppositeDirection = direction === 'up'
+                    ? 'down'
+                    : 'up';
+
+                item.find(
+                    `.mpc-section-list__move--${oppositeDirection}`
+                ).trigger('focus');
+            });
+        }
+    );
+
+    /*
+     * Pointer dragging remains available when jQuery UI Sortable is loaded.
+     * The move buttons continue to work even if Sortable is unavailable.
+     */
+    if ($.fn.sortable) {
+        list.sortable({
+            items: '.mpc-section-list__item',
+            handle: '.mpc-section-list__handle',
+            axis: 'y',
+            tolerance: 'pointer',
+            cursor: 'grabbing',
+            opacity: 0.85,
+
+            start(event, ui) {
+                ui.item.addClass('is-dragging');
+            },
+
+            update(event, ui) {
+                updateOrderInput(true);
+                announceMovement(ui.item.get(0));
+            },
+
+            stop(event, ui) {
+                ui.item.removeClass('is-dragging');
+                updateMoveButtons();
+            },
+        });
+    }
+
+    /*
+     * Establish the correct hidden value and disabled-button state without
+     * marking the freshly loaded form as changed.
+     */
+    updateOrderInput(false);
+}
+
+function initServicesEditor() {
+    const editor = $('.mpc-services-editor');
+
+    if (!editor.length) {
         return;
     }
 
-    list.sortable({
-        items: '.mpc-section-list__item',
-        axis: 'y',
-        tolerance: 'pointer',
-        cursor: 'move',
-        opacity: 0.85,
-        update: updateOrderInput,
-        stop: updateOrderInput
+    const list = editor.find(
+        '.mpc-services-editor__list'
+    );
+
+    const template = editor.find(
+        'template.mpc-service-item-template'
+    ).get(0);
+
+    const addButton = editor.find(
+        '.mpc-services-editor__add'
+    );
+
+    const emptyMessage = editor.find(
+        '.mpc-services-editor__empty'
+    );
+
+    const countOutput = editor.find(
+        '[data-service-count]'
+    );
+
+    const status = editor.find(
+        '.mpc-services-editor__status'
+    );
+
+    const maxItems = parseInt(
+        editor.attr('data-service-max'),
+        10
+    ) || 8;
+
+    const itemLabel = editor.attr(
+        'data-service-item-label'
+    ) || 'Service';
+
+    const addedMessage = editor.attr(
+        'data-service-added-message'
+    ) || 'Service item added.';
+
+    const removedTemplate = editor.attr(
+        'data-service-removed-template'
+    ) || '%s removed.';
+
+    const movedTemplate = editor.attr(
+        'data-service-moved-template'
+    ) || '%1$s moved to position %2$d of %3$d.';
+
+    const limitMessage = editor.attr(
+        'data-service-limit-message'
+    ) || `You can add up to ${maxItems} services.`;
+
+    const dragTemplate = editor.attr(
+        'data-service-drag-template'
+    ) || 'Drag %s to reorder';
+
+    const controlsTemplate = editor.attr(
+        'data-service-controls-template'
+    ) || 'Reorder or remove %s';
+
+    const removeTemplate = editor.attr(
+        'data-service-remove-template'
+    ) || 'Remove %s';
+
+    function getItems() {
+        return list.children(
+            '.mpc-service-item[data-service-item]'
+        );
+    }
+
+    function formatMessage(
+        message,
+        replacements
+    ) {
+        let formatted = String(message || '');
+
+        Object.keys(replacements).forEach(
+            (placeholder) => {
+                formatted = formatted.replace(
+                    placeholder,
+                    String(replacements[placeholder])
+                );
+            }
+        );
+
+        return formatted;
+    }
+
+    function announce(message) {
+        if (!status.length || !message) {
+            return;
+        }
+
+        status.text('');
+
+        window.setTimeout(() => {
+            status.text(message);
+        }, 20);
+    }
+
+    function markFormDirty() {
+        const listElement = list.get(0);
+
+        if (!listElement) {
+            return;
+        }
+
+        listElement.dispatchEvent(
+            new Event(
+                'input',
+                {
+                    bubbles: true,
+                }
+            )
+        );
+    }
+
+    function getItemLabel(item) {
+        const items = getItems();
+        const position = items.index(item) + 1;
+
+        const title = String(
+            item.find(
+                '[data-service-field="title"]'
+            ).val() || ''
+        ).trim();
+
+        return title || `${itemLabel} ${position}`;
+    }
+
+    function updateEditorState() {
+        const items = getItems();
+        const itemCount = items.length;
+        const lastIndex = itemCount - 1;
+
+        items.each(function (index) {
+            const item = $(this);
+            const visibleNumber = index + 1;
+            const fallbackLabel = `${itemLabel} ${visibleNumber}`;
+
+            item.attr(
+                'data-service-index',
+                index
+            );
+
+            item.find(
+                '[data-service-number]'
+            ).text(visibleNumber);
+
+            item.find(
+                '[data-service-field]'
+            ).each(function () {
+                const field = $(this);
+                const fieldName = field.attr(
+                    'data-service-field'
+                );
+
+                if (!fieldName) {
+                    return;
+                }
+
+                const fieldId = [
+                    'mpc_service_item',
+                    index,
+                    fieldName,
+                ].join('_');
+
+                field.attr({
+                    id: fieldId,
+                    name: `mpc_homepage_settings[services_items][${index}][${fieldName}]`,
+                });
+
+                item.find(
+                    `[data-service-label-for="${fieldName}"]`
+                ).attr(
+                    'for',
+                    fieldId
+                );
+            });
+
+            item.find(
+                '.mpc-service-item__move--up'
+            ).prop(
+                'disabled',
+                index === 0
+            );
+
+            item.find(
+                '.mpc-service-item__move--down'
+            ).prop(
+                'disabled',
+                index === lastIndex
+            );
+
+            item.find(
+                '.mpc-service-item__handle'
+            ).attr(
+                'aria-label',
+                formatMessage(
+                    dragTemplate,
+                    {
+                        '%s': fallbackLabel,
+                    }
+                )
+            );
+
+            item.find(
+                '.mpc-service-item__controls'
+            ).attr(
+                'aria-label',
+                formatMessage(
+                    controlsTemplate,
+                    {
+                        '%s': fallbackLabel,
+                    }
+                )
+            );
+
+            item.find(
+                '.mpc-service-item__remove'
+            ).attr(
+                'aria-label',
+                formatMessage(
+                    removeTemplate,
+                    {
+                        '%s': fallbackLabel,
+                    }
+                )
+            );
+        });
+
+        countOutput.text(itemCount);
+
+        emptyMessage.prop(
+            'hidden',
+            itemCount > 0
+        );
+
+        addButton.prop(
+            'disabled',
+            itemCount >= maxItems
+        );
+
+        list.toggleClass(
+            'is-empty',
+            itemCount === 0
+        );
+    }
+
+    function announceMovement(item) {
+        if (!item || !item.length) {
+            return;
+        }
+
+        const items = getItems();
+        const position = items.index(item) + 1;
+        const label = getItemLabel(item);
+
+        announce(
+            formatMessage(
+                movedTemplate,
+                {
+                    '%1$s': label,
+                    '%2$d': position,
+                    '%3$d': items.length,
+                }
+            )
+        );
+    }
+
+    addButton.on('click', function (event) {
+        event.preventDefault();
+
+        if (getItems().length >= maxItems) {
+            announce(limitMessage);
+            return;
+        }
+
+        if (
+            !template
+            || !template.content
+            || !list.get(0)
+        ) {
+            return;
+        }
+
+        const fragment = template.content.cloneNode(
+            true
+        );
+
+        list.get(0).appendChild(fragment);
+
+        updateEditorState();
+        markFormDirty();
+        announce(addedMessage);
+
+        const newItem = getItems().last();
+
+        window.requestAnimationFrame(() => {
+            newItem.find(
+                '[data-service-field="title"]'
+            ).trigger('focus');
+        });
     });
 
-    list.disableSelection();
+    list.on(
+        'click',
+        '.mpc-service-item__remove',
+        function (event) {
+            event.preventDefault();
 
-    list.on('change', 'input, select, textarea', updateOrderInput);
+            const item = $(this).closest(
+                '.mpc-service-item'
+            );
 
-    updateOrderInput();
+            if (!item.length) {
+                return;
+            }
+
+            const label = getItemLabel(item);
+            const nextItem = item.next(
+                '.mpc-service-item'
+            );
+
+            const previousItem = item.prev(
+                '.mpc-service-item'
+            );
+
+            item.remove();
+
+            updateEditorState();
+            markFormDirty();
+
+            announce(
+                formatMessage(
+                    removedTemplate,
+                    {
+                        '%s': label,
+                    }
+                )
+            );
+
+            const focusItem = nextItem.length
+                ? nextItem
+                : previousItem;
+
+            window.requestAnimationFrame(() => {
+                if (focusItem.length) {
+                    focusItem.find(
+                        '[data-service-field="title"]'
+                    ).trigger('focus');
+
+                    return;
+                }
+
+                addButton.trigger('focus');
+            });
+        }
+    );
+
+    list.on(
+        'click',
+        '.mpc-service-item__move',
+        function (event) {
+            event.preventDefault();
+
+            const button = $(this);
+
+            if (button.prop('disabled')) {
+                return;
+            }
+
+            const item = button.closest(
+                '.mpc-service-item'
+            );
+
+            const direction = button.attr(
+                'data-service-direction'
+            );
+
+            if (direction === 'up') {
+                const previousItem = item.prev(
+                    '.mpc-service-item'
+                );
+
+                if (!previousItem.length) {
+                    return;
+                }
+
+                item.insertBefore(previousItem);
+            } else if (direction === 'down') {
+                const nextItem = item.next(
+                    '.mpc-service-item'
+                );
+
+                if (!nextItem.length) {
+                    return;
+                }
+
+                item.insertAfter(nextItem);
+            } else {
+                return;
+            }
+
+            updateEditorState();
+            markFormDirty();
+            announceMovement(item);
+
+            window.requestAnimationFrame(() => {
+                const sameDirectionButton = item.find(
+                    `.mpc-service-item__move--${direction}`
+                );
+
+                if (!sameDirectionButton.prop('disabled')) {
+                    sameDirectionButton.trigger('focus');
+                    return;
+                }
+
+                const oppositeDirection = direction === 'up'
+                    ? 'down'
+                    : 'up';
+
+                item.find(
+                    `.mpc-service-item__move--${oppositeDirection}`
+                ).trigger('focus');
+            });
+        }
+    );
+
+    if ($.fn.sortable) {
+        list.sortable({
+            items: '.mpc-service-item',
+            handle: '.mpc-service-item__handle',
+            axis: 'y',
+            tolerance: 'pointer',
+            cursor: 'grabbing',
+            opacity: 0.85,
+            forcePlaceholderSize: true,
+            placeholder:
+                'mpc-service-item mpc-service-item--placeholder',
+
+            start(event, ui) {
+                ui.item.addClass('is-dragging');
+            },
+
+            update(event, ui) {
+                updateEditorState();
+                markFormDirty();
+                announceMovement(ui.item);
+            },
+
+            stop(event, ui) {
+                ui.item.removeClass('is-dragging');
+                updateEditorState();
+            },
+        });
+    }
+
+    updateEditorState();
 }
 
 function initStickySubmit() {
@@ -265,6 +919,7 @@ function initStickySubmit() {
         initFeaturedAdminToggles();
         initBlogAdminToggles();
         initSectionManager();
+        initServicesEditor();
         initStickySubmit();
         initAdminPanels();
     }
