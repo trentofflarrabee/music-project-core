@@ -913,7 +913,384 @@ function initStickySubmit() {
     });
 }
 
+    /**
+     * Initialize accessible Theme Style tabs.
+     *
+     * Without JavaScript, the tab navigation remains hidden and every
+     * settings section remains visible.
+     */
+    function initThemeStyleTabs() {
+        const root = document.querySelector(
+            '[data-theme-style-tabs]'
+        );
+
+        if (!root) {
+            return;
+        }
+
+        const tablist = root.querySelector(
+            '[role="tablist"]'
+        );
+
+        const tabs = Array.from(
+            root.querySelectorAll(
+                '.mpc-theme-style-tabs__tab[role="tab"]'
+            )
+        );
+
+        const panels = Array.from(
+            root.querySelectorAll(
+                '.mpc-theme-style-tabs__panel[role="tabpanel"]'
+            )
+        );
+
+        if (
+            !tablist
+            || !tabs.length
+            || !panels.length
+        ) {
+            return;
+        }
+
+        const storageKey = [
+            'mpc_theme_style_active_tab',
+            window.location.pathname,
+        ].join(':');
+
+        /**
+         * Get the panel controlled by a tab.
+         *
+         * @param {HTMLElement} tab Tab button.
+         * @returns {HTMLElement|null}
+         */
+        function getPanelForTab(tab) {
+            if (!tab) {
+                return null;
+            }
+
+            const panelId = tab.getAttribute(
+                'aria-controls'
+            );
+
+            if (!panelId) {
+                return null;
+            }
+
+            const panel = document.getElementById(
+                panelId
+            );
+
+            if (
+                !panel
+                || !root.contains(panel)
+            ) {
+                return null;
+            }
+
+            return panel;
+        }
+
+        /**
+         * Get the tab associated with a panel.
+         *
+         * @param {HTMLElement} panel Tab panel.
+         * @returns {HTMLElement|null}
+         */
+        function getTabForPanel(panel) {
+            if (!panel || !panel.id) {
+                return null;
+            }
+
+            return tabs.find(
+                (tab) => (
+                    tab.getAttribute(
+                        'aria-controls'
+                    ) === panel.id
+                )
+            ) || null;
+        }
+
+        /**
+         * Safely read the remembered tab from session storage.
+         *
+         * @returns {string}
+         */
+        function getStoredPanelId() {
+            try {
+                return window.sessionStorage.getItem(
+                    storageKey
+                ) || '';
+            } catch (error) {
+                return '';
+            }
+        }
+
+        /**
+         * Safely remember the active tab for this browser session.
+         *
+         * @param {string} panelId Active panel ID.
+         */
+        function storePanelId(panelId) {
+            if (!panelId) {
+                return;
+            }
+
+            try {
+                window.sessionStorage.setItem(
+                    storageKey,
+                    panelId
+                );
+            } catch (error) {
+                /*
+                 * Storage can be unavailable in restricted browser modes.
+                 * The tab interface remains fully functional without it.
+                 */
+            }
+        }
+
+        /**
+         * Find the appropriate tab for the current URL hash.
+         *
+         * The hash may reference either a panel or an element inside it.
+         *
+         * @returns {HTMLElement|null}
+         */
+        function getHashTab() {
+            if (!window.location.hash) {
+                return null;
+            }
+
+            let targetId = window.location.hash.slice(
+                1
+            );
+
+            try {
+                targetId = decodeURIComponent(
+                    targetId
+                );
+            } catch (error) {
+                return null;
+            }
+
+            const target = document.getElementById(
+                targetId
+            );
+
+            if (!target || !root.contains(target)) {
+                return null;
+            }
+
+            const panel = target.matches(
+                '.mpc-theme-style-tabs__panel'
+            )
+                ? target
+                : target.closest(
+                    '.mpc-theme-style-tabs__panel'
+                );
+
+            return getTabForPanel(panel);
+        }
+
+        /**
+         * Update the URL without adding a browser-history entry.
+         *
+         * @param {HTMLElement} panel Active panel.
+         */
+        function updateLocationHash(panel) {
+            if (!panel || !panel.id) {
+                return;
+            }
+
+            const newHash = `#${panel.id}`;
+
+            if (
+                window.history
+                && typeof window.history.replaceState === 'function'
+            ) {
+                window.history.replaceState(
+                    null,
+                    '',
+                    newHash
+                );
+
+                return;
+            }
+
+            window.location.hash = panel.id;
+        }
+
+        /**
+         * Activate one tab and its corresponding panel.
+         *
+         * @param {HTMLElement} tab Tab to activate.
+         * @param {Object} options Activation options.
+         */
+        function activateTab(
+            tab,
+            options = {}
+        ) {
+            if (!tabs.includes(tab)) {
+                return;
+            }
+
+            const activePanel = getPanelForTab(tab);
+
+            if (!activePanel) {
+                return;
+            }
+
+            tabs.forEach((candidate) => {
+                const isActive = candidate === tab;
+
+                candidate.setAttribute(
+                    'aria-selected',
+                    isActive ? 'true' : 'false'
+                );
+
+                candidate.setAttribute(
+                    'tabindex',
+                    isActive ? '0' : '-1'
+                );
+            });
+
+            panels.forEach((panel) => {
+                panel.hidden = panel !== activePanel;
+            });
+
+            storePanelId(activePanel.id);
+
+            if (options.updateLocation !== false) {
+                updateLocationHash(activePanel);
+            }
+
+            if (options.focus) {
+                tab.focus();
+            }
+        }
+
+        /**
+         * Activate a tab using its position in the tab collection.
+         *
+         * @param {number} index Tab index.
+         */
+        function activateTabAtIndex(index) {
+            const tabCount = tabs.length;
+
+            if (!tabCount) {
+                return;
+            }
+
+            const normalizedIndex = (
+                index + tabCount
+            ) % tabCount;
+
+            activateTab(
+                tabs[normalizedIndex],
+                {
+                    focus: true,
+                    updateLocation: true,
+                }
+            );
+        }
+
+        tabs.forEach((tab, index) => {
+            tab.addEventListener(
+                'click',
+                () => {
+                    activateTab(
+                        tab,
+                        {
+                            focus: false,
+                            updateLocation: true,
+                        }
+                    );
+                }
+            );
+
+            tab.addEventListener(
+                'keydown',
+                (event) => {
+                    let targetIndex = null;
+
+                    switch (event.key) {
+                        case 'ArrowLeft':
+                            targetIndex = index - 1;
+                            break;
+
+                        case 'ArrowRight':
+                            targetIndex = index + 1;
+                            break;
+
+                        case 'Home':
+                            targetIndex = 0;
+                            break;
+
+                        case 'End':
+                            targetIndex = tabs.length - 1;
+                            break;
+
+                        default:
+                            return;
+                    }
+
+                    event.preventDefault();
+                    activateTabAtIndex(targetIndex);
+                }
+            );
+        });
+
+        root.classList.add('is-enhanced');
+        tablist.hidden = false;
+
+        let initialTab = getHashTab();
+
+        if (!initialTab) {
+            const storedPanelId = getStoredPanelId();
+            const storedPanel = storedPanelId
+                ? document.getElementById(
+                    storedPanelId
+                )
+                : null;
+
+            initialTab = getTabForPanel(
+                storedPanel
+            );
+        }
+
+        if (!initialTab) {
+            initialTab = tabs[0];
+        }
+
+        activateTab(
+            initialTab,
+            {
+                focus: false,
+                updateLocation: false,
+            }
+        );
+
+        window.addEventListener(
+            'hashchange',
+            () => {
+                const hashTab = getHashTab();
+
+                if (!hashTab) {
+                    return;
+                }
+
+                activateTab(
+                    hashTab,
+                    {
+                        focus: false,
+                        updateLocation: false,
+                    }
+                );
+            }
+        );
+    }
+
     function initMPCAdmin() {
+        initThemeStyleTabs();
         initMediaUploader();
         initHeroAdminToggles();
         initFeaturedAdminToggles();

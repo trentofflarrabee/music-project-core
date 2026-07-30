@@ -600,7 +600,89 @@ function mpc_render_theme_style_settings_page() {
     <form method="post" action="options.php">
         <?php settings_fields('mpc_theme_style_settings_group'); ?>
 
-        <h2><?php esc_html_e('Colors', 'music-project-core'); ?></h2>
+        <div
+            class="mpc-theme-style-tabs"
+            data-theme-style-tabs
+        >
+            <div
+                class="mpc-theme-style-tabs__tablist"
+                role="tablist"
+                aria-label="<?php esc_attr_e('Theme Style sections', 'music-project-core'); ?>"
+                aria-orientation="horizontal"
+                hidden
+            >
+                <button
+                    type="button"
+                    id="mpc-theme-style-tab-colors"
+                    class="mpc-theme-style-tabs__tab"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="mpc-theme-style-panel-colors"
+                    tabindex="0"
+                >
+                    <?php esc_html_e('Colors', 'music-project-core'); ?>
+                </button>
+
+                <button
+                    type="button"
+                    id="mpc-theme-style-tab-design"
+                    class="mpc-theme-style-tabs__tab"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="mpc-theme-style-panel-design"
+                    tabindex="-1"
+                >
+                    <?php esc_html_e('Design Details', 'music-project-core'); ?>
+                </button>
+
+                <button
+                    type="button"
+                    id="mpc-theme-style-tab-chrome"
+                    class="mpc-theme-style-tabs__tab"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="mpc-theme-style-panel-chrome"
+                    tabindex="-1"
+                >
+                    <?php esc_html_e('Site Chrome', 'music-project-core'); ?>
+                </button>
+
+                <button
+                    type="button"
+                    id="mpc-theme-style-tab-typography"
+                    class="mpc-theme-style-tabs__tab"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="mpc-theme-style-panel-typography"
+                    tabindex="-1"
+                >
+                    <?php esc_html_e('Typography', 'music-project-core'); ?>
+                </button>
+
+                <button
+                    type="button"
+                    id="mpc-theme-style-tab-texture"
+                    class="mpc-theme-style-tabs__tab"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="mpc-theme-style-panel-texture"
+                    tabindex="-1"
+                >
+                    <?php esc_html_e('Texture', 'music-project-core'); ?>
+                </button>
+            </div>
+
+            <div class="mpc-theme-style-tabs__panels">
+                <section
+                    id="mpc-theme-style-panel-colors"
+                    class="mpc-theme-style-tabs__panel"
+                    role="tabpanel"
+                    aria-labelledby="mpc-theme-style-tab-colors"
+                    tabindex="0"
+                >
+                    <h2>
+                        <?php esc_html_e('Colors', 'music-project-core'); ?>
+                    </h2>
 
         <table class="form-table" role="presentation">
             <tr>
@@ -748,10 +830,18 @@ function mpc_render_theme_style_settings_page() {
             </tr>
 
         </table>
+    </section>
 
-        <hr>
-
-        <h2><?php esc_html_e('Design Details', 'music-project-core'); ?></h2>
+    <section
+        id="mpc-theme-style-panel-design"
+        class="mpc-theme-style-tabs__panel"
+        role="tabpanel"
+        aria-labelledby="mpc-theme-style-tab-design"
+        tabindex="0"
+    >
+        <h2>
+            <?php esc_html_e('Design Details', 'music-project-core'); ?>
+        </h2>
 
         <table class="form-table" role="presentation">
             <tr>
@@ -846,10 +936,18 @@ function mpc_render_theme_style_settings_page() {
                 </td>
             </tr>
         </table>
+    </section>
 
-        <hr>
-
-        <h2><?php esc_html_e('Site Chrome', 'music-project-core'); ?></h2>
+    <section
+        id="mpc-theme-style-panel-chrome"
+        class="mpc-theme-style-tabs__panel"
+        role="tabpanel"
+        aria-labelledby="mpc-theme-style-tab-chrome"
+        tabindex="0"
+    >
+        <h2>
+            <?php esc_html_e('Site Chrome', 'music-project-core'); ?>
+        </h2>
 
         <p>
             <?php esc_html_e('Controls the header, navbar behavior, mobile navigation overlay, branding display, and footer colors.', 'music-project-core'); ?>
@@ -1053,9 +1151,18 @@ function mpc_render_theme_style_settings_page() {
                 </td>
             </tr>
         </table>
-        <hr>
+    </section>
 
-        <h2><?php esc_html_e('Typography', 'music-project-core'); ?></h2>
+    <section
+        id="mpc-theme-style-panel-typography"
+        class="mpc-theme-style-tabs__panel"
+        role="tabpanel"
+        aria-labelledby="mpc-theme-style-tab-typography"
+        tabindex="0"
+    >
+        <h2>
+            <?php esc_html_e('Typography', 'music-project-core'); ?>
+        </h2>
 
         <p>
             <?php esc_html_e('Define your available fonts, then assign them to different typography roles across the site.', 'music-project-core'); ?>
@@ -1307,9 +1414,7 @@ function mpc_render_theme_style_settings_page() {
                 </td>
             </tr>
         </table>
-
-
-<hr>
+    </section>
 
 <?php
 $texture_opacity_value = mpc_sanitize_opacity(
@@ -1343,6 +1448,13 @@ $primary_repeat_options = [
 ];
 ?>
 
+<section
+    id="mpc-theme-style-panel-texture"
+    class="mpc-theme-style-tabs__panel"
+    role="tabpanel"
+    aria-labelledby="mpc-theme-style-tab-texture"
+    tabindex="0"
+>
 <h2>
     <?php
     esc_html_e(
@@ -1542,9 +1654,11 @@ $primary_repeat_options = [
 		</td>
 	</tr>
 </table>
+                </section>
+            </div>
+        </div>
 
-        <?php submit_button(__('Save Theme Style', 'music-project-core')); ?>
-    </form>
+        <?php submit_button(__('Save Theme Style', 'music-project-core')); ?>    </form>
 </div>
 
 <?php
