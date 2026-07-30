@@ -516,26 +516,32 @@ add_action('admin_menu', 'mpc_add_theme_style_submenu');
  * Enqueue media uploader on Theme Style page.
  */
 function mpc_enqueue_theme_style_admin_assets() {
-    if (!isset($_GET['page']) || $_GET['page'] !== 'mpc-theme-style') {
+    $page = isset($_GET['page'])
+        ? sanitize_key(wp_unslash($_GET['page']))
+        : '';
+
+    if ($page !== 'mpc-theme-style') {
         return;
     }
 
     wp_enqueue_media();
 
-wp_enqueue_script(
-    'mpc-admin',
-    MPC_URL . 'assets/admin.js',
-    ['jquery'],
-    mpc_get_asset_version('assets/admin.js'),
-    true
-);
+    wp_enqueue_script(
+        'mpc-admin',
+        MPC_URL . 'assets/admin.js',
+        ['jquery'],
+        mpc_get_asset_version('assets/admin.js'),
+        true
+    );
 
-wp_enqueue_style(
-    'mpc-admin',
-    MPC_URL . 'assets/admin.css',
-    [],
-    mpc_get_asset_version('assets/admin.css')
-);
+    mpc_localize_admin_script();
+
+    wp_enqueue_style(
+        'mpc-admin',
+        MPC_URL . 'assets/admin.css',
+        [],
+        mpc_get_asset_version('assets/admin.css')
+    );
 }
 add_action('admin_enqueue_scripts', 'mpc_enqueue_theme_style_admin_assets');
 
@@ -552,7 +558,26 @@ function mpc_render_theme_style_media_field($field_name, $attachment_id, $media_
             $preview = wp_get_attachment_image($attachment_id, 'medium');
         } else {
             $url = wp_get_attachment_url($attachment_id);
-            $preview = $url ? '<p><strong>Selected file:</strong><br>' . esc_html(basename($url)) . '</p>' : '';
+
+            if ($url) {
+                $file_path = wp_parse_url(
+                    $url,
+                    PHP_URL_PATH
+                );
+
+                $file_name = wp_basename(
+                    $file_path ?: $url
+                );
+
+                $preview = sprintf(
+                    '<p><strong>%1$s</strong><br>%2$s</p>',
+                    esc_html__(
+                        'Selected file:',
+                        'music-project-core'
+                    ),
+                    esc_html($file_name)
+                );
+            }
         }
     }
     ?>
@@ -563,7 +588,7 @@ function mpc_render_theme_style_media_field($field_name, $attachment_id, $media_
         value="<?php echo esc_attr($attachment_id); ?>">
 
     <div class="mpc-media-preview" data-preview-for="<?php echo esc_attr($field_id); ?>">
-        <?php echo $preview; ?>
+        <?php echo wp_kses_post($preview); ?>
     </div>
 
     <button type="button" class="button mpc-media-upload" data-target="<?php echo esc_attr($field_id); ?>"

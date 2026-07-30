@@ -1,90 +1,242 @@
 (function ($) {
     'use strict';
 
-function setVisible(elements, shouldShow) {
-    if (!elements) {
-        return;
+    const adminI18n = (
+        window.mpcAdminI18n
+        && typeof window.mpcAdminI18n === 'object'
+    )
+        ? window.mpcAdminI18n
+        : {};
+
+    /**
+     * Get one translated admin string.
+     *
+     * @param {string} key      Translation object key.
+     * @param {string} fallback English fallback.
+     * @returns {string}
+     */
+    function getAdminString(
+        key,
+        fallback = ''
+    ) {
+        const value = adminI18n[key];
+
+        return (
+            typeof value === 'string'
+            && value !== ''
+        )
+            ? value
+            : fallback;
     }
 
-    Array.from(elements).forEach((element) => {
-        if (element && element.style) {
-            element.style.display = shouldShow ? '' : 'none';
+    /**
+     * Show or hide a collection of elements.
+     *
+     * @param {NodeList|HTMLElement[]} elements   Elements to update.
+     * @param {boolean}                shouldShow Whether elements are visible.
+     */
+    function setVisible(
+        elements,
+        shouldShow
+    ) {
+        if (!elements) {
+            return;
         }
-    });
-}
 
+        Array.from(elements).forEach(
+            (element) => {
+                if (element && element.style) {
+                    element.style.display = shouldShow
+                        ? ''
+                        : 'none';
+                }
+            }
+        );
+    }
+
+    /**
+     * Initialize WordPress media fields.
+     */
     function initMediaUploader() {
-        $(document).on('click', '.mpc-media-upload', function (event) {
-            event.preventDefault();
+        $(document).on(
+            'click',
+            '.mpc-media-upload',
+            function (event) {
+                event.preventDefault();
 
-            if (typeof wp === 'undefined' || !wp.media) {
-                return;
-            }
-
-            const button = $(this);
-            const targetId = button.data('target');
-            const mediaType = button.data('type');
-            const input = $('#' + targetId);
-            const preview = $('[data-preview-for="' + targetId + '"]');
-
-            if (!targetId || !input.length) {
-                return;
-            }
-
-            const frame = wp.media({
-                title: 'Choose File',
-                button: {
-                    text: 'Use this file'
-                },
-                library: mediaType ? { type: mediaType } : {},
-                multiple: false
-            });
-
-            frame.on('select', function () {
-                const attachment = frame.state().get('selection').first().toJSON();
-
-                input.val(attachment.id);
-                preview.empty();
-
-                if (mediaType === 'image') {
-                    const imageUrl = attachment.sizes && attachment.sizes.medium
-                        ? attachment.sizes.medium.url
-                        : attachment.url;
-
-                    $('<img>', {
-                        src: imageUrl,
-                        alt: ''
-                    }).appendTo(preview);
-                } else {
-                    const fileNotice = $('<p>');
-                    $('<strong>').text('Selected file:').appendTo(fileNotice);
-                    $('<br>').appendTo(fileNotice);
-                    fileNotice.append(document.createTextNode(attachment.filename || attachment.url));
-
-                    preview.append(fileNotice);
+                if (
+                    typeof wp === 'undefined'
+                    || !wp.media
+                ) {
+                    return;
                 }
 
-                button.text('Replace File');
-            });
+                const button = $(this);
+                const targetId = String(
+                    button.data('target') || ''
+                );
 
-            frame.open();
-        });
+                const mediaType = String(
+                    button.data('type') || ''
+                );
 
-        $(document).on('click', '.mpc-media-remove', function (event) {
-            event.preventDefault();
+                const inputElement = targetId
+                    ? document.getElementById(targetId)
+                    : null;
 
-            const button = $(this);
-            const targetId = button.data('target');
-            const input = $('#' + targetId);
-            const preview = $('[data-preview-for="' + targetId + '"]');
+                if (!inputElement) {
+                    return;
+                }
 
-            if (!targetId || !input.length) {
-                return;
+                const input = $(inputElement);
+                const field = button.closest(
+                    '.mpc-media-field'
+                );
+
+                const preview = field.find(
+                    '[data-preview-for]'
+                );
+
+                const currentButtonText = String(
+                    button.text() || ''
+                ).trim();
+
+                const frame = wp.media({
+                    title: getAdminString(
+                        'chooseFile',
+                        currentButtonText
+                    ),
+
+                    button: {
+                        text: getAdminString(
+                            'useThisFile',
+                            currentButtonText
+                        ),
+                    },
+
+                    library: mediaType
+                        ? {
+                            type: mediaType,
+                        }
+                        : {},
+
+                    multiple: false,
+                });
+
+                frame.on('select', function () {
+                    const selection = frame
+                        .state()
+                        .get('selection')
+                        .first();
+
+                    if (!selection) {
+                        return;
+                    }
+
+                    const attachment = selection.toJSON();
+
+                    input
+                        .val(attachment.id || '')
+                        .trigger('change');
+
+                    preview.empty();
+
+                    if (mediaType === 'image') {
+                        const imageUrl = (
+                            attachment.sizes
+                            && attachment.sizes.medium
+                        )
+                            ? attachment.sizes.medium.url
+                            : attachment.url;
+
+                        $('<img>', {
+                            src: imageUrl || '',
+                            alt: '',
+                        }).appendTo(preview);
+                    } else {
+                        const fileNotice = $('<p>');
+
+                        $('<strong>')
+                            .text(
+                                getAdminString(
+                                    'selectedFile',
+                                    'Selected file:'
+                                )
+                            )
+                            .appendTo(fileNotice);
+
+                        $('<br>').appendTo(fileNotice);
+
+                        fileNotice.append(
+                            document.createTextNode(
+                                attachment.filename
+                                || attachment.url
+                                || ''
+                            )
+                        );
+
+                        preview.append(fileNotice);
+                    }
+
+                    button.text(
+                        getAdminString(
+                            'replaceFile',
+                            currentButtonText
+                        )
+                    );
+                });
+
+                frame.open();
             }
+        );
 
-            input.val('');
-            preview.empty();
-        });
+        $(document).on(
+            'click',
+            '.mpc-media-remove',
+            function (event) {
+                event.preventDefault();
+
+                const button = $(this);
+                const targetId = String(
+                    button.data('target') || ''
+                );
+
+                const inputElement = targetId
+                    ? document.getElementById(targetId)
+                    : null;
+
+                if (!inputElement) {
+                    return;
+                }
+
+                const field = button.closest(
+                    '.mpc-media-field'
+                );
+
+                const preview = field.find(
+                    '[data-preview-for]'
+                );
+
+                const uploadButton = field.find(
+                    '.mpc-media-upload'
+                );
+
+                $(inputElement)
+                    .val('')
+                    .trigger('change');
+
+                preview.empty();
+
+                uploadButton.text(
+                    getAdminString(
+                        'chooseFile',
+                        String(
+                            uploadButton.text() || ''
+                        ).trim()
+                    )
+                );
+            }
+        );
     }
 
     function initHeroAdminToggles() {
@@ -196,7 +348,10 @@ function initSectionManager() {
 
     const movedTemplate = manager.attr(
         'data-moved-template'
-    ) || '%1$s moved to position %2$d of %3$d.';
+    ) || getAdminString(
+        'sectionMoved',
+        '%1$s moved to position %2$d of %3$d.'
+    );
 
     /**
      * Get the current ordered collection of section rows.
@@ -458,37 +613,66 @@ function initServicesEditor() {
         10
     ) || 8;
 
-    const itemLabel = editor.attr(
-        'data-service-item-label'
-    ) || 'Service';
+const itemLabel = editor.attr(
+    'data-service-item-label'
+) || getAdminString(
+    'service',
+    'Service'
+);
 
-    const addedMessage = editor.attr(
-        'data-service-added-message'
-    ) || 'Service item added.';
+const addedMessage = editor.attr(
+    'data-service-added-message'
+) || getAdminString(
+    'serviceAdded',
+    'Service item added.'
+);
 
-    const removedTemplate = editor.attr(
-        'data-service-removed-template'
-    ) || '%s removed.';
+const removedTemplate = editor.attr(
+    'data-service-removed-template'
+) || getAdminString(
+    'serviceRemoved',
+    '%s removed.'
+);
 
-    const movedTemplate = editor.attr(
-        'data-service-moved-template'
-    ) || '%1$s moved to position %2$d of %3$d.';
+const movedTemplate = editor.attr(
+    'data-service-moved-template'
+) || getAdminString(
+    'serviceMoved',
+    '%1$s moved to position %2$d of %3$d.'
+);
 
-    const limitMessage = editor.attr(
-        'data-service-limit-message'
-    ) || `You can add up to ${maxItems} services.`;
+const limitTemplate = editor.attr(
+    'data-service-limit-message'
+) || getAdminString(
+    'serviceLimit',
+    'You can add up to %d services.'
+);
 
-    const dragTemplate = editor.attr(
-        'data-service-drag-template'
-    ) || 'Drag %s to reorder';
+const limitMessage = limitTemplate.replace(
+    '%d',
+    String(maxItems)
+);
 
-    const controlsTemplate = editor.attr(
-        'data-service-controls-template'
-    ) || 'Reorder or remove %s';
+const dragTemplate = editor.attr(
+    'data-service-drag-template'
+) || getAdminString(
+    'dragService',
+    'Drag %s to reorder'
+);
 
-    const removeTemplate = editor.attr(
-        'data-service-remove-template'
-    ) || 'Remove %s';
+const controlsTemplate = editor.attr(
+    'data-service-controls-template'
+) || getAdminString(
+    'serviceControls',
+    'Reorder or remove %s'
+);
+
+const removeTemplate = editor.attr(
+    'data-service-remove-template'
+) || getAdminString(
+    'removeService',
+    'Remove %s'
+);
 
     function getItems() {
         return list.children(
@@ -1289,6 +1473,88 @@ function initStickySubmit() {
         );
     }
 
+    /**
+     * Restore and remember expandable admin-panel states.
+     */
+    function initAdminPanels() {
+        const panels = document.querySelectorAll(
+            '.mpc-admin-panel[data-panel-id]'
+        );
+
+        if (!panels.length) {
+            return;
+        }
+
+        let storage = null;
+
+        try {
+            storage = window.localStorage;
+        } catch (error) {
+            /*
+             * Browsers can block storage in private or restricted contexts.
+             * The panels remain fully functional without persistence.
+             */
+            return;
+        }
+
+        if (!storage) {
+            return;
+        }
+
+        panels.forEach((panel) => {
+            const panelId = panel.getAttribute(
+                'data-panel-id'
+            );
+
+            if (!panelId) {
+                return;
+            }
+
+            const storageKey = (
+                'mpc_admin_panel_'
+                + panelId
+            );
+
+            let savedState = '';
+
+            try {
+                savedState = storage.getItem(
+                    storageKey
+                ) || '';
+            } catch (error) {
+                return;
+            }
+
+            if (savedState === 'open') {
+                panel.setAttribute('open', '');
+            } else if (savedState === 'closed') {
+                panel.removeAttribute('open');
+            }
+
+            panel.addEventListener(
+                'toggle',
+                () => {
+                    try {
+                        storage.setItem(
+                            storageKey,
+                            panel.open
+                                ? 'open'
+                                : 'closed'
+                        );
+                    } catch (error) {
+                        /*
+                         * Losing persistence should never prevent the panel
+                         * itself from opening or closing.
+                         */
+                    }
+                }
+            );
+        });
+    }
+
+    /**
+     * Initialize shared Music Project admin behavior.
+     */
     function initMPCAdmin() {
         initThemeStyleTabs();
         initMediaUploader();
@@ -1303,37 +1569,3 @@ function initStickySubmit() {
 
     $(initMPCAdmin);
 })(jQuery);
-
-function initAdminPanels() {
-    const panels = document.querySelectorAll('.mpc-admin-panel[data-panel-id]');
-
-    if (!panels.length || !window.localStorage) {
-        return;
-    }
-
-    panels.forEach((panel) => {
-        const panelId = panel.getAttribute('data-panel-id');
-
-        if (!panelId) {
-            return;
-        }
-
-        const storageKey = 'mpc_admin_panel_' + panelId;
-        const savedState = window.localStorage.getItem(storageKey);
-
-        if (savedState === 'open') {
-            panel.setAttribute('open', '');
-        }
-
-        if (savedState === 'closed') {
-            panel.removeAttribute('open');
-        }
-
-        panel.addEventListener('toggle', () => {
-            window.localStorage.setItem(
-                storageKey,
-                panel.open ? 'open' : 'closed'
-            );
-        });
-    });
-}

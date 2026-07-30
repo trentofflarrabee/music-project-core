@@ -835,6 +835,8 @@ wp_enqueue_script(
     true
 );
 
+mpc_localize_admin_script();
+
     wp_enqueue_style(
         'mpc-admin',
         MPC_URL . 'assets/admin.css',

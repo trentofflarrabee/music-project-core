@@ -3,8 +3,9 @@
  * Plugin Name: Music Project Core
  * Description: Core admin settings and reusable content tools for music project websites.
  * Version: 0.1.0
- * Author: Your Name
+ * Author: Trent Larrabee
  * Text Domain: music-project-core
+ * Domain Path: /languages
  */
 
 if (!defined('ABSPATH')) {
@@ -14,6 +15,94 @@ if (!defined('ABSPATH')) {
 define('MPC_VERSION', '0.1.0');
 define('MPC_PATH', plugin_dir_path(__FILE__));
 define('MPC_URL', plugin_dir_url(__FILE__));
+
+/**
+ * Load bundled plugin translations.
+ *
+ * WordPress language-pack translations continue to work normally. This also
+ * supports translation files placed in the plugin's local languages folder.
+ */
+function mpc_load_plugin_textdomain() {
+    load_plugin_textdomain(
+        'music-project-core',
+        false,
+        dirname(plugin_basename(__FILE__)) . '/languages'
+    );
+}
+add_action('init', 'mpc_load_plugin_textdomain');
+
+/**
+ * Get translated strings used by the shared admin script.
+ *
+ * @return array
+ */
+function mpc_get_admin_script_strings() {
+    return [
+        'chooseFile'   => __('Choose File', 'music-project-core'),
+        'useThisFile'  => __('Use this file', 'music-project-core'),
+        'selectedFile' => __('Selected file:', 'music-project-core'),
+        'replaceFile'  => __('Replace File', 'music-project-core'),
+
+        /* translators: 1: section name, 2: new position, 3: total sections. */
+        'sectionMoved' => __(
+            '%1$s moved to position %2$d of %3$d.',
+            'music-project-core'
+        ),
+
+        'service'      => __('Service', 'music-project-core'),
+        'serviceAdded' => __('Service item added.', 'music-project-core'),
+
+        /* translators: %s is a service name. */
+        'serviceRemoved' => __('%s removed.', 'music-project-core'),
+
+        /* translators: 1: service name, 2: new position, 3: total services. */
+        'serviceMoved' => __(
+            '%1$s moved to position %2$d of %3$d.',
+            'music-project-core'
+        ),
+
+        /* translators: %d is the maximum number of services. */
+        'serviceLimit' => __(
+            'You can add up to %d services.',
+            'music-project-core'
+        ),
+
+        /* translators: %s is a service name. */
+        'dragService' => __(
+            'Drag %s to reorder',
+            'music-project-core'
+        ),
+
+        /* translators: %s is a service name. */
+        'serviceControls' => __(
+            'Reorder or remove %s',
+            'music-project-core'
+        ),
+
+        /* translators: %s is a service name. */
+        'removeService' => __(
+            'Remove %s',
+            'music-project-core'
+        ),
+    ];
+}
+
+/**
+ * Attach translated strings to the shared admin script.
+ *
+ * Call this after the mpc-admin script has been enqueued.
+ */
+function mpc_localize_admin_script() {
+    if (!wp_script_is('mpc-admin', 'enqueued')) {
+        return;
+    }
+
+    wp_localize_script(
+        'mpc-admin',
+        'mpcAdminI18n',
+        mpc_get_admin_script_strings()
+    );
+}
 /**
  * Get a cache-busting version for a plugin asset.
  *
