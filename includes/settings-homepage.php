@@ -1833,74 +1833,339 @@ mpc_admin_panel_open(
     </tr>
 </table>
 
-<h3><?php esc_html_e('Service Items', 'music-project-core'); ?></h3>
-
 <?php
 $service_item_defaults = [
-    'title' => '',
+    'title'       => '',
     'description' => '',
-    'link_text' => '',
-    'link_url' => '',
+    'link_text'   => '',
+    'link_url'    => '',
 ];
 
-$services_items = $settings['services_items'] ?? [];
-$services_items = is_array($services_items) ? $services_items : [];
-$services_items = array_slice(array_pad($services_items, 8, $service_item_defaults), 0, 8);
+$service_item_limit = mpc_get_services_item_limit();
+
+$services_items = isset($settings['services_items'])
+    && is_array($settings['services_items'])
+        ? array_values($settings['services_items'])
+        : [];
+
+$services_items = array_slice(
+    $services_items,
+    0,
+    $service_item_limit
+);
+
+/**
+ * Render one Service editor card.
+ *
+ * JavaScript reindexes every field after adding, removing, or moving cards.
+ *
+ * @param array      $item  Service item data.
+ * @param int|string $index Item index or template placeholder.
+ * @return void
+ */
+$render_service_item = static function (
+    $item,
+    $index
+) use (
+    $service_item_defaults
+) {
+    $item = wp_parse_args(
+        is_array($item) ? $item : [],
+        $service_item_defaults
+    );
+
+    $index_token = (string) $index;
+
+    $visible_number = is_numeric($index)
+        ? absint($index) + 1
+        : 1;
+
+    $field_name_base = sprintf(
+        'mpc_homepage_settings[services_items][%s]',
+        $index_token
+    );
+
+    $field_id_base = sprintf(
+        'mpc_service_item_%s',
+        $index_token
+    );
+    ?>
+
+    <div
+        class="mpc-service-item"
+        data-service-item
+    >
+        <header class="mpc-service-item__header">
+            <button
+                type="button"
+                class="mpc-service-item__handle"
+                aria-label="<?php esc_attr_e('Drag service item to reorder', 'music-project-core'); ?>"
+                title="<?php esc_attr_e('Drag to reorder', 'music-project-core'); ?>"
+            >
+                <span aria-hidden="true">↕</span>
+            </button>
+
+            <h4 class="mpc-service-item__title">
+                <?php esc_html_e('Service', 'music-project-core'); ?>
+
+                <span data-service-number>
+                    <?php echo esc_html($visible_number); ?>
+                </span>
+            </h4>
+
+            <div
+                class="mpc-service-item__controls"
+                role="group"
+                aria-label="<?php esc_attr_e('Reorder or remove service item', 'music-project-core'); ?>"
+            >
+                <button
+                    type="button"
+                    class="button button-small mpc-service-item__move mpc-service-item__move--up"
+                    data-service-direction="up"
+                >
+                    <span aria-hidden="true">↑</span>
+
+                    <span>
+                        <?php esc_html_e('Move up', 'music-project-core'); ?>
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    class="button button-small mpc-service-item__move mpc-service-item__move--down"
+                    data-service-direction="down"
+                >
+                    <span aria-hidden="true">↓</span>
+
+                    <span>
+                        <?php esc_html_e('Move down', 'music-project-core'); ?>
+                    </span>
+                </button>
+
+                <button
+                    type="button"
+                    class="button button-small mpc-service-item__remove"
+                >
+                    <?php esc_html_e('Remove', 'music-project-core'); ?>
+                </button>
+            </div>
+        </header>
+
+        <div class="mpc-service-item__fields">
+            <div class="mpc-service-item__field">
+                <label
+                    data-service-label-for="title"
+                    for="<?php echo esc_attr($field_id_base . '_title'); ?>"
+                >
+                    <?php esc_html_e('Heading', 'music-project-core'); ?>
+                </label>
+
+                <input
+                    id="<?php echo esc_attr($field_id_base . '_title'); ?>"
+                    type="text"
+                    class="regular-text"
+                    data-service-field="title"
+                    name="<?php echo esc_attr($field_name_base . '[title]'); ?>"
+                    value="<?php echo esc_attr($item['title']); ?>"
+                >
+            </div>
+
+            <div class="mpc-service-item__field mpc-service-item__field--description">
+                <label
+                    data-service-label-for="description"
+                    for="<?php echo esc_attr($field_id_base . '_description'); ?>"
+                >
+                    <?php esc_html_e('Description', 'music-project-core'); ?>
+                </label>
+
+                <textarea
+                    id="<?php echo esc_attr($field_id_base . '_description'); ?>"
+                    class="large-text"
+                    rows="4"
+                    data-service-field="description"
+                    name="<?php echo esc_attr($field_name_base . '[description]'); ?>"
+                    aria-describedby="mpc-services-description-help"
+                ><?php echo esc_textarea($item['description']); ?></textarea>
+            </div>
+
+            <div class="mpc-service-item__field">
+                <label
+                    data-service-label-for="link_text"
+                    for="<?php echo esc_attr($field_id_base . '_link_text'); ?>"
+                >
+                    <?php esc_html_e('Link Text', 'music-project-core'); ?>
+                </label>
+
+                <input
+                    id="<?php echo esc_attr($field_id_base . '_link_text'); ?>"
+                    type="text"
+                    class="regular-text"
+                    data-service-field="link_text"
+                    name="<?php echo esc_attr($field_name_base . '[link_text]'); ?>"
+                    value="<?php echo esc_attr($item['link_text']); ?>"
+                    placeholder="<?php esc_attr_e('Learn More', 'music-project-core'); ?>"
+                >
+            </div>
+
+            <div class="mpc-service-item__field">
+                <label
+                    data-service-label-for="link_url"
+                    for="<?php echo esc_attr($field_id_base . '_link_url'); ?>"
+                >
+                    <?php esc_html_e('Link URL', 'music-project-core'); ?>
+                </label>
+
+                <input
+                    id="<?php echo esc_attr($field_id_base . '_link_url'); ?>"
+                    type="url"
+                    class="regular-text"
+                    data-service-field="link_url"
+                    name="<?php echo esc_attr($field_name_base . '[link_url]'); ?>"
+                    value="<?php echo esc_url($item['link_url']); ?>"
+                    placeholder="https://example.com/service"
+                >
+            </div>
+        </div>
+    </div>
+    <?php
+};
 ?>
 
-<table class="widefat striped mpc-services-items-table" style="max-width: 1100px;">
-    <thead>
-        <tr>
-            <th><?php esc_html_e('Heading', 'music-project-core'); ?></th>
-            <th><?php esc_html_e('Description', 'music-project-core'); ?></th>
-            <th><?php esc_html_e('Link Text', 'music-project-core'); ?></th>
-            <th><?php esc_html_e('Link URL', 'music-project-core'); ?></th>
-        </tr>
-    </thead>
+<div
+    class="mpc-services-editor"
+    data-service-max="<?php echo esc_attr($service_item_limit); ?>"
+    data-service-item-label="<?php esc_attr_e('Service', 'music-project-core'); ?>"
+    data-service-added-message="<?php esc_attr_e('Service item added.', 'music-project-core'); ?>"
+    data-service-removed-template="<?php echo esc_attr__('%s removed.', 'music-project-core'); ?>"
+    data-service-moved-template="<?php echo esc_attr__('%1$s moved to position %2$d of %3$d.', 'music-project-core'); ?>"
+    data-service-limit-message="<?php
+    echo esc_attr(
+        sprintf(
+            /* translators: %d is the maximum number of services. */
+            __(
+                'You can add up to %d services.',
+                'music-project-core'
+            ),
+            $service_item_limit
+        )
+    );
+    ?>"
+    data-service-drag-template="<?php echo esc_attr__('Drag %s to reorder', 'music-project-core'); ?>"
+    data-service-controls-template="<?php echo esc_attr__('Reorder or remove %s', 'music-project-core'); ?>"
+    data-service-remove-template="<?php echo esc_attr__('Remove %s', 'music-project-core'); ?>"
+>
+    <div class="mpc-services-editor__toolbar">
+        <div>
+            <h3 class="mpc-services-editor__heading">
+                <?php esc_html_e('Service Items', 'music-project-core'); ?>
+            </h3>
 
-    <tbody>
+            <p
+                id="mpc-services-editor-instructions"
+                class="description"
+            >
+                <?php
+                printf(
+                    /* translators: %d is the maximum number of services. */
+                    esc_html__(
+                        'Add up to %d services. Drag the cards or use the move buttons to reorder them.',
+                        'music-project-core'
+                    ),
+                    $service_item_limit
+                );
+                ?>
+            </p>
+
+            <p
+                id="mpc-services-description-help"
+                class="description"
+            >
+                <?php
+                esc_html_e(
+                    'Service descriptions may contain basic formatting and links.',
+                    'music-project-core'
+                );
+                ?>
+            </p>
+        </div>
+
+        <button
+            type="button"
+            class="button button-secondary mpc-services-editor__add"
+            <?php disabled(count($services_items) >= $service_item_limit); ?>
+        >
+            <?php esc_html_e('Add Service', 'music-project-core'); ?>
+        </button>
+    </div>
+
+    <div
+        class="mpc-services-editor__list"
+        aria-describedby="mpc-services-editor-instructions"
+    >
         <?php foreach ($services_items as $index => $item) : ?>
-            <?php $item = wp_parse_args($item, $service_item_defaults); ?>
-
-            <tr>
-                <td>
-                    <input
-                        type="text"
-                        name="mpc_homepage_settings[services_items][<?php echo esc_attr($index); ?>][title]"
-                        value="<?php echo esc_attr($item['title']); ?>"
-                        class="regular-text"
-                    >
-                </td>
-
-                <td>
-                    <textarea
-                        name="mpc_homepage_settings[services_items][<?php echo esc_attr($index); ?>][description]"
-                        rows="3"
-                        class="large-text"
-                    ><?php echo esc_textarea($item['description']); ?></textarea>
-                </td>
-
-                <td>
-                    <input
-                        type="text"
-                        name="mpc_homepage_settings[services_items][<?php echo esc_attr($index); ?>][link_text]"
-                        value="<?php echo esc_attr($item['link_text']); ?>"
-                        class="regular-text"
-                    >
-                </td>
-
-                <td>
-                    <input
-                        type="url"
-                        name="mpc_homepage_settings[services_items][<?php echo esc_attr($index); ?>][link_url]"
-                        value="<?php echo esc_url($item['link_url']); ?>"
-                        class="regular-text"
-                    >
-                </td>
-            </tr>
+            <?php $render_service_item($item, $index); ?>
         <?php endforeach; ?>
-    </tbody>
-</table>
+    </div>
+
+<p
+    class="mpc-services-editor__empty"
+    <?php if (!empty($services_items)) : ?>
+        hidden
+    <?php endif; ?>
+>
+        <?php
+        esc_html_e(
+            'No service items have been added yet.',
+            'music-project-core'
+        );
+        ?>
+    </p>
+
+    <div class="mpc-services-editor__footer">
+        <p class="mpc-services-editor__count">
+            <span data-service-count>
+                <?php echo esc_html(count($services_items)); ?>
+            </span>
+
+            <?php
+            printf(
+                /* translators: %d is the maximum number of service items. */
+                esc_html__(
+                    'of %d service items',
+                    'music-project-core'
+                ),
+                $service_item_limit
+            );
+            ?>
+        </p>
+    </div>
+
+    <p
+        class="screen-reader-text mpc-services-editor__status"
+        aria-live="polite"
+        aria-atomic="true"
+    ></p>
+
+    <template class="mpc-service-item-template">
+        <?php
+        $render_service_item(
+            $service_item_defaults,
+            '__INDEX__'
+        );
+        ?>
+    </template>
+
+    <noscript>
+        <p class="notice notice-warning inline">
+            <?php
+            esc_html_e(
+                'JavaScript is required to add, remove, or reorder service items.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </noscript>
+</div>
 
 <table class="form-table" role="presentation">
     <tr>
