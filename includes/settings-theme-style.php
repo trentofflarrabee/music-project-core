@@ -49,6 +49,7 @@ function mpc_get_theme_style_defaults() {
         // Typography role assignments.
         'font_role_body' => 'body',
         'font_role_heading' => 'heading',
+        'font_role_blog_heading' => 'heading',
         'font_role_hero_heading' => 'heading',
         'font_role_nav' => 'accent',
         'font_role_button' => 'accent',
@@ -356,6 +357,7 @@ $output['brand_display'] = in_array($brand_display, $allowed_brand_displays, tru
         $font_role_fields = [
             'font_role_body',
             'font_role_heading',
+            'font_role_blog_heading',
             'font_role_hero_heading',
             'font_role_nav',
             'font_role_button',
@@ -1223,7 +1225,20 @@ function mpc_render_theme_style_settings_page() {
         'font_role_heading',
         __('Headings', 'music-project-core'),
         $settings,
-        __('Page titles, section headings, card headings, and article headings.', 'music-project-core')
+        __(
+            'General page titles, homepage section headings, and promotional card headings.',
+            'music-project-core'
+        )
+    );
+
+    mpc_render_font_assignment_select(
+        'font_role_blog_heading',
+        __('Blog / Editorial Headings', 'music-project-core'),
+        $settings,
+        __(
+            'Blog and archive titles, post cards, single-post titles, article headings, and previous or next post titles.',
+            'music-project-core'
+        )
     );
 
     mpc_render_font_assignment_select(
