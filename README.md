@@ -158,7 +158,7 @@ The Integrations screen provides provider-neutral fields for:
 
 An optional Bandsintown adapter is included through the following shortcode:
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   [mpc_bandsintown_shows artist="Artist Name" app_id="your-app-id" signup_target="#signup"]   `
+`[mpc_bandsintown_shows artist="Artist Name" app_id="your-app-id" signup_target="#signup"]   `
 
 The application ID may also be supplied through the BIT\_APP\_ID environment variable.
 
@@ -288,11 +288,11 @@ Stored Data
 
 Music Project Core stores configuration in these WordPress options:
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   mpc_homepage_settings  mpc_theme_style_settings  mpc_integrations_settings  mpc_footer_settings  mpc_social_links_settings  mpc_site_status_settings  mpc_schema_versions   `
+`mpc_homepage_settings  mpc_theme_style_settings  mpc_integrations_settings  mpc_footer_settings  mpc_social_links_settings  mpc_site_status_settings  mpc_schema_versions   `
 
 Quotes and testimonials use the following custom post type:
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   mpc_press_quote   `
+`mpc_press_quote   `
 
 Activation and Updates
 ----------------------
@@ -326,11 +326,11 @@ Translation
 
 The plugin uses the text domain:
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   music-project-core   `
+`music-project-core`
 
 Local translation files may be placed in:
 
-Plain textANTLR4BashCC#CSSCoffeeScriptCMakeDartDjangoDockerEJSErlangGitGoGraphQLGroovyHTMLJavaJavaScriptJSONJSXKotlinLaTeXLessLuaMakefileMarkdownMATLABMarkupObjective-CPerlPHPPowerShell.propertiesProtocol BuffersPythonRRubySass (Sass)Sass (Scss)SchemeSQLShellSwiftSVGTSXTypeScriptWebAssemblyYAMLXML`   languages/   `
+`languages/`
 
 Development
 -----------
