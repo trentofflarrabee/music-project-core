@@ -140,3 +140,30 @@ require_once MPC_PATH . 'includes/settings-theme-style.php';
 require_once MPC_PATH . 'includes/settings-footer.php';
 require_once MPC_PATH . 'includes/settings-site-status.php';
 require_once MPC_PATH . 'includes/migrations.php';
+
+
+/**
+ * Run outstanding schema migrations when Core is activated.
+ *
+ * Normal plugin updates continue to use the admin_init migration check.
+ *
+ * @param bool $network_wide Whether Core is network-activated.
+ * @return void
+ */
+function mpc_activate_plugin(
+    $network_wide = false
+) {
+    /*
+     * Core currently maintains per-site settings. Other sites in a
+     * multisite network will run the normal migration check when their
+     * administrators enter WordPress admin.
+     */
+    unset($network_wide);
+
+    mpc_run_schema_migrations(true);
+}
+
+register_activation_hook(
+    __FILE__,
+    'mpc_activate_plugin'
+);

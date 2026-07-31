@@ -353,23 +353,32 @@ function mpc_migrate_theme_style_schema_1() {
  *
  * @return void
  */
-function mpc_run_schema_migrations() {
-    if (!is_admin()) {
-        return;
-    }
+function mpc_run_schema_migrations(
+    $force = false
+) {
+    if (!$force) {
+        if (!is_admin()) {
+            return;
+        }
 
-    if (
-        defined('DOING_AJAX')
-        && DOING_AJAX
-    ) {
-        return;
-    }
+        if (
+            defined('DOING_AJAX')
+            && DOING_AJAX
+        ) {
+            return;
+        }
 
-    if (!current_user_can('manage_options')) {
-        return;
+        if (
+            !current_user_can(
+                'manage_options'
+            )
+        ) {
+            return;
+        }
     }
 
     $current = mpc_get_current_schema_versions();
+
     $stored = mpc_get_stored_schema_versions();
     $changed = false;
 
