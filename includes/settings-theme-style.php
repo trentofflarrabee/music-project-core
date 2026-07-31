@@ -539,41 +539,115 @@ $output['border_strength'] = in_array(
         $output['font_quote'] = isset($input['font_quote'])
             ? mpc_sanitize_font_family($input['font_quote'])
             : $defaults['font_quote'];
-            // Typography role assignments.
-        $allowed_font_roles = [
-            'body',
-            'heading',
-            'accent',
-            'quote',
-        ];
-
-        $font_role_fields = [
-            'font_role_body',
-            'font_role_heading',
-            'font_role_blog_heading',
-            'font_role_hero_heading',
-            'font_role_nav',
-            'font_role_button',
-            'font_role_accent',
-            'font_role_quote',
-        ];
-
-        foreach ($font_role_fields as $field) {
-            $role = isset($input[$field])
-                ? sanitize_key($input[$field])
-                : $defaults[$field];
-
-            $output[$field] = in_array($role, $allowed_font_roles, true)
-                ? $role
-                : $defaults[$field];
-        }
 
 
-        // Texture V2.
-$output['texture_enabled'] = !empty($input['texture_enabled']) ? 1 : 0;
-$output['texture_image_id'] = isset($input['texture_image_id']) ? absint($input['texture_image_id']) : 0;
-$output['texture_opacity'] = isset($input['texture_opacity']) ? mpc_sanitize_opacity($input['texture_opacity']) : $defaults['texture_opacity'];
-$output['texture_size'] = isset($input['texture_size']) ? mpc_sanitize_texture_size($input['texture_size']) : $defaults['texture_size'];
+// Typography role assignments.
+$allowed_font_roles = [
+    'body',
+    'heading',
+    'accent',
+    'quote',
+];
+
+$font_role_fields = [
+    'font_role_body',
+    'font_role_heading',
+    'font_role_blog_heading',
+    'font_role_hero_heading',
+    'font_role_nav',
+    'font_role_button',
+    'font_role_accent',
+    'font_role_quote',
+];
+
+foreach ($font_role_fields as $field) {
+    $role = (
+        isset($input[$field])
+        && is_scalar($input[$field])
+    )
+        ? sanitize_key(
+            (string) $input[$field]
+        )
+        : $defaults[$field];
+
+    $output[$field] = in_array(
+        $role,
+        $allowed_font_roles,
+        true
+    )
+        ? $role
+        : $defaults[$field];
+}
+
+
+// Texture V2.
+
+/**
+ * Normalize one checkbox-style value.
+ *
+ * @param mixed $value Submitted or saved value.
+ * @return int
+ */
+$sanitize_texture_toggle = static function (
+    $value
+) {
+    if (!is_scalar($value)) {
+        return 0;
+    }
+
+    $value = strtolower(
+        trim((string) $value)
+    );
+
+    return in_array(
+        $value,
+        [
+            '1',
+            'true',
+            'yes',
+            'on',
+        ],
+        true
+    )
+        ? 1
+        : 0;
+};
+
+$output['texture_enabled'] = isset(
+    $input['texture_enabled']
+)
+    ? $sanitize_texture_toggle(
+        $input['texture_enabled']
+    )
+    : 0;
+
+$output['texture_image_id'] = (
+    isset($input['texture_image_id'])
+    && is_scalar($input['texture_image_id'])
+)
+    ? absint(
+        (string) $input['texture_image_id']
+    )
+    : 0;
+
+$output['texture_opacity'] = (
+    isset($input['texture_opacity'])
+    && is_scalar($input['texture_opacity'])
+    && is_numeric($input['texture_opacity'])
+)
+    ? mpc_sanitize_opacity(
+        (string) $input['texture_opacity']
+    )
+    : $defaults['texture_opacity'];
+
+$output['texture_size'] = (
+    isset($input['texture_size'])
+    && is_scalar($input['texture_size'])
+)
+    ? mpc_sanitize_texture_size(
+        (string) $input['texture_size']
+    )
+    : $defaults['texture_size'];
 
 $allowed_repeats = [
     'repeat',
@@ -582,8 +656,22 @@ $allowed_repeats = [
     'repeat-y',
 ];
 
-$repeat = isset($input['texture_repeat']) ? sanitize_key($input['texture_repeat']) : $defaults['texture_repeat'];
-$output['texture_repeat'] = in_array($repeat, $allowed_repeats, true) ? $repeat : $defaults['texture_repeat'];
+$repeat = (
+    isset($input['texture_repeat'])
+    && is_scalar($input['texture_repeat'])
+)
+    ? sanitize_key(
+        (string) $input['texture_repeat']
+    )
+    : $defaults['texture_repeat'];
+
+$output['texture_repeat'] = in_array(
+    $repeat,
+    $allowed_repeats,
+    true
+)
+    ? $repeat
+    : $defaults['texture_repeat'];
 
 $texture_zone_fields = [
     'texture_apply_header',
@@ -594,14 +682,22 @@ $texture_zone_fields = [
 ];
 
 foreach ($texture_zone_fields as $field) {
-    $output[$field] = !empty($input[$field]) ? 1 : 0;
+    $output[$field] = isset($input[$field])
+        ? $sanitize_texture_toggle(
+            $input[$field]
+        )
+        : 0;
 }
 
 /*
  * Preserve retired placement settings without continuing to expose them
  * in the primary admin interface.
  */
-$current_settings = get_option('mpc_theme_style_settings', []);
+$current_settings = get_option(
+    'mpc_theme_style_settings',
+    []
+);
+
 if (!is_array($current_settings)) {
     $current_settings = [];
 }
@@ -615,10 +711,22 @@ $legacy_texture_fields = [
 
 foreach ($legacy_texture_fields as $field) {
     if (array_key_exists($field, $input)) {
-        $output[$field] = !empty($input[$field]) ? 1 : 0;
+        $output[$field] =
+            $sanitize_texture_toggle(
+                $input[$field]
+            );
+
         continue;
     }
-    $output[$field] = !empty($current_settings[$field]) ? 1 : 0;
+
+    $output[$field] = array_key_exists(
+        $field,
+        $current_settings
+    )
+        ? $sanitize_texture_toggle(
+            $current_settings[$field]
+        )
+        : $defaults[$field];
 }
 
     return $output;

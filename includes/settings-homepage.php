@@ -237,7 +237,7 @@ function mpc_get_homepage_defaults() {
         'section_order' => implode(',', mpc_get_homepage_section_default_order()),
         'section_visibility' => mpc_get_homepage_section_default_visibility(),
 
-        // Hero.
+       // Hero. 
         'hero_enabled' => 1,
         'hero_heading' => get_bloginfo('name'),
         'hero_layout' => 'split',
@@ -420,10 +420,43 @@ function mpc_sanitize_featured_video_url($url) {
  * Sanitize homepage settings before saving.
  */
 function mpc_sanitize_homepage_settings($input) {
-    $input = is_array($input) ? $input : [];
+    $input = is_array($input)
+        ? $input
+        : [];
 
     $defaults = mpc_get_homepage_defaults();
     $output = [];
+
+    /**
+     * Normalize checkbox-style Homepage values.
+     *
+     * @param mixed $value Submitted value.
+     * @return int
+     */
+    $sanitize_homepage_toggle = static function (
+        $value
+    ) {
+        if (!is_scalar($value)) {
+            return 0;
+        }
+
+        $value = strtolower(
+            trim((string) $value)
+        );
+
+        return in_array(
+            $value,
+            [
+                '1',
+                'true',
+                'yes',
+                'on',
+            ],
+            true
+        )
+            ? 1
+            : 0;
+    };
 
     // Section Manager.
     $known_sections = mpc_get_homepage_section_default_order();
@@ -451,38 +484,80 @@ foreach ($known_sections as $section) {
 
 $output['section_visibility'] =
     $section_visibility;
-// Hero.
-$allowed_hero_layouts = ['split', 'full_bleed'];
 
-$output['hero_layout'] = isset($input['hero_layout'])
-    ? sanitize_key($input['hero_layout'])
+// Hero.
+$allowed_hero_layouts = [
+    'split',
+    'full_bleed',
+];
+
+$hero_layout = (
+    isset($input['hero_layout'])
+    && is_scalar($input['hero_layout'])
+)
+    ? sanitize_key(
+        (string) $input['hero_layout']
+    )
     : $defaults['hero_layout'];
 
-if (!in_array($output['hero_layout'], $allowed_hero_layouts, true)) {
-    $output['hero_layout'] = $defaults['hero_layout'];
-}
+$output['hero_layout'] = in_array(
+    $hero_layout,
+    $allowed_hero_layouts,
+    true
+)
+    ? $hero_layout
+    : $defaults['hero_layout'];
 
-        $allowed_hero_heights = ['compact', 'standard', 'full_screen'];
+$allowed_hero_heights = [
+    'compact',
+    'standard',
+    'full_screen',
+];
 
-$output['hero_height'] = isset($input['hero_height'])
-    ? sanitize_key($input['hero_height'])
+$hero_height = (
+    isset($input['hero_height'])
+    && is_scalar($input['hero_height'])
+)
+    ? sanitize_key(
+        (string) $input['hero_height']
+    )
     : $defaults['hero_height'];
 
-if (!in_array($output['hero_height'], $allowed_hero_heights, true)) {
-    $output['hero_height'] = $defaults['hero_height'];
-}
+$output['hero_height'] = in_array(
+    $hero_height,
+    $allowed_hero_heights,
+    true
+)
+    ? $hero_height
+    : $defaults['hero_height'];
 
-$allowed_hero_overlay_styles = ['side', 'bottom', 'center', 'even'];
+$allowed_hero_overlay_styles = [
+    'side',
+    'bottom',
+    'center',
+    'even',
+];
 
-$output['hero_overlay_style'] = isset($input['hero_overlay_style'])
-    ? sanitize_key($input['hero_overlay_style'])
+$hero_overlay_style = (
+    isset($input['hero_overlay_style'])
+    && is_scalar($input['hero_overlay_style'])
+)
+    ? sanitize_key(
+        (string) $input['hero_overlay_style']
+    )
     : $defaults['hero_overlay_style'];
 
-if (!in_array($output['hero_overlay_style'], $allowed_hero_overlay_styles, true)) {
-    $output['hero_overlay_style'] = $defaults['hero_overlay_style'];
-}
+$output['hero_overlay_style'] = in_array(
+    $hero_overlay_style,
+    $allowed_hero_overlay_styles,
+    true
+)
+    ? $hero_overlay_style
+    : $defaults['hero_overlay_style'];
 
-// Legacy content position. Keep saving this for backward compatibility.
+/*
+ * Legacy content-position setting retained for backward compatibility.
+ */
 $allowed_hero_content_positions = [
     'bottom_left',
     'center_left',
@@ -490,158 +565,521 @@ $allowed_hero_content_positions = [
     'center_center',
 ];
 
-$output['hero_content_position'] = isset($input['hero_content_position'])
-    ? sanitize_key($input['hero_content_position'])
+$hero_content_position = (
+    isset($input['hero_content_position'])
+    && is_scalar(
+        $input['hero_content_position']
+    )
+)
+    ? sanitize_key(
+        (string) $input[
+            'hero_content_position'
+        ]
+    )
     : $defaults['hero_content_position'];
 
-if (!in_array($output['hero_content_position'], $allowed_hero_content_positions, true)) {
-    $output['hero_content_position'] = $defaults['hero_content_position'];
-}
+$output['hero_content_position'] = in_array(
+    $hero_content_position,
+    $allowed_hero_content_positions,
+    true
+)
+    ? $hero_content_position
+    : $defaults['hero_content_position'];
 
 // Hero V2 placement.
-$allowed_hero_content_horizontal = ['left', 'center', 'right'];
-$hero_content_horizontal = isset($input['hero_content_horizontal'])
-    ? sanitize_key($input['hero_content_horizontal'])
+$allowed_hero_content_horizontal = [
+    'left',
+    'center',
+    'right',
+];
+
+$hero_content_horizontal = (
+    isset($input['hero_content_horizontal'])
+    && is_scalar(
+        $input['hero_content_horizontal']
+    )
+)
+    ? sanitize_key(
+        (string) $input[
+            'hero_content_horizontal'
+        ]
+    )
     : '';
 
-$output['hero_content_horizontal'] = in_array($hero_content_horizontal, $allowed_hero_content_horizontal, true)
+$output['hero_content_horizontal'] = in_array(
+    $hero_content_horizontal,
+    $allowed_hero_content_horizontal,
+    true
+)
     ? $hero_content_horizontal
     : '';
 
-$allowed_hero_content_vertical = ['top', 'center', 'bottom'];
-$hero_content_vertical = isset($input['hero_content_vertical'])
-    ? sanitize_key($input['hero_content_vertical'])
+$allowed_hero_content_vertical = [
+    'top',
+    'center',
+    'bottom',
+];
+
+$hero_content_vertical = (
+    isset($input['hero_content_vertical'])
+    && is_scalar(
+        $input['hero_content_vertical']
+    )
+)
+    ? sanitize_key(
+        (string) $input[
+            'hero_content_vertical'
+        ]
+    )
     : '';
 
-$output['hero_content_vertical'] = in_array($hero_content_vertical, $allowed_hero_content_vertical, true)
+$output['hero_content_vertical'] = in_array(
+    $hero_content_vertical,
+    $allowed_hero_content_vertical,
+    true
+)
     ? $hero_content_vertical
     : '';
 
-$allowed_hero_text_alignments = ['auto', 'left', 'center', 'right'];
-$hero_text_align = isset($input['hero_text_align'])
-    ? sanitize_key($input['hero_text_align'])
+$allowed_hero_text_alignments = [
+    'auto',
+    'left',
+    'center',
+    'right',
+];
+
+$hero_text_align = (
+    isset($input['hero_text_align'])
+    && is_scalar($input['hero_text_align'])
+)
+    ? sanitize_key(
+        (string) $input['hero_text_align']
+    )
     : $defaults['hero_text_align'];
 
-$output['hero_text_align'] = in_array($hero_text_align, $allowed_hero_text_alignments, true)
+$output['hero_text_align'] = in_array(
+    $hero_text_align,
+    $allowed_hero_text_alignments,
+    true
+)
     ? $hero_text_align
     : $defaults['hero_text_align'];
 
-    $output['hero_overlay_opacity'] = isset($input['hero_overlay_opacity'])
-    ? min(100, max(0, absint($input['hero_overlay_opacity'])))
-    : 45;
+$hero_overlay_opacity = (
+    isset($input['hero_overlay_opacity'])
+    && is_scalar(
+        $input['hero_overlay_opacity']
+    )
+)
+    ? absint(
+        (string) $input[
+            'hero_overlay_opacity'
+        ]
+    )
+    : absint(
+        $defaults['hero_overlay_opacity']
+    );
 
-    /*
-    * Legacy mirror retained for older theme versions and integrations.
-    * Section Manager is the canonical source.
-    */
-    $output['hero_enabled'] = $section_visibility['hero'];
+$output['hero_overlay_opacity'] = min(
+    100,
+    max(0, $hero_overlay_opacity)
+);
 
-    $output['hero_heading'] = isset($input['hero_heading'])
-        ? sanitize_text_field($input['hero_heading'])
-        : $defaults['hero_heading'];
+/*
+ * Legacy mirror retained for older theme versions and integrations.
+ * Section Manager is the canonical visibility source.
+ */
+$output['hero_enabled'] =
+    $section_visibility['hero'];
 
-    $output['hero_text'] = isset($input['hero_text'])
-        ? sanitize_textarea_field($input['hero_text'])
-        : $defaults['hero_text'];
+$output['hero_heading'] = (
+    isset($input['hero_heading'])
+    && is_scalar($input['hero_heading'])
+)
+    ? sanitize_text_field(
+        (string) $input['hero_heading']
+    )
+    : $defaults['hero_heading'];
 
-    $output['hero_mobile_image_id'] = isset($input['hero_mobile_image_id'])
-        ? absint($input['hero_mobile_image_id'])
-        : 0;
+$output['hero_text'] = (
+    isset($input['hero_text'])
+    && is_scalar($input['hero_text'])
+)
+    ? sanitize_textarea_field(
+        (string) $input['hero_text']
+    )
+    : $defaults['hero_text'];
 
-    $output['hero_desktop_video_id'] = isset($input['hero_desktop_video_id'])
-        ? absint($input['hero_desktop_video_id'])
-        : 0;
+$output['hero_mobile_image_id'] = (
+    isset($input['hero_mobile_image_id'])
+    && is_scalar(
+        $input['hero_mobile_image_id']
+    )
+)
+    ? absint(
+        (string) $input[
+            'hero_mobile_image_id'
+        ]
+    )
+    : 0;
 
-    $output['hero_cta_text'] = isset($input['hero_cta_text'])
-        ? sanitize_text_field($input['hero_cta_text'])
-        : '';
+$output['hero_desktop_video_id'] = (
+    isset($input['hero_desktop_video_id'])
+    && is_scalar(
+        $input['hero_desktop_video_id']
+    )
+)
+    ? absint(
+        (string) $input[
+            'hero_desktop_video_id'
+        ]
+    )
+    : 0;
 
-    $output['hero_cta_url'] = isset($input['hero_cta_url'])
-        ? esc_url_raw($input['hero_cta_url'])
-        : '';   
+$output['hero_cta_text'] = (
+    isset($input['hero_cta_text'])
+    && is_scalar($input['hero_cta_text'])
+)
+    ? sanitize_text_field(
+        (string) $input['hero_cta_text']
+    )
+    : $defaults['hero_cta_text'];
+
+$output['hero_cta_url'] = (
+    isset($input['hero_cta_url'])
+    && is_scalar($input['hero_cta_url'])
+)
+    ? esc_url_raw(
+        (string) $input['hero_cta_url']
+    )
+    : $defaults['hero_cta_url'];
 
 
-    // Featured Content.
-    /*
-    * Legacy mirror retained for backward compatibility.
-    */
-    $output['featured_enabled'] = $section_visibility['featured-content'];
+// Featured Content.
 
-    $output['featured_heading'] = isset($input['featured_heading'])
-        ? sanitize_text_field($input['featured_heading'])
-        : $defaults['featured_heading'];
+/*
+ * Legacy mirror retained for backward compatibility.
+ * Section Manager is the canonical visibility source.
+ */
+$output['featured_enabled'] =
+    $section_visibility['featured-content'];
 
-    $output['featured_label'] = isset($input['featured_label'])
-        ? sanitize_text_field($input['featured_label'])
-        : $defaults['featured_label'];
+$output['featured_heading'] = (
+    isset($input['featured_heading'])
+    && is_scalar($input['featured_heading'])
+)
+    ? sanitize_text_field(
+        (string) $input['featured_heading']
+    )
+    : $defaults['featured_heading'];
 
-    $output['featured_title'] = isset($input['featured_title'])
-        ? sanitize_text_field($input['featured_title'])
-        : '';
+$output['featured_label'] = (
+    isset($input['featured_label'])
+    && is_scalar($input['featured_label'])
+)
+    ? sanitize_text_field(
+        (string) $input['featured_label']
+    )
+    : $defaults['featured_label'];
 
-    $output['featured_text'] = isset($input['featured_text'])
-        ? wp_kses_post($input['featured_text'])
-        : '';
+$output['featured_title'] = (
+    isset($input['featured_title'])
+    && is_scalar($input['featured_title'])
+)
+    ? sanitize_text_field(
+        (string) $input['featured_title']
+    )
+    : $defaults['featured_title'];
 
-    $output['featured_image_id'] = isset($input['featured_image_id'])
-        ? absint($input['featured_image_id'])
-        : 0;
+$output['featured_text'] = (
+    isset($input['featured_text'])
+    && is_scalar($input['featured_text'])
+)
+    ? wp_kses_post(
+        (string) $input['featured_text']
+    )
+    : $defaults['featured_text'];
 
-    $output['featured_cta_text'] = isset($input['featured_cta_text'])
-        ? sanitize_text_field($input['featured_cta_text'])
-        : '';
+$output['featured_image_id'] = (
+    isset($input['featured_image_id'])
+    && is_scalar($input['featured_image_id'])
+)
+    ? absint(
+        (string) $input['featured_image_id']
+    )
+    : $defaults['featured_image_id'];
 
-    $output['featured_cta_url'] = isset($input['featured_cta_url'])
-        ? esc_url_raw($input['featured_cta_url'])
-        : '';
+$output['featured_cta_text'] = (
+    isset($input['featured_cta_text'])
+    && is_scalar($input['featured_cta_text'])
+)
+    ? sanitize_text_field(
+        (string) $input['featured_cta_text']
+    )
+    : $defaults['featured_cta_text'];
 
-    $allowed_featured_layouts = [
-        'split_card',
-        'media_left',
-        'media_right',
-        'stacked',
-    ];
+$output['featured_cta_url'] = (
+    isset($input['featured_cta_url'])
+    && is_scalar($input['featured_cta_url'])
+)
+    ? esc_url_raw(
+        (string) $input['featured_cta_url']
+    )
+    : $defaults['featured_cta_url'];
 
-    $output['featured_layout'] = isset($input['featured_layout'])
-        ? sanitize_key($input['featured_layout'])
-        : 'split_card';
+$allowed_featured_layouts = [
+    'split_card',
+    'media_left',
+    'media_right',
+    'stacked',
+];
 
-    if (!in_array($output['featured_layout'], $allowed_featured_layouts, true)) {
-        $output['featured_layout'] = 'split_card';
-    }
+$featured_layout = (
+    isset($input['featured_layout'])
+    && is_scalar($input['featured_layout'])
+)
+    ? sanitize_key(
+        (string) $input['featured_layout']
+    )
+    : $defaults['featured_layout'];
 
-    $allowed_featured_quote_positions = [
-        'beside',
-        'below',
-        'hidden',
-    ];
+$output['featured_layout'] = in_array(
+    $featured_layout,
+    $allowed_featured_layouts,
+    true
+)
+    ? $featured_layout
+    : $defaults['featured_layout'];
 
-$output['featured_quote_position'] = isset($input['featured_quote_position'])
-    ? sanitize_key($input['featured_quote_position'])
+$allowed_featured_quote_positions = [
+    'beside',
+    'below',
+    'hidden',
+];
+
+$featured_quote_position = (
+    isset($input['featured_quote_position'])
+    && is_scalar(
+        $input['featured_quote_position']
+    )
+)
+    ? sanitize_key(
+        (string) $input[
+            'featured_quote_position'
+        ]
+    )
     : $defaults['featured_quote_position'];
 
-if (!in_array($output['featured_quote_position'], $allowed_featured_quote_positions, true)) {
-    $output['featured_quote_position'] = $defaults['featured_quote_position'];
-}
+$output['featured_quote_position'] = in_array(
+    $featured_quote_position,
+    $allowed_featured_quote_positions,
+    true
+)
+    ? $featured_quote_position
+    : $defaults['featured_quote_position'];
 
-    /**
-     * Keep old featured_show_quote setting in sync for backward compatibility.
-     */
-    $output['featured_show_quote'] = $output['featured_quote_position'] === 'hidden' ? 0 : 1;
+/*
+ * Keep the legacy featured_show_quote setting synchronized for older theme
+ * versions and integrations.
+ */
+$output['featured_show_quote'] = (
+    $output['featured_quote_position']
+    === 'hidden'
+)
+    ? 0
+    : 1;
 
-    $allowed_featured_media_types = ['image', 'video'];
+$allowed_featured_media_types = [
+    'image',
+    'video',
+];
 
-    $output['featured_media_type'] = isset($input['featured_media_type'])
-        ? sanitize_key($input['featured_media_type'])
-        : 'image';
+$featured_media_type = (
+    isset($input['featured_media_type'])
+    && is_scalar($input['featured_media_type'])
+)
+    ? sanitize_key(
+        (string) $input['featured_media_type']
+    )
+    : $defaults['featured_media_type'];
 
-    if (!in_array($output['featured_media_type'], $allowed_featured_media_types, true)) {
-        $output['featured_media_type'] = 'image';
-    }
+$output['featured_media_type'] = in_array(
+    $featured_media_type,
+    $allowed_featured_media_types,
+    true
+)
+    ? $featured_media_type
+    : $defaults['featured_media_type'];
 
-    $output['featured_video_url'] = isset($input['featured_video_url'])
-        ? mpc_sanitize_featured_video_url($input['featured_video_url'])
-        : '';
+$output['featured_video_url'] = isset(
+    $input['featured_video_url']
+)
+    ? mpc_sanitize_featured_video_url(
+        $input['featured_video_url']
+    )
+    : $defaults['featured_video_url'];// Featured Content.
+
+/*
+ * Legacy mirror retained for backward compatibility.
+ * Section Manager is the canonical visibility source.
+ */
+$output['featured_enabled'] =
+    $section_visibility['featured-content'];
+
+$output['featured_heading'] = (
+    isset($input['featured_heading'])
+    && is_scalar($input['featured_heading'])
+)
+    ? sanitize_text_field(
+        (string) $input['featured_heading']
+    )
+    : $defaults['featured_heading'];
+
+$output['featured_label'] = (
+    isset($input['featured_label'])
+    && is_scalar($input['featured_label'])
+)
+    ? sanitize_text_field(
+        (string) $input['featured_label']
+    )
+    : $defaults['featured_label'];
+
+$output['featured_title'] = (
+    isset($input['featured_title'])
+    && is_scalar($input['featured_title'])
+)
+    ? sanitize_text_field(
+        (string) $input['featured_title']
+    )
+    : $defaults['featured_title'];
+
+$output['featured_text'] = (
+    isset($input['featured_text'])
+    && is_scalar($input['featured_text'])
+)
+    ? wp_kses_post(
+        (string) $input['featured_text']
+    )
+    : $defaults['featured_text'];
+
+$output['featured_image_id'] = (
+    isset($input['featured_image_id'])
+    && is_scalar($input['featured_image_id'])
+)
+    ? absint(
+        (string) $input['featured_image_id']
+    )
+    : $defaults['featured_image_id'];
+
+$output['featured_cta_text'] = (
+    isset($input['featured_cta_text'])
+    && is_scalar($input['featured_cta_text'])
+)
+    ? sanitize_text_field(
+        (string) $input['featured_cta_text']
+    )
+    : $defaults['featured_cta_text'];
+
+$output['featured_cta_url'] = (
+    isset($input['featured_cta_url'])
+    && is_scalar($input['featured_cta_url'])
+)
+    ? esc_url_raw(
+        (string) $input['featured_cta_url']
+    )
+    : $defaults['featured_cta_url'];
+
+$allowed_featured_layouts = [
+    'split_card',
+    'media_left',
+    'media_right',
+    'stacked',
+];
+
+$featured_layout = (
+    isset($input['featured_layout'])
+    && is_scalar($input['featured_layout'])
+)
+    ? sanitize_key(
+        (string) $input['featured_layout']
+    )
+    : $defaults['featured_layout'];
+
+$output['featured_layout'] = in_array(
+    $featured_layout,
+    $allowed_featured_layouts,
+    true
+)
+    ? $featured_layout
+    : $defaults['featured_layout'];
+
+$allowed_featured_quote_positions = [
+    'beside',
+    'below',
+    'hidden',
+];
+
+$featured_quote_position = (
+    isset($input['featured_quote_position'])
+    && is_scalar(
+        $input['featured_quote_position']
+    )
+)
+    ? sanitize_key(
+        (string) $input[
+            'featured_quote_position'
+        ]
+    )
+    : $defaults['featured_quote_position'];
+
+$output['featured_quote_position'] = in_array(
+    $featured_quote_position,
+    $allowed_featured_quote_positions,
+    true
+)
+    ? $featured_quote_position
+    : $defaults['featured_quote_position'];
+
+/*
+ * Keep the legacy featured_show_quote setting synchronized for older theme
+ * versions and integrations.
+ */
+$output['featured_show_quote'] = (
+    $output['featured_quote_position']
+    === 'hidden'
+)
+    ? 0
+    : 1;
+
+$allowed_featured_media_types = [
+    'image',
+    'video',
+];
+
+$featured_media_type = (
+    isset($input['featured_media_type'])
+    && is_scalar($input['featured_media_type'])
+)
+    ? sanitize_key(
+        (string) $input['featured_media_type']
+    )
+    : $defaults['featured_media_type'];
+
+$output['featured_media_type'] = in_array(
+    $featured_media_type,
+    $allowed_featured_media_types,
+    true
+)
+    ? $featured_media_type
+    : $defaults['featured_media_type'];
+
+$output['featured_video_url'] = isset(
+    $input['featured_video_url']
+)
+    ? mpc_sanitize_featured_video_url(
+        $input['featured_video_url']
+    )
+    : $defaults['featured_video_url'];
 
 // Quotes / Testimonials.
 $output['quotes_heading'] = isset($input['quotes_heading'])
@@ -652,13 +1090,21 @@ $output['quotes_intro'] = isset($input['quotes_intro'])
     ? sanitize_textarea_field($input['quotes_intro'])
     : $defaults['quotes_intro'];
 
-$allowed_quotes_layouts = ['single', 'grid', 'featured_first'];
+$allowed_quotes_layouts = [
+    'single',
+    'grid',
+    'featured_first',
+];
 
 $quotes_layout = isset($input['quotes_layout'])
     ? sanitize_key($input['quotes_layout'])
     : $defaults['quotes_layout'];
 
-$output['quotes_layout'] = in_array($quotes_layout, $allowed_quotes_layouts, true)
+$output['quotes_layout'] = in_array(
+    $quotes_layout,
+    $allowed_quotes_layouts,
+    true
+)
     ? $quotes_layout
     : $defaults['quotes_layout'];
 
@@ -666,91 +1112,228 @@ $quotes_count = isset($input['quotes_count'])
     ? absint($input['quotes_count'])
     : absint($defaults['quotes_count']);
 
-$output['quotes_count'] = min(12, max(1, $quotes_count));
+$output['quotes_count'] = min(
+    12,
+    max(1, $quotes_count)
+);
 
-$output['quotes_featured_only'] = !empty($input['quotes_featured_only']) ? 1 : 0;
+$output['quotes_featured_only'] = !empty(
+    $input['quotes_featured_only']
+)
+    ? 1
+    : 0;
 
-$output['quotes_show_attribution'] = !empty($input['quotes_show_attribution']) ? 1 : 0;
+$output['quotes_show_attribution'] = !empty(
+    $input['quotes_show_attribution']
+)
+    ? 1
+    : 0;
 
-$allowed_quotes_background_tones = ['default', 'surface', 'contrast'];
+$allowed_quotes_background_tones = [
+    'default',
+    'surface',
+    'contrast',
+];
 
-$quotes_background_tone = isset($input['quotes_background_tone'])
-    ? sanitize_key($input['quotes_background_tone'])
+$quotes_background_tone = isset(
+    $input['quotes_background_tone']
+)
+    ? sanitize_key(
+        $input['quotes_background_tone']
+    )
     : $defaults['quotes_background_tone'];
 
-$output['quotes_background_tone'] = in_array($quotes_background_tone, $allowed_quotes_background_tones, true)
+$output['quotes_background_tone'] = in_array(
+    $quotes_background_tone,
+    $allowed_quotes_background_tones,
+    true
+)
     ? $quotes_background_tone
     : $defaults['quotes_background_tone'];
 
+
     // Blog.
-    /*
-    * Legacy mirror retained for backward compatibility.
-    */
-    $output['blog_enabled'] = $section_visibility['blog'];
 
-    $output['blog_heading'] = isset($input['blog_heading'])
-        ? sanitize_text_field($input['blog_heading'])
-        : $defaults['blog_heading'];
+/*
+ * Legacy mirror retained for backward compatibility.
+ * Section Manager is the canonical visibility source.
+ */
+$output['blog_enabled'] =
+    $section_visibility['blog'];
 
-    $allowed_blog_layouts = ['grid', 'featured_first', 'compact'];
+$output['blog_heading'] = (
+    isset($input['blog_heading'])
+    && is_scalar($input['blog_heading'])
+)
+    ? sanitize_text_field(
+        (string) $input['blog_heading']
+    )
+    : $defaults['blog_heading'];
 
-    $output['blog_layout'] = isset($input['blog_layout'])
-        ? sanitize_key($input['blog_layout'])
-        : 'grid';
+$allowed_blog_layouts = [
+    'grid',
+    'featured_first',
+    'compact',
+];
 
-    if (!in_array($output['blog_layout'], $allowed_blog_layouts, true)) {
-        $output['blog_layout'] = 'grid';
-    }
+$blog_layout = (
+    isset($input['blog_layout'])
+    && is_scalar($input['blog_layout'])
+)
+    ? sanitize_key(
+        (string) $input['blog_layout']
+    )
+    : $defaults['blog_layout'];
 
-    $allowed_featured_sources = ['latest', 'manual'];
+$output['blog_layout'] = in_array(
+    $blog_layout,
+    $allowed_blog_layouts,
+    true
+)
+    ? $blog_layout
+    : $defaults['blog_layout'];
 
-    $output['blog_featured_source'] = isset($input['blog_featured_source'])
-        ? sanitize_key($input['blog_featured_source'])
-        : 'latest';
+$allowed_featured_sources = [
+    'latest',
+    'manual',
+];
 
-    if (!in_array($output['blog_featured_source'], $allowed_featured_sources, true)) {
-        $output['blog_featured_source'] = 'latest';
-    }
+$blog_featured_source = (
+    isset($input['blog_featured_source'])
+    && is_scalar(
+        $input['blog_featured_source']
+    )
+)
+    ? sanitize_key(
+        (string) $input[
+            'blog_featured_source'
+        ]
+    )
+    : $defaults['blog_featured_source'];
 
-    $output['blog_featured_post_id'] = isset($input['blog_featured_post_id'])
-        ? absint($input['blog_featured_post_id'])
-        : 0;
+$output['blog_featured_source'] = in_array(
+    $blog_featured_source,
+    $allowed_featured_sources,
+    true
+)
+    ? $blog_featured_source
+    : $defaults['blog_featured_source'];
 
-    $output['blog_posts_per_page'] = isset($input['blog_posts_per_page'])
-        ? absint($input['blog_posts_per_page'])
-        : $defaults['blog_posts_per_page'];
+$output['blog_featured_post_id'] = (
+    isset($input['blog_featured_post_id'])
+    && is_scalar(
+        $input['blog_featured_post_id']
+    )
+)
+    ? absint(
+        (string) $input[
+            'blog_featured_post_id'
+        ]
+    )
+    : $defaults['blog_featured_post_id'];
 
-    if ($output['blog_posts_per_page'] < 1) {
-        $output['blog_posts_per_page'] = 1;
-    }
+$blog_posts_per_page = (
+    isset($input['blog_posts_per_page'])
+    && is_scalar(
+        $input['blog_posts_per_page']
+    )
+)
+    ? absint(
+        (string) $input[
+            'blog_posts_per_page'
+        ]
+    )
+    : absint(
+        $defaults['blog_posts_per_page']
+    );
 
-    if ($output['blog_posts_per_page'] > 12) {
-        $output['blog_posts_per_page'] = 12;
-    }
+$output['blog_posts_per_page'] = min(
+    12,
+    max(1, $blog_posts_per_page)
+);
 
-    $output['blog_additional_posts'] = isset($input['blog_additional_posts'])
-        ? absint($input['blog_additional_posts'])
-        : 2;
+$blog_additional_posts = (
+    isset($input['blog_additional_posts'])
+    && is_scalar(
+        $input['blog_additional_posts']
+    )
+)
+    ? absint(
+        (string) $input[
+            'blog_additional_posts'
+        ]
+    )
+    : absint(
+        $defaults['blog_additional_posts']
+    );
 
-    if ($output['blog_additional_posts'] > 6) {
-        $output['blog_additional_posts'] = 6;
-    }
+$output['blog_additional_posts'] = min(
+    6,
+    $blog_additional_posts
+);
 
-    $output['blog_show_images'] = !empty($input['blog_show_images']) ? 1 : 0;
-    $output['blog_show_dates'] = !empty($input['blog_show_dates']) ? 1 : 0;
-    $output['blog_show_excerpts'] = !empty($input['blog_show_excerpts']) ? 1 : 0;
+$output['blog_show_images'] = isset(
+    $input['blog_show_images']
+)
+    ? $sanitize_homepage_toggle(
+        $input['blog_show_images']
+    )
+    : 0;
 
-    $output['blog_read_more_text'] = isset($input['blog_read_more_text'])
-        ? sanitize_text_field($input['blog_read_more_text'])
-        : $defaults['blog_read_more_text'];
+$output['blog_show_dates'] = isset(
+    $input['blog_show_dates']
+)
+    ? $sanitize_homepage_toggle(
+        $input['blog_show_dates']
+    )
+    : 0;
 
-    $output['blog_view_all_text'] = isset($input['blog_view_all_text'])
-        ? sanitize_text_field($input['blog_view_all_text'])
-        : $defaults['blog_view_all_text'];
+$output['blog_show_excerpts'] = isset(
+    $input['blog_show_excerpts']
+)
+    ? $sanitize_homepage_toggle(
+        $input['blog_show_excerpts']
+    )
+    : 0;
 
-    $output['blog_view_all_url'] = isset($input['blog_view_all_url'])
-        ? esc_url_raw($input['blog_view_all_url'])
-        : $defaults['blog_view_all_url'];
+$output['blog_read_more_text'] = (
+    isset($input['blog_read_more_text'])
+    && is_scalar(
+        $input['blog_read_more_text']
+    )
+)
+    ? sanitize_text_field(
+        (string) $input[
+            'blog_read_more_text'
+        ]
+    )
+    : $defaults['blog_read_more_text'];
+
+$output['blog_view_all_text'] = (
+    isset($input['blog_view_all_text'])
+    && is_scalar(
+        $input['blog_view_all_text']
+    )
+)
+    ? sanitize_text_field(
+        (string) $input[
+            'blog_view_all_text'
+        ]
+    )
+    : $defaults['blog_view_all_text'];
+
+$output['blog_view_all_url'] = (
+    isset($input['blog_view_all_url'])
+    && is_scalar(
+        $input['blog_view_all_url']
+    )
+)
+    ? esc_url_raw(
+        (string) $input[
+            'blog_view_all_url'
+        ]
+    )
+    : $defaults['blog_view_all_url'];
 
         // Services.
     $output['services_heading'] = isset($input['services_heading'])
