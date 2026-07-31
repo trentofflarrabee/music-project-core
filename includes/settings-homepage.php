@@ -803,7 +803,11 @@ function mpc_register_homepage_settings() {
         'mpc_homepage_settings_group',
         'mpc_homepage_settings',
         [
-            'sanitize_callback' => 'mpc_sanitize_homepage_settings',
+            'type'              => 'array',
+            'sanitize_callback' =>
+                'mpc_sanitize_homepage_settings',
+            'default'           =>
+                mpc_get_homepage_defaults(),
         ]
     );
 }

@@ -1,9 +1,13 @@
 <?php
 /**
  * Plugin Name: Music Project Core
+ * Plugin URI: https://github.com/trentofflarrabee/music-project-core
  * Description: Core admin settings and reusable content tools for music project websites.
  * Version: 0.1.0
+ * Requires at least: 6.8
+ * Requires PHP: 7.4
  * Author: Trent Larrabee
+ * Update URI: https://github.com/trentofflarrabee/music-project-core
  * Text Domain: music-project-core
  * Domain Path: /languages
  */

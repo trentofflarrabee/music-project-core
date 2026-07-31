@@ -491,7 +491,11 @@ function mpc_register_theme_style_settings() {
         'mpc_theme_style_settings_group',
         'mpc_theme_style_settings',
         [
-            'sanitize_callback' => 'mpc_sanitize_theme_style_settings',
+            'type'              => 'array',
+            'sanitize_callback' =>
+                'mpc_sanitize_theme_style_settings',
+            'default'           =>
+                mpc_get_theme_style_defaults(),
         ]
     );
 }
