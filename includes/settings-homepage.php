@@ -209,8 +209,10 @@ function mpc_get_homepage_defaults() {
         'hero_layout' => 'split',
         'hero_height' => 'full_screen',
         'hero_overlay_opacity' => 45,
-        'hero_text' => 'A reusable WordPress theme for bands, artists, and music projects.',
-        
+        'hero_text' => __(
+            'A reusable WordPress theme for bands, artists, and music projects.',
+            'music-project-core'
+        ),        
         'hero_overlay_style' => 'side',
 
         // Legacy position setting. Keep for backward compatibility.
@@ -229,8 +231,14 @@ function mpc_get_homepage_defaults() {
 
         // Featured Content.
         'featured_enabled' => 1,
-        'featured_heading' => 'Featured Content',
-        'featured_label' => 'Latest Release',
+        'featured_heading' => __(
+            'Featured Content',
+            'music-project-core'
+        ),
+        'featured_label' => __(
+            'Latest Release',
+            'music-project-core'
+        ),
         'featured_title' => '',
         'featured_text' => '',
         'featured_image_id' => 0,
@@ -262,7 +270,10 @@ function mpc_get_homepage_defaults() {
 
         // Blog.
         'blog_enabled' => 1,
-        'blog_heading' => 'Blog',
+        'blog_heading' => __(
+            'Blog',
+            'music-project-core'
+        ),
         'blog_layout' => 'grid',
         'blog_featured_source' => 'latest',
         'blog_featured_post_id' => 0,
@@ -271,8 +282,14 @@ function mpc_get_homepage_defaults() {
         'blog_show_images' => 1,
         'blog_show_dates' => 1,
         'blog_show_excerpts' => 1,
-        'blog_read_more_text' => 'Read More',
-        'blog_view_all_text' => 'View All Posts',
+        'blog_read_more_text' => __(
+            'Read More',
+            'music-project-core'
+        ),
+        'blog_view_all_text' => __(
+            'View All Posts',
+            'music-project-core'
+        ),
         'blog_view_all_url' => '/blog',
     ];
 }

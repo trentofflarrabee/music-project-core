@@ -363,17 +363,37 @@ function mpc_press_quote_admin_column_content($column, $post_id) {
     }
 
     if ($column === 'quote_featured') {
-        $featured = get_post_meta($post_id, '_mpc_press_quote_featured', true);
+        $featured = get_post_meta(
+            $post_id,
+            '_mpc_press_quote_featured',
+            true
+        );
 
         if ($featured) {
-            echo '<strong style="color:#008a20;">Yes</strong>';
+            printf(
+                '<strong style="color:#008a20;">%s</strong>',
+                esc_html__(
+                    'Yes',
+                    'music-project-core'
+                )
+            );
         } else {
-            echo '<span style="color:#646970;">No</span>';
+            printf(
+                '<span style="color:#646970;">%s</span>',
+                esc_html__(
+                    'No',
+                    'music-project-core'
+                )
+            );
         }
     }
 }
-add_action('manage_mpc_press_quote_posts_custom_column', 'mpc_press_quote_admin_column_content', 10, 2);
-
+add_action(
+    'manage_mpc_press_quote_posts_custom_column',
+    'mpc_press_quote_admin_column_content',
+    10,
+    2
+);
 /**
  * Press Quote featured filter.
  */
@@ -477,7 +497,14 @@ function mpc_press_quote_auto_title($post_id, $post, $update) {
 
     $new_title = $title_parts
         ? implode(' — ', $title_parts)
-        : 'Quote / Testimonial #' . $post_id;
+        : sprintf(
+            /* translators: %d is the quote or testimonial post ID. */
+            __(
+                'Quote / Testimonial #%d',
+                'music-project-core'
+            ),
+            $post_id
+        );
 
     remove_action('save_post_mpc_press_quote', 'mpc_press_quote_auto_title', 20);
 

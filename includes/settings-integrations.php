@@ -10,12 +10,21 @@ if (!defined('ABSPATH')) {
 function mpc_get_integrations_defaults() {
     return [
         'shows_enabled' => 1,
-        'shows_heading' => 'Shows',
+        'shows_heading' => __(
+            'Shows',
+            'music-project-core'
+        ),
         'shows_embed' => '',
 
         'newsletter_enabled' => 1,
-        'newsletter_heading' => 'Newsletter',
-        'newsletter_text' => 'Sign up for updates.',
+        'newsletter_heading' => __(
+            'Newsletter',
+            'music-project-core'
+        ),
+        'newsletter_text' => __(
+            'Sign up for updates.',
+            'music-project-core'
+        ),
         'newsletter_embed' => '',
     ];
 }
