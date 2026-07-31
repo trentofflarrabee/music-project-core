@@ -167,9 +167,15 @@ function mpc_sanitize_footer_settings($input) {
 
     $output = [];
 
+    /*
+     * Preserve unknown scalar settings so temporarily unavailable extensions
+     * do not silently lose their stored Footer data.
+     */
     if (is_array($current)) {
         foreach ($current as $key => $value) {
-            $key = sanitize_key((string) $key);
+            $key = sanitize_key(
+                (string) $key
+            );
 
             if (
                 $key !== ''
@@ -183,43 +189,59 @@ function mpc_sanitize_footer_settings($input) {
         }
     }
 
-    $output['footer_tagline'] = isset(
-        $input['footer_tagline']
+    $footer_tagline = (
+        isset($input['footer_tagline'])
+        && is_scalar($input['footer_tagline'])
     )
         ? sanitize_text_field(
-            $input['footer_tagline']
+            (string) $input['footer_tagline']
         )
         : '';
 
-    $output['footer_copyright'] = isset(
-        $input['footer_copyright']
+    $footer_copyright = (
+        isset($input['footer_copyright'])
+        && is_scalar($input['footer_copyright'])
     )
         ? sanitize_text_field(
-            $input['footer_copyright']
+            (string) $input['footer_copyright']
         )
         : $defaults['footer_copyright'];
 
-    $output['footer_show_brand'] = !empty(
-        $input['footer_show_brand']
-    ) ? 1 : 0;
-
-    $output['footer_show_menu'] = !empty(
-        $input['footer_show_menu']
-    ) ? 1 : 0;
-
-    $output['footer_show_socials'] = !empty(
-        $input['footer_show_socials']
-    ) ? 1 : 0;
+    $layout = (
+        isset($input['footer_layout'])
+        && is_scalar($input['footer_layout'])
+    )
+        ? sanitize_key(
+            (string) $input['footer_layout']
+        )
+        : $defaults['footer_layout'];
 
     $allowed_layouts = array_keys(
         mpc_get_footer_layout_options()
     );
 
-    $layout = isset($input['footer_layout'])
-        ? sanitize_key(
-            (string) $input['footer_layout']
-        )
-        : $defaults['footer_layout'];
+    $output['footer_tagline'] = $footer_tagline;
+
+    $output['footer_copyright'] =
+        $footer_copyright;
+
+    $output['footer_show_brand'] = !empty(
+        $input['footer_show_brand']
+    )
+        ? 1
+        : 0;
+
+    $output['footer_show_menu'] = !empty(
+        $input['footer_show_menu']
+    )
+        ? 1
+        : 0;
+
+    $output['footer_show_socials'] = !empty(
+        $input['footer_show_socials']
+    )
+        ? 1
+        : 0;
 
     $output['footer_layout'] = in_array(
         $layout,

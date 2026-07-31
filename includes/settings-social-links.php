@@ -432,6 +432,8 @@ function mpc_sanitize_social_links_settings($input) {
         ? $input
         : [];
 
+    $defaults = mpc_get_social_links_defaults();
+
     $current = get_option(
         'mpc_social_links_settings',
         []
@@ -439,9 +441,15 @@ function mpc_sanitize_social_links_settings($input) {
 
     $output = [];
 
+    /*
+     * Preserve unknown scalar settings so temporarily unavailable platform
+     * extensions do not silently lose their saved data.
+     */
     if (is_array($current)) {
         foreach ($current as $key => $value) {
-            $key = sanitize_key((string) $key);
+            $key = sanitize_key(
+                (string) $key
+            );
 
             if (
                 $key !== ''
@@ -455,13 +463,23 @@ function mpc_sanitize_social_links_settings($input) {
         }
     }
 
-    foreach (mpc_get_social_link_items() as $key => $item) {
-        $value = isset($input[$key])
-            ? trim((string) $input[$key])
+    foreach (
+        mpc_get_social_link_items()
+        as $key => $item
+    ) {
+        $value = (
+            isset($input[$key])
+            && is_scalar($input[$key])
+        )
+            ? trim(
+                (string) $input[$key]
+            )
             : '';
 
         if ($item['type'] === 'email') {
-            $output[$key] = sanitize_email($value);
+            $output[$key] = sanitize_email(
+                $value
+            );
         } else {
             $output[$key] = esc_url_raw(
                 $value,
@@ -475,14 +493,28 @@ function mpc_sanitize_social_links_settings($input) {
     );
 
     foreach (
-        ['hero_display', 'footer_display']
+        [
+            'hero_display',
+            'footer_display',
+        ]
         as $display_key
     ) {
-        $value = isset($input[$display_key])
+        $default_display = isset(
+            $defaults[$display_key]
+        )
+            ? sanitize_key(
+                (string) $defaults[$display_key]
+            )
+            : 'labels';
+
+        $value = (
+            isset($input[$display_key])
+            && is_scalar($input[$display_key])
+        )
             ? sanitize_key(
                 (string) $input[$display_key]
             )
-            : 'labels';
+            : $default_display;
 
         $output[$display_key] = in_array(
             $value,
@@ -490,7 +522,7 @@ function mpc_sanitize_social_links_settings($input) {
             true
         )
             ? $value
-            : 'labels';
+            : $default_display;
     }
 
     return $output;

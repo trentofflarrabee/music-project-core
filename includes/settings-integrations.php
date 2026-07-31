@@ -164,9 +164,16 @@ function mpc_render_integration_content($content, $context = 'general') {
  * Sanitize integration settings.
  */
 function mpc_sanitize_integrations_settings($input) {
-    $input = is_array($input) ? $input : [];
+    $input = is_array($input)
+        ? $input
+        : [];
+
     $defaults = mpc_get_integrations_defaults();
-    $current = get_option('mpc_integrations_settings', []);
+
+    $current = get_option(
+        'mpc_integrations_settings',
+        []
+    );
 
     if (!is_array($current)) {
         $current = [];
@@ -175,51 +182,107 @@ function mpc_sanitize_integrations_settings($input) {
     $output = [];
 
     /*
-     * These keys remain stored for compatibility, but their value now mirrors
-     * Homepage Section Manager rather than a second admin checkbox.
+     * These keys remain stored for compatibility, but their values mirror
+     * Homepage Section Manager rather than separate admin checkboxes.
      */
-    if (function_exists('mpc_is_homepage_section_visible')) {
-        $output['shows_enabled'] = mpc_is_homepage_section_visible(
-            'shows'
-        ) ? 1 : 0;
+    if (
+        function_exists(
+            'mpc_is_homepage_section_visible'
+        )
+    ) {
+        $output['shows_enabled'] =
+            mpc_is_homepage_section_visible(
+                'shows'
+            )
+                ? 1
+                : 0;
 
-        $output['newsletter_enabled'] = mpc_is_homepage_section_visible(
-            'newsletter'
-        ) ? 1 : 0;
+        $output['newsletter_enabled'] =
+            mpc_is_homepage_section_visible(
+                'newsletter'
+            )
+                ? 1
+                : 0;
     } else {
         $output['shows_enabled'] = array_key_exists(
             'shows_enabled',
             $current
         )
-            ? (!empty($current['shows_enabled']) ? 1 : 0)
+            ? (
+                !empty($current['shows_enabled'])
+                    ? 1
+                    : 0
+            )
             : $defaults['shows_enabled'];
 
-        $output['newsletter_enabled'] = array_key_exists(
-            'newsletter_enabled',
-            $current
-        )
-            ? (!empty($current['newsletter_enabled']) ? 1 : 0)
-            : $defaults['newsletter_enabled'];
+        $output['newsletter_enabled'] =
+            array_key_exists(
+                'newsletter_enabled',
+                $current
+            )
+                ? (
+                    !empty(
+                        $current[
+                            'newsletter_enabled'
+                        ]
+                    )
+                        ? 1
+                        : 0
+                )
+                : $defaults[
+                    'newsletter_enabled'
+                ];
     }
 
-    $output['shows_heading'] = isset($input['shows_heading'])
-        ? sanitize_text_field($input['shows_heading'])
+    $output['shows_heading'] = (
+        isset($input['shows_heading'])
+        && is_scalar($input['shows_heading'])
+    )
+        ? sanitize_text_field(
+            (string) $input['shows_heading']
+        )
         : $defaults['shows_heading'];
 
-    $output['shows_embed'] = isset($input['shows_embed'])
-        ? mpc_sanitize_embed_content($input['shows_embed'])
+    $output['shows_embed'] = (
+        isset($input['shows_embed'])
+        && is_string($input['shows_embed'])
+    )
+        ? mpc_sanitize_embed_content(
+            $input['shows_embed']
+        )
         : '';
 
-    $output['newsletter_heading'] = isset($input['newsletter_heading'])
-        ? sanitize_text_field($input['newsletter_heading'])
+    $output['newsletter_heading'] = (
+        isset($input['newsletter_heading'])
+        && is_scalar(
+            $input['newsletter_heading']
+        )
+    )
+        ? sanitize_text_field(
+            (string) $input[
+                'newsletter_heading'
+            ]
+        )
         : $defaults['newsletter_heading'];
 
-    $output['newsletter_text'] = isset($input['newsletter_text'])
-        ? sanitize_textarea_field($input['newsletter_text'])
+    $output['newsletter_text'] = (
+        isset($input['newsletter_text'])
+        && is_scalar($input['newsletter_text'])
+    )
+        ? sanitize_textarea_field(
+            (string) $input['newsletter_text']
+        )
         : $defaults['newsletter_text'];
 
-    $output['newsletter_embed'] = isset($input['newsletter_embed'])
-        ? mpc_sanitize_embed_content($input['newsletter_embed'])
+    $output['newsletter_embed'] = (
+        isset($input['newsletter_embed'])
+        && is_string(
+            $input['newsletter_embed']
+        )
+    )
+        ? mpc_sanitize_embed_content(
+            $input['newsletter_embed']
+        )
         : '';
 
     return $output;
@@ -233,7 +296,11 @@ function mpc_register_integrations_settings() {
         'mpc_integrations_settings_group',
         'mpc_integrations_settings',
         [
-            'sanitize_callback' => 'mpc_sanitize_integrations_settings',
+            'type'              => 'array',
+            'sanitize_callback' =>
+                'mpc_sanitize_integrations_settings',
+            'default'           =>
+                mpc_get_integrations_defaults(),
         ]
     );
 }

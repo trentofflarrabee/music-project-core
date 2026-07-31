@@ -186,46 +186,71 @@ function mpc_sanitize_texture_size($value) {
  * Sanitize theme style settings.
  */
 function mpc_sanitize_theme_style_settings($input) {
+    $input = is_array($input)
+        ? $input
+        : [];
+
     $defaults = mpc_get_theme_style_defaults();
     $output = [];
 
-    // Colors.
-    $color_fields = [
-        'color_background',
-        'color_surface',
-        'color_text',
-        'color_muted',
-        'color_accent',
-        'color_button_background',
-        'color_button_text',
-    ];
+// Core palette colors.
+$color_fields = [
+    'color_background',
+    'color_surface',
+    'color_text',
+    'color_muted',
+    'color_accent',
+    'color_button_background',
+    'color_button_text',
+];
 
-    foreach ($color_fields as $field) {
-        $color = isset($input[$field]) ? sanitize_hex_color($input[$field]) : '';
-        $output[$field] = $color ?: $defaults[$field];
-    }
+foreach ($color_fields as $field) {
+    $submitted_value = (
+        isset($input[$field])
+        && is_scalar($input[$field])
+    )
+        ? (string) $input[$field]
+        : '';
 
-    // Site chrome colors.
-    $chrome_color_fields = [
-        'header_background_color',
-        'header_text_color',
-        'header_border_color',
-        'mobile_nav_background_color',
-        'mobile_nav_text_color',
-        'mobile_nav_border_color',
-        'footer_background_color',
-        'footer_text_color',
-        'footer_muted_color',
-        'footer_border_color',
-    ];
+    $color = sanitize_hex_color(
+        $submitted_value
+    );
 
-    foreach ($chrome_color_fields as $field) {
-        $value = isset($input[$field]) ? sanitize_hex_color($input[$field]) : '';
+    $output[$field] = $color
+        ?: $defaults[$field];
+}
 
-        $output[$field] = $value ?: $defaults[$field];
-    }
+// Site chrome colors.
+$chrome_color_fields = [
+    'header_background_color',
+    'header_text_color',
+    'header_border_color',
+    'mobile_nav_background_color',
+    'mobile_nav_text_color',
+    'mobile_nav_border_color',
+    'footer_background_color',
+    'footer_text_color',
+    'footer_muted_color',
+    'footer_border_color',
+];
 
-    // Site chrome behavior.
+foreach ($chrome_color_fields as $field) {
+    $submitted_value = (
+        isset($input[$field])
+        && is_scalar($input[$field])
+    )
+        ? (string) $input[$field]
+        : '';
+
+    $color = sanitize_hex_color(
+        $submitted_value
+    );
+
+    $output[$field] = $color
+        ?: $defaults[$field];
+}
+
+// Site chrome behavior.
 $allowed_header_behaviors = [
     'standard',
     'sticky',
@@ -233,11 +258,20 @@ $allowed_header_behaviors = [
     'transparent_scroll',
 ];
 
-$header_behavior = isset($input['header_behavior'])
-    ? sanitize_key($input['header_behavior'])
+$header_behavior = (
+    isset($input['header_behavior'])
+    && is_scalar($input['header_behavior'])
+)
+    ? sanitize_key(
+        (string) $input['header_behavior']
+    )
     : $defaults['header_behavior'];
 
-$output['header_behavior'] = in_array($header_behavior, $allowed_header_behaviors, true)
+$output['header_behavior'] = in_array(
+    $header_behavior,
+    $allowed_header_behaviors,
+    true
+)
     ? $header_behavior
     : $defaults['header_behavior'];
 
@@ -248,11 +282,20 @@ $allowed_brand_displays = [
     'hidden',
 ];
 
-$brand_display = isset($input['brand_display'])
-    ? sanitize_key($input['brand_display'])
+$brand_display = (
+    isset($input['brand_display'])
+    && is_scalar($input['brand_display'])
+)
+    ? sanitize_key(
+        (string) $input['brand_display']
+    )
     : $defaults['brand_display'];
 
-$output['brand_display'] = in_array($brand_display, $allowed_brand_displays, true)
+$output['brand_display'] = in_array(
+    $brand_display,
+    $allowed_brand_displays,
+    true
+)
     ? $brand_display
     : $defaults['brand_display'];
 
@@ -273,78 +316,224 @@ $output['brand_display'] = in_array($brand_display, $allowed_brand_displays, tru
         ? mpc_sanitize_font_family($input['font_accent'])
         : $defaults['font_accent'];
 
-    $allowed_transforms = ['none', 'uppercase', 'lowercase', 'capitalize'];
-    $transform = isset($input['heading_text_transform'])
-        ? sanitize_key($input['heading_text_transform'])
-        : $defaults['heading_text_transform'];
+$allowed_transforms = [
+    'none',
+    'uppercase',
+    'lowercase',
+    'capitalize',
+];
 
-    $output['heading_text_transform'] = in_array($transform, $allowed_transforms, true)
-        ? $transform
-        : $defaults['heading_text_transform'];
+$transform = (
+    isset($input['heading_text_transform'])
+    && is_scalar(
+        $input['heading_text_transform']
+    )
+)
+    ? sanitize_key(
+        (string) $input[
+            'heading_text_transform'
+        ]
+    )
+    : $defaults['heading_text_transform'];
 
-    $letter_spacing = isset($input['heading_letter_spacing'])
-        ? trim(wp_unslash($input['heading_letter_spacing']))
-        : $defaults['heading_letter_spacing'];
+$output['heading_text_transform'] = in_array(
+    $transform,
+    $allowed_transforms,
+    true
+)
+    ? $transform
+    : $defaults['heading_text_transform'];
 
-    $output['heading_letter_spacing'] = preg_match('/^-?\d+(\.\d+)?(px|rem|em)$/', $letter_spacing)
-        ? $letter_spacing
-        : $defaults['heading_letter_spacing'];
+$letter_spacing = (
+    isset($input['heading_letter_spacing'])
+    && is_scalar(
+        $input['heading_letter_spacing']
+    )
+)
+    ? trim(
+        wp_unslash(
+            (string) $input[
+                'heading_letter_spacing'
+            ]
+        )
+    )
+    : $defaults['heading_letter_spacing'];
 
-        $allowed_heading_alignment_scopes = ['none', 'home', 'all'];
+$output['heading_letter_spacing'] = preg_match(
+    '/^-?\d+(\.\d+)?(px|rem|em)$/',
+    $letter_spacing
+)
+    ? $letter_spacing
+    : $defaults['heading_letter_spacing'];
 
-        $output['heading_alignment_scope'] = isset($input['heading_alignment_scope']) && in_array($input['heading_alignment_scope'], $allowed_heading_alignment_scopes, true)
-            ? $input['heading_alignment_scope']
-            : $defaults['heading_alignment_scope'];
+$allowed_heading_alignment_scopes = [
+    'none',
+    'home',
+    'all',
+];
 
-            $output['hero_heading_color'] = isset($input['hero_heading_color'])
-            ? sanitize_hex_color($input['hero_heading_color'])
-            : $defaults['hero_heading_color'];
+$heading_alignment_scope = (
+    isset($input['heading_alignment_scope'])
+    && is_scalar(
+        $input['heading_alignment_scope']
+    )
+)
+    ? sanitize_key(
+        (string) $input[
+            'heading_alignment_scope'
+        ]
+    )
+    : $defaults[
+        'heading_alignment_scope'
+    ];
 
-        $output['hero_lead_color'] = isset($input['hero_lead_color'])
-            ? sanitize_hex_color($input['hero_lead_color'])
-            : $defaults['hero_lead_color'];
+$output['heading_alignment_scope'] = in_array(
+    $heading_alignment_scope,
+    $allowed_heading_alignment_scopes,
+    true
+)
+    ? $heading_alignment_scope
+    : $defaults['heading_alignment_scope'];
 
-        $allowed_hero_text_shadows = ['none', 'subtle', 'strong'];
+$hero_heading_color = (
+    isset($input['hero_heading_color'])
+    && is_scalar($input['hero_heading_color'])
+)
+    ? sanitize_hex_color(
+        (string) $input['hero_heading_color']
+    )
+    : '';
 
-        $output['hero_text_shadow'] = isset($input['hero_text_shadow']) && in_array($input['hero_text_shadow'], $allowed_hero_text_shadows, true)
-            ? $input['hero_text_shadow']
-            : $defaults['hero_text_shadow'];
+$output['hero_heading_color'] =
+    $hero_heading_color
+        ?: $defaults['hero_heading_color'];
 
-        $output['hero_text_shadow_color'] = isset($input['hero_text_shadow_color'])
-            ? sanitize_hex_color($input['hero_text_shadow_color'])
-            : $defaults['hero_text_shadow_color'];
+$hero_lead_color = (
+    isset($input['hero_lead_color'])
+    && is_scalar($input['hero_lead_color'])
+)
+    ? sanitize_hex_color(
+        (string) $input['hero_lead_color']
+    )
+    : '';
 
-        if (!$output['hero_text_shadow_color']) {
-            $output['hero_text_shadow_color'] = $defaults['hero_text_shadow_color'];
-        }    
+$output['hero_lead_color'] =
+    $hero_lead_color
+        ?: $defaults['hero_lead_color'];
 
-        // Design tokens.
-        $allowed_corner_styles = ['sharp', 'subtle', 'rounded', 'soft'];
-        $corner_style = isset($input['corner_style'])
-            ? sanitize_key($input['corner_style'])
-            : $defaults['corner_style'];
+$allowed_hero_text_shadows = [
+    'none',
+    'subtle',
+    'strong',
+];
 
-        $output['corner_style'] = in_array($corner_style, $allowed_corner_styles, true)
-            ? $corner_style
-            : $defaults['corner_style'];
+$hero_text_shadow = (
+    isset($input['hero_text_shadow'])
+    && is_scalar($input['hero_text_shadow'])
+)
+    ? sanitize_key(
+        (string) $input['hero_text_shadow']
+    )
+    : $defaults['hero_text_shadow'];
 
-        $allowed_card_shadow_styles = ['none', 'subtle', 'standard', 'dramatic'];
-        $card_shadow_style = isset($input['card_shadow_style'])
-            ? sanitize_key($input['card_shadow_style'])
-            : $defaults['card_shadow_style'];
+$output['hero_text_shadow'] = in_array(
+    $hero_text_shadow,
+    $allowed_hero_text_shadows,
+    true
+)
+    ? $hero_text_shadow
+    : $defaults['hero_text_shadow'];
 
-        $output['card_shadow_style'] = in_array($card_shadow_style, $allowed_card_shadow_styles, true)
-            ? $card_shadow_style
-            : $defaults['card_shadow_style'];
+$hero_text_shadow_color = (
+    isset($input['hero_text_shadow_color'])
+    && is_scalar(
+        $input['hero_text_shadow_color']
+    )
+)
+    ? sanitize_hex_color(
+        (string) $input[
+            'hero_text_shadow_color'
+        ]
+    )
+    : '';
 
-        $allowed_border_strengths = ['minimal', 'subtle', 'defined'];
-        $border_strength = isset($input['border_strength'])
-            ? sanitize_key($input['border_strength'])
-            : $defaults['border_strength'];
+$output['hero_text_shadow_color'] =
+    $hero_text_shadow_color
+        ?: $defaults[
+            'hero_text_shadow_color'
+        ];
 
-        $output['border_strength'] = in_array($border_strength, $allowed_border_strengths, true)
-            ? $border_strength
-            : $defaults['border_strength'];
+// Design tokens.
+$allowed_corner_styles = [
+    'sharp',
+    'subtle',
+    'rounded',
+    'soft',
+];
+
+$corner_style = (
+    isset($input['corner_style'])
+    && is_scalar($input['corner_style'])
+)
+    ? sanitize_key(
+        (string) $input['corner_style']
+    )
+    : $defaults['corner_style'];
+
+$output['corner_style'] = in_array(
+    $corner_style,
+    $allowed_corner_styles,
+    true
+)
+    ? $corner_style
+    : $defaults['corner_style'];
+
+$allowed_card_shadow_styles = [
+    'none',
+    'subtle',
+    'standard',
+    'dramatic',
+];
+
+$card_shadow_style = (
+    isset($input['card_shadow_style'])
+    && is_scalar($input['card_shadow_style'])
+)
+    ? sanitize_key(
+        (string) $input['card_shadow_style']
+    )
+    : $defaults['card_shadow_style'];
+
+$output['card_shadow_style'] = in_array(
+    $card_shadow_style,
+    $allowed_card_shadow_styles,
+    true
+)
+    ? $card_shadow_style
+    : $defaults['card_shadow_style'];
+
+$allowed_border_strengths = [
+    'minimal',
+    'subtle',
+    'defined',
+];
+
+$border_strength = (
+    isset($input['border_strength'])
+    && is_scalar($input['border_strength'])
+)
+    ? sanitize_key(
+        (string) $input['border_strength']
+    )
+    : $defaults['border_strength'];
+
+$output['border_strength'] = in_array(
+    $border_strength,
+    $allowed_border_strengths,
+    true
+)
+    ? $border_strength
+    : $defaults['border_strength'];
 
 
         $output['font_quote'] = isset($input['font_quote'])
@@ -520,9 +709,16 @@ add_action('admin_menu', 'mpc_add_theme_style_submenu');
  * Enqueue media uploader on Theme Style page.
  */
 function mpc_enqueue_theme_style_admin_assets() {
-    $page = isset($_GET['page'])
-        ? sanitize_key(wp_unslash($_GET['page']))
-        : '';
+$page = (
+    isset($_GET['page'])
+    && is_string($_GET['page'])
+)
+    ? sanitize_key(
+        wp_unslash(
+            $_GET['page']
+        )
+    )
+    : '';
 
     if ($page !== 'mpc-theme-style') {
         return;

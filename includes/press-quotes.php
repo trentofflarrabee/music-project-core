@@ -402,9 +402,16 @@ function mpc_press_quote_admin_filters($post_type) {
         return;
     }
 
-    $current = isset($_GET['mpc_quote_featured_filter'])
-        ? sanitize_key($_GET['mpc_quote_featured_filter'])
-        : '';
+$current = (
+    isset($_GET['mpc_quote_featured_filter'])
+    && is_string($_GET['mpc_quote_featured_filter'])
+)
+    ? sanitize_key(
+        wp_unslash(
+            $_GET['mpc_quote_featured_filter']
+        )
+    )
+    : '';
     ?>
     <select name="mpc_quote_featured_filter">
 <option value=""><?php esc_html_e('All Quotes / Testimonials', 'music-project-core'); ?></option>
@@ -431,9 +438,16 @@ function mpc_press_quote_admin_filter_query($query) {
         return;
     }
 
-    $filter = isset($_GET['mpc_quote_featured_filter'])
-        ? sanitize_key($_GET['mpc_quote_featured_filter'])
-        : '';
+$filter = (
+    isset($_GET['mpc_quote_featured_filter'])
+    && is_string($_GET['mpc_quote_featured_filter'])
+)
+    ? sanitize_key(
+        wp_unslash(
+            $_GET['mpc_quote_featured_filter']
+        )
+    )
+    : '';
 
     if ($filter === 'featured') {
         $query->set('meta_query', [

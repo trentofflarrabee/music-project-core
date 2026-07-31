@@ -46,10 +46,16 @@ function mpc_get_homepage_section_default_visibility() {
 }
 
 function mpc_normalize_homepage_section_order($order) {
-    $known_sections = mpc_get_homepage_section_default_order();
+    $known_sections =
+        mpc_get_homepage_section_default_order();
 
     if (is_string($order)) {
-        $order = array_filter(array_map('trim', explode(',', $order)));
+        $order = array_filter(
+            array_map(
+                'trim',
+                explode(',', $order)
+            )
+        );
     }
 
     if (!is_array($order)) {
@@ -59,15 +65,43 @@ function mpc_normalize_homepage_section_order($order) {
     $normalized = [];
 
     foreach ($order as $section) {
-        $section = sanitize_key($section);
+        if (!is_scalar($section)) {
+            continue;
+        }
 
-        if (in_array($section, $known_sections, true) && !in_array($section, $normalized, true)) {
+        $section = sanitize_key(
+            (string) $section
+        );
+
+        if (
+            $section !== ''
+            && in_array(
+                $section,
+                $known_sections,
+                true
+            )
+            && !in_array(
+                $section,
+                $normalized,
+                true
+            )
+        ) {
             $normalized[] = $section;
         }
     }
 
+    /*
+     * Restore missing registered sections so malformed or older saved orders
+     * cannot make a homepage section disappear from the manager.
+     */
     foreach ($known_sections as $section) {
-        if (!in_array($section, $normalized, true)) {
+        if (
+            !in_array(
+                $section,
+                $normalized,
+                true
+            )
+        ) {
             $normalized[] = $section;
         }
     }
@@ -333,20 +367,38 @@ function mpc_get_homepage_setting($key, $default = '') {
 }
 
 function mpc_sanitize_featured_video_url($url) {
-    $url = esc_url_raw(trim((string) $url));
-
-    if (!$url) {
+    if (!is_scalar($url)) {
         return '';
     }
 
-    $host = wp_parse_url($url, PHP_URL_HOST);
+    $url = esc_url_raw(
+        trim((string) $url)
+    );
 
-    if (!$host) {
+    if ($url === '') {
+        return '';
+    }
+
+    $host = wp_parse_url(
+        $url,
+        PHP_URL_HOST
+    );
+
+    if (!is_string($host) || $host === '') {
         return '';
     }
 
     $host = strtolower($host);
-    $host = preg_replace('/^www\./', '', $host);
+
+    $host = preg_replace(
+        '/^www\./',
+        '',
+        $host
+    );
+
+    if (!is_string($host)) {
+        return '';
+    }
 
     $allowed_hosts = [
         'youtube.com',
@@ -355,7 +407,13 @@ function mpc_sanitize_featured_video_url($url) {
         'player.vimeo.com',
     ];
 
-    return in_array($host, $allowed_hosts, true) ? $url : '';
+    return in_array(
+        $host,
+        $allowed_hosts,
+        true
+    )
+        ? $url
+        : '';
 }
 
 /**
@@ -374,14 +432,25 @@ function mpc_sanitize_homepage_settings($input) {
         ? implode(',', mpc_normalize_homepage_section_order($input['section_order']))
         : implode(',', $known_sections);
 
-    $section_visibility = [];
+$submitted_visibility = (
+    isset($input['section_visibility'])
+    && is_array($input['section_visibility'])
+)
+    ? $input['section_visibility']
+    : [];
 
-    foreach ($known_sections as $section) {
-        $section_visibility[$section] = !empty($input['section_visibility'][$section]) ? 1 : 0;
-    }
+$section_visibility = [];
 
-    $output['section_visibility'] = $section_visibility;
+foreach ($known_sections as $section) {
+    $section_visibility[$section] = !empty(
+        $submitted_visibility[$section]
+    )
+        ? 1
+        : 0;
+}
 
+$output['section_visibility'] =
+    $section_visibility;
 // Hero.
 $allowed_hero_layouts = ['split', 'full_bleed'];
 

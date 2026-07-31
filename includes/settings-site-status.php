@@ -79,12 +79,15 @@ function mpc_is_site_status_preview() {
     if (
         !current_user_can('manage_options')
         || !isset($_GET['mpc_preview_site_status'])
+        || !is_string($_GET['mpc_preview_site_status'])
     ) {
         return false;
     }
 
     $preview_value = sanitize_key(
-        wp_unslash($_GET['mpc_preview_site_status'])
+        wp_unslash(
+            $_GET['mpc_preview_site_status']
+        )
     );
 
     return $preview_value === '1';
@@ -115,45 +118,93 @@ function mpc_get_site_status_preview_url() {
 
 function mpc_sanitize_site_status_settings($input) {
     $defaults = mpc_get_site_status_defaults();
-    $input = is_array($input) ? $input : [];
-    $output = [];
 
-    $allowed_modes = ['disabled', 'coming_soon', 'maintenance'];
+    $input = is_array($input)
+        ? $input
+        : [];
 
-    $mode = isset($input['mode'])
-        ? sanitize_key($input['mode'])
+    $allowed_modes = [
+        'disabled',
+        'coming_soon',
+        'maintenance',
+    ];
+
+    $mode = (
+        isset($input['mode'])
+        && is_scalar($input['mode'])
+    )
+        ? sanitize_key(
+            (string) $input['mode']
+        )
         : $defaults['mode'];
 
-    $output['mode'] = in_array($mode, $allowed_modes, true)
-        ? $mode
-        : $defaults['mode'];
-
-    $output['heading'] = isset($input['heading'])
-        ? sanitize_text_field($input['heading'])
+    $heading = (
+        isset($input['heading'])
+        && is_scalar($input['heading'])
+    )
+        ? sanitize_text_field(
+            (string) $input['heading']
+        )
         : $defaults['heading'];
 
-    $output['message'] = isset($input['message'])
-        ? sanitize_textarea_field($input['message'])
+    $message = (
+        isset($input['message'])
+        && is_scalar($input['message'])
+    )
+        ? sanitize_textarea_field(
+            (string) $input['message']
+        )
         : $defaults['message'];
 
-    $output['button_text'] = isset($input['button_text'])
-        ? sanitize_text_field($input['button_text'])
+    $button_text = (
+        isset($input['button_text'])
+        && is_scalar($input['button_text'])
+    )
+        ? sanitize_text_field(
+            (string) $input['button_text']
+        )
         : $defaults['button_text'];
 
-    $output['button_url'] = isset($input['button_url'])
-        ? esc_url_raw($input['button_url'])
+    $button_url = (
+        isset($input['button_url'])
+        && is_scalar($input['button_url'])
+    )
+        ? esc_url_raw(
+            (string) $input['button_url']
+        )
         : $defaults['button_url'];
 
-    $output['show_social_links'] = !empty($input['show_social_links']) ? 1 : 0;
+    return [
+        'mode' => in_array(
+            $mode,
+            $allowed_modes,
+            true
+        )
+            ? $mode
+            : $defaults['mode'],
 
-    return $output;
+        'heading'           => $heading,
+        'message'           => $message,
+        'button_text'       => $button_text,
+        'button_url'        => $button_url,
+        'show_social_links' =>
+            !empty($input['show_social_links'])
+                ? 1
+                : 0,
+    ];
 }
 
 function mpc_register_site_status_settings() {
     register_setting(
         'mpc_site_status_settings_group',
         'mpc_site_status_settings',
-        'mpc_sanitize_site_status_settings'
+        [
+            'type'              => 'array',
+            'sanitize_callback' =>
+                'mpc_sanitize_site_status_settings',
+            'default'           =>
+                mpc_get_site_status_defaults(),
+        ]
     );
 }
 add_action('admin_init', 'mpc_register_site_status_settings');
