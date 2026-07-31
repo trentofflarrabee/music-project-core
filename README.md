@@ -388,9 +388,11 @@ Current development version:
 
 ` 0.1.0   `
 
-License
--------
+## License
 
-A project license has not yet been selected.
+Music Project Core is licensed under the GNU General Public License, version 2 or any later version.
 
-Add a LICENSE file and update this section before a public release.
+SPDX license identifier:
+
+```text
+GPL-2.0-or-later
