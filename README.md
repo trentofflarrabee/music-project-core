@@ -253,13 +253,14 @@ Installation
 ------------
 
 1.  Download or clone this repository.
-    
-2.  wp-content/plugins/music-project-core
-    
+2.  Place the plugin directory at:
+
+    ```
+    wp-content/plugins/music-project-core
+    ```
+
 3.  Activate **Music Project Core** under **Plugins** in WordPress.
-    
 4.  Install and activate the companion Music Project Base theme.
-    
 5.  Open the **Music Project** menu in WordPress administration.
     
 
