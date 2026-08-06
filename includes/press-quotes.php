@@ -149,21 +149,29 @@ placeholder="<?php esc_attr_e('Client name, venue, publication, blog, etc.', 'mu
 }
 
 /**
- * Save meta box data.
+ * Save Quotes / Testimonials meta box data.
+ *
+ * @param int $post_id Quote / Testimonial post ID.
+ * @return void
  */
 function mpc_save_press_quote_meta($post_id) {
-    if (!isset($_POST['mpc_press_quote_nonce'])) {
+    $post_id = absint($post_id);
+
+    if (
+        !$post_id
+        || get_post_type($post_id) !== 'mpc_press_quote'
+    ) {
         return;
     }
 
-    if (!wp_verify_nonce(
-        sanitize_text_field(wp_unslash($_POST['mpc_press_quote_nonce'])),
-        'mpc_save_press_quote_meta'
-    )) {
-        return;
-    }
-
-    if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
+    if (
+        wp_is_post_revision($post_id)
+        || wp_is_post_autosave($post_id)
+        || (
+            defined('DOING_AUTOSAVE')
+            && DOING_AUTOSAVE
+        )
+    ) {
         return;
     }
 
@@ -171,24 +179,98 @@ function mpc_save_press_quote_meta($post_id) {
         return;
     }
 
-    $quote_text = isset($_POST['mpc_press_quote_text'])
-        ? sanitize_textarea_field(wp_unslash($_POST['mpc_press_quote_text']))
+    if (
+        !isset($_POST['mpc_press_quote_nonce'])
+        || !is_scalar($_POST['mpc_press_quote_nonce'])
+    ) {
+        return;
+    }
+
+    $nonce = sanitize_text_field(
+        wp_unslash(
+            (string) $_POST['mpc_press_quote_nonce']
+        )
+    );
+
+    if (
+        !wp_verify_nonce(
+            $nonce,
+            'mpc_save_press_quote_meta'
+        )
+    ) {
+        return;
+    }
+
+    $quote_text = (
+        isset($_POST['mpc_press_quote_text'])
+        && is_scalar($_POST['mpc_press_quote_text'])
+    )
+        ? sanitize_textarea_field(
+            wp_unslash(
+                (string) $_POST['mpc_press_quote_text']
+            )
+        )
         : '';
 
-    $source_name = isset($_POST['mpc_press_quote_source_name'])
-        ? sanitize_text_field(wp_unslash($_POST['mpc_press_quote_source_name']))
+    $source_name = (
+        isset($_POST['mpc_press_quote_source_name'])
+        && is_scalar($_POST['mpc_press_quote_source_name'])
+    )
+        ? sanitize_text_field(
+            wp_unslash(
+                (string) $_POST['mpc_press_quote_source_name']
+            )
+        )
         : '';
 
-    $source_url = isset($_POST['mpc_press_quote_source_url'])
-        ? esc_url_raw(wp_unslash($_POST['mpc_press_quote_source_url']))
+    $source_url = (
+        isset($_POST['mpc_press_quote_source_url'])
+        && is_scalar($_POST['mpc_press_quote_source_url'])
+    )
+        ? esc_url_raw(
+            wp_unslash(
+                (string) $_POST['mpc_press_quote_source_url']
+            ),
+            [
+                'http',
+                'https',
+            ]
+        )
         : '';
 
-    $featured = !empty($_POST['mpc_press_quote_featured']) ? '1' : '0';
+    $featured = (
+        isset($_POST['mpc_press_quote_featured'])
+        && is_scalar($_POST['mpc_press_quote_featured'])
+        && wp_unslash(
+            (string) $_POST['mpc_press_quote_featured']
+        ) === '1'
+    )
+        ? '1'
+        : '0';
 
-    update_post_meta($post_id, '_mpc_press_quote_text', $quote_text);
-    update_post_meta($post_id, '_mpc_press_quote_source_name', $source_name);
-    update_post_meta($post_id, '_mpc_press_quote_source_url', $source_url);
-    update_post_meta($post_id, '_mpc_press_quote_featured', $featured);
+    update_post_meta(
+        $post_id,
+        '_mpc_press_quote_text',
+        $quote_text
+    );
+
+    update_post_meta(
+        $post_id,
+        '_mpc_press_quote_source_name',
+        $source_name
+    );
+
+    update_post_meta(
+        $post_id,
+        '_mpc_press_quote_source_url',
+        $source_url
+    );
+
+    update_post_meta(
+        $post_id,
+        '_mpc_press_quote_featured',
+        $featured
+    );
 }
 add_action('save_post_mpc_press_quote', 'mpc_save_press_quote_meta');
 
