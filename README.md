@@ -333,50 +333,59 @@ Local translation files may be placed in:
 
 `languages/`
 
-## Packaging
+Packaging
+---------
 
 Create a release ZIP from a clean, committed checkout of the intended release branch:
 
-```
-git archive \\  
-\--format=zip \\  
-\--prefix=music-project-core/ \\  
-\--output=../music-project-core.zip \\  
-HEAD
+```bash
+git archive \
+  --format=zip \
+  --prefix=music-project-core/ \
+  --output=../music-project-core.zip \
+  HEAD
 ```
 
 The release ZIP must contain one top-level directory:
 
+```text
 music-project-core/
+```
 
 The archive should include these production files and directories:
 
-music-project-core/  
-├── assets/  
-├── includes/  
-├── CHANGELOG.md  
-├── LICENSE  
-├── README.md  
-├── music-project-core.php  
+```text
+music-project-core/
+├── assets/
+├── includes/
+├── CHANGELOG.md
+├── LICENSE
+├── README.md
+├── music-project-core.php
 └── uninstall.php
+```
 
-The repository's .gitattributes rules exclude .gitattributes, .gitignore, and .github from archives created with git archive.
+The repository's `.gitattributes` rules exclude `.gitattributes`, `.gitignore`, and `.github` from archives created with `git archive`.
 
 Do not include development-only or local files such as:
 
-.git/  
-.DS_Store  
-Thumbs.db  
-node_modules/  
-vendor/  
-IDE project files  
-local database exports  
-environment files  
+```text
+.git/
+.DS_Store
+Thumbs.db
+node_modules/
+vendor/
+IDE project files
+local database exports
+environment files
 temporary or test ZIP files
+```
 
 Install and test the generated ZIP on a clean WordPress site before publishing it.
 
-## Development
+Development
+-----------
+
 The plugin uses WordPress-native APIs, including:
 
 *   Settings API
