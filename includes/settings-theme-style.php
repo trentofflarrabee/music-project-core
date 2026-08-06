@@ -127,23 +127,67 @@ function mpc_sanitize_font_family($value) {
 }
 
 /**
- * Sanitize Google Fonts stylesheet URL.
+ * Sanitize the optional Google Fonts stylesheet URL.
+ *
+ * Only the official Google Fonts stylesheet host is permitted. HTTP URLs are
+ * normalized to HTTPS so saved settings cannot cause mixed-content failures
+ * on secure sites.
+ *
+ * @param mixed $url Submitted stylesheet URL.
+ * @return string Sanitized HTTPS stylesheet URL, or an empty string.
  */
 function mpc_sanitize_google_fonts_url($url) {
-    $url = is_string($url) ? trim(wp_unslash($url)) : '';
+    if (!is_scalar($url)) {
+        return '';
+    }
+
+    $url = trim(
+        wp_unslash(
+            (string) $url
+        )
+    );
 
     if ($url === '') {
         return '';
     }
 
-    $url = esc_url_raw($url);
-    $host = wp_parse_url($url, PHP_URL_HOST);
+    $url = esc_url_raw(
+        $url,
+        [
+            'http',
+            'https',
+        ]
+    );
+
+    if ($url === '') {
+        return '';
+    }
+
+    $parts = wp_parse_url($url);
+
+    if (!is_array($parts)) {
+        return '';
+    }
+
+    $host = isset($parts['host'])
+        ? strtolower(
+            (string) $parts['host']
+        )
+        : '';
 
     if ($host !== 'fonts.googleapis.com') {
         return '';
     }
 
-    return $url;
+    return esc_url_raw(
+        set_url_scheme(
+            $url,
+            'https'
+        ),
+        [
+            'https',
+        ]
+    );
 }
 
 /**
