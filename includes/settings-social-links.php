@@ -425,26 +425,92 @@ function mpc_get_social_display_mode(
  * This helper supplies a rendering-neutral contract for themes and other
  * integrations. It does not generate icons or markup.
  *
- * @param string $context Optional rendering context.
+ * Filter output is normalized at this public boundary so malformed extension
+ * data cannot generate PHP warnings or introduce unsupported URL protocols.
+ *
+ * @param mixed $context Optional rendering context.
  * @return array
  */
 function mpc_get_social_links($context = '') {
-    $context = sanitize_key((string) $context);
-    $settings = mpc_get_social_links_settings();
-    $items = mpc_get_social_link_items();
+    $context = is_scalar($context)
+        ? sanitize_key(
+            (string) $context
+        )
+        : '';
+
+    $settings =
+        mpc_get_social_links_settings();
+
+    $items =
+        mpc_get_social_link_items();
+
     $links = [];
 
     foreach ($items as $key => $item) {
-        $value = isset($settings[$key])
-            ? trim((string) $settings[$key])
+        if (
+            !is_array($item)
+            || !is_scalar($key)
+        ) {
+            continue;
+        }
+
+        $key = sanitize_key(
+            (string) $key
+        );
+
+        if ($key === '') {
+            continue;
+        }
+
+        $value = (
+            isset($settings[$key])
+            && is_scalar($settings[$key])
+        )
+            ? trim(
+                (string) $settings[$key]
+            )
             : '';
 
         if ($value === '') {
             continue;
         }
 
-        if ($item['type'] === 'email') {
-            $email = sanitize_email($value);
+        $type = (
+            isset($item['type'])
+            && is_scalar($item['type'])
+        )
+            ? sanitize_key(
+                (string) $item['type']
+            )
+            : 'url';
+
+        $label = (
+            isset($item['label'])
+            && is_scalar($item['label'])
+        )
+            ? sanitize_text_field(
+                (string) $item['label']
+            )
+            : '';
+
+        if (
+            $label === ''
+            || !in_array(
+                $type,
+                [
+                    'url',
+                    'email',
+                ],
+                true
+            )
+        ) {
+            continue;
+        }
+
+        if ($type === 'email') {
+            $email = sanitize_email(
+                $value
+            );
 
             if (
                 $email === ''
@@ -457,7 +523,10 @@ function mpc_get_social_links($context = '') {
         } else {
             $url = esc_url_raw(
                 $value,
-                ['http', 'https']
+                [
+                    'http',
+                    'https',
+                ]
             );
 
             if ($url === '') {
@@ -467,15 +536,26 @@ function mpc_get_social_links($context = '') {
 
         $links[] = [
             'key'      => $key,
-            'label'    => $item['label'],
+            'label'    => $label,
             'url'      => $url,
-            'type'     => $item['type'],
-            'external' => !empty($item['external']),
+            'type'     => $type,
+            'external' => (
+                $type !== 'email'
+                && !empty($item['external'])
+            ),
         ];
     }
 
     /**
      * Filter normalized social links before rendering.
+     *
+     * Each returned item should contain:
+     *
+     * - key
+     * - label
+     * - url
+     * - type
+     * - external
      *
      * @param array  $links    Configured social links.
      * @param string $context  Rendering context.
@@ -494,6 +574,39 @@ function mpc_get_social_links($context = '') {
         return [];
     }
 
+    /**
+     * Normalize a boolean-style filtered value.
+     *
+     * @param mixed $value Submitted value.
+     * @return bool
+     */
+    $normalize_boolean = static function (
+        $value
+    ) {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (!is_scalar($value)) {
+            return false;
+        }
+
+        return in_array(
+            strtolower(
+                trim(
+                    (string) $value
+                )
+            ),
+            [
+                '1',
+                'true',
+                'yes',
+                'on',
+            ],
+            true
+        );
+    };
+
     $normalized = [];
 
     foreach ($links as $link) {
@@ -501,20 +614,35 @@ function mpc_get_social_links($context = '') {
             continue;
         }
 
-        $key = isset($link['key'])
-            ? sanitize_key((string) $link['key'])
+        $key = (
+            isset($link['key'])
+            && is_scalar($link['key'])
+        )
+            ? sanitize_key(
+                (string) $link['key']
+            )
             : '';
 
-        $label = isset($link['label'])
+        $label = (
+            isset($link['label'])
+            && is_scalar($link['label'])
+        )
             ? sanitize_text_field(
                 (string) $link['label']
             )
             : '';
 
-        $url = isset($link['url'])
+        $url = (
+            isset($link['url'])
+            && is_scalar($link['url'])
+        )
             ? esc_url_raw(
                 (string) $link['url'],
-                ['http', 'https', 'mailto']
+                [
+                    'http',
+                    'https',
+                    'mailto',
+                ]
             )
             : '';
 
@@ -526,14 +654,49 @@ function mpc_get_social_links($context = '') {
             continue;
         }
 
-        $type = isset($link['type'])
-            ? sanitize_key((string) $link['type'])
-            : 'url';
+        $is_email =
+            strpos($url, 'mailto:') === 0;
+
+        $type = (
+            isset($link['type'])
+            && is_scalar($link['type'])
+        )
+            ? sanitize_key(
+                (string) $link['type']
+            )
+            : (
+                $is_email
+                    ? 'email'
+                    : 'url'
+            );
+
+        if (
+            !in_array(
+                $type,
+                [
+                    'url',
+                    'email',
+                ],
+                true
+            )
+        ) {
+            $type = $is_email
+                ? 'email'
+                : 'url';
+        }
+
+        if ($is_email) {
+            $type = 'email';
+        }
 
         $external = (
-            !empty($link['external'])
-            && strpos($url, 'mailto:') !== 0
-        );
+            !$is_email
+            && isset($link['external'])
+        )
+            ? $normalize_boolean(
+                $link['external']
+            )
+            : false;
 
         $normalized[] = [
             'key'      => $key,
