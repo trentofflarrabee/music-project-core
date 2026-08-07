@@ -423,16 +423,66 @@ function mpc_get_homepage_defaults() {
 }
 
 /**
- * Get all homepage settings.
+ * Get normalized Homepage settings.
+ *
+ * Stored values may originate from an earlier release, direct database
+ * editing, or third-party code. Core-owned settings are normalized before
+ * they reach administration or frontend rendering.
+ *
+ * Unknown extension-owned values remain available without being rewritten
+ * or deleted.
+ *
+ * @return array
  */
 function mpc_get_homepage_settings() {
-    $saved = get_option('mpc_homepage_settings', []);
+    $defaults = mpc_get_homepage_defaults();
+
+    $saved = get_option(
+        'mpc_homepage_settings',
+        []
+    );
 
     if (!is_array($saved)) {
         $saved = [];
     }
 
-    return wp_parse_args($saved, mpc_get_homepage_defaults());
+    $settings = wp_parse_args(
+        $saved,
+        $defaults
+    );
+
+    /*
+     * Reuse the Settings API sanitizer as the read boundary for Core-owned
+     * values. Calling it here does not update the database.
+     */
+    $normalized =
+        mpc_sanitize_homepage_settings(
+            $settings
+        );
+
+    if (!is_array($normalized)) {
+        $normalized = $defaults;
+    }
+
+    /*
+     * Preserve unknown extension-owned values exactly as stored. Core does
+     * not interpret or render these keys.
+     */
+    foreach ($saved as $key => $value) {
+        if (
+            !array_key_exists(
+                $key,
+                $defaults
+            )
+        ) {
+            $normalized[$key] = $value;
+        }
+    }
+
+    return wp_parse_args(
+        $normalized,
+        $defaults
+    );
 }
 
 /**
