@@ -30,16 +30,196 @@ function mpc_get_integrations_defaults() {
 }
 
 /**
- * Get all integration settings.
+ * Get normalized Integration settings.
+ *
+ * Stored values may originate from an earlier release, direct database
+ * editing, or third-party code. Core-owned values are normalized before
+ * reaching administration or frontend rendering.
+ *
+ * Trusted embed strings are preserved exactly as stored. They are sanitized
+ * according to the saving user's capabilities when the settings are saved,
+ * not re-filtered according to the current frontend visitor.
+ *
+ * Unknown extension-owned scalar values remain available.
+ *
+ * @return array
  */
 function mpc_get_integrations_settings() {
-    $saved = get_option('mpc_integrations_settings', []);
+    $defaults = mpc_get_integrations_defaults();
+
+    $saved = get_option(
+        'mpc_integrations_settings',
+        []
+    );
 
     if (!is_array($saved)) {
         $saved = [];
     }
 
-    return wp_parse_args($saved, mpc_get_integrations_defaults());
+    $settings = [];
+
+    /*
+     * Preserve unknown extension-owned scalar settings while rebuilding every
+     * Core-owned field below.
+     */
+    foreach ($saved as $key => $value) {
+        $key = sanitize_key(
+            (string) $key
+        );
+
+        if (
+            $key === ''
+            || array_key_exists(
+                $key,
+                $defaults
+            )
+        ) {
+            continue;
+        }
+
+        if (
+            is_scalar($value)
+            || $value === null
+        ) {
+            $settings[$key] = $value;
+        }
+    }
+
+    /**
+     * Normalize a stored checkbox-style value.
+     *
+     * @param mixed $value Stored value.
+     * @return int
+     */
+    $normalize_toggle = static function ($value) {
+        if (!is_scalar($value)) {
+            return 0;
+        }
+
+        $value = strtolower(
+            trim(
+                (string) $value
+            )
+        );
+
+        return in_array(
+            $value,
+            [
+                '1',
+                'true',
+                'yes',
+                'on',
+            ],
+            true
+        )
+            ? 1
+            : 0;
+    };
+
+    /*
+     * Homepage Section Manager is the canonical source for Shows and
+     * Newsletter visibility.
+     */
+    if (
+        function_exists(
+            'mpc_is_homepage_section_visible'
+        )
+    ) {
+        $settings['shows_enabled'] =
+            mpc_is_homepage_section_visible(
+                'shows'
+            )
+                ? 1
+                : 0;
+
+        $settings['newsletter_enabled'] =
+            mpc_is_homepage_section_visible(
+                'newsletter'
+            )
+                ? 1
+                : 0;
+    } else {
+        $settings['shows_enabled'] = array_key_exists(
+            'shows_enabled',
+            $saved
+        )
+            ? $normalize_toggle(
+                $saved['shows_enabled']
+            )
+            : $defaults['shows_enabled'];
+
+        $settings['newsletter_enabled'] =
+            array_key_exists(
+                'newsletter_enabled',
+                $saved
+            )
+                ? $normalize_toggle(
+                    $saved['newsletter_enabled']
+                )
+                : $defaults[
+                    'newsletter_enabled'
+                ];
+    }
+
+    $settings['shows_heading'] = (
+        isset($saved['shows_heading'])
+        && is_scalar($saved['shows_heading'])
+    )
+        ? sanitize_text_field(
+            (string) $saved['shows_heading']
+        )
+        : $defaults['shows_heading'];
+
+    /*
+     * Preserve trusted saved markup exactly. Non-string malformed values
+     * safely fall back to an empty embed.
+     */
+    $settings['shows_embed'] = (
+        isset($saved['shows_embed'])
+        && is_string($saved['shows_embed'])
+    )
+        ? $saved['shows_embed']
+        : $defaults['shows_embed'];
+
+    $settings['newsletter_heading'] = (
+        isset($saved['newsletter_heading'])
+        && is_scalar(
+            $saved['newsletter_heading']
+        )
+    )
+        ? sanitize_text_field(
+            (string) $saved[
+                'newsletter_heading'
+            ]
+        )
+        : $defaults['newsletter_heading'];
+
+    $settings['newsletter_text'] = (
+        isset($saved['newsletter_text'])
+        && is_scalar($saved['newsletter_text'])
+    )
+        ? sanitize_textarea_field(
+            (string) $saved['newsletter_text']
+        )
+        : $defaults['newsletter_text'];
+
+    /*
+     * Preserve trusted saved markup exactly. Non-string malformed values
+     * safely fall back to an empty embed.
+     */
+    $settings['newsletter_embed'] = (
+        isset($saved['newsletter_embed'])
+        && is_string(
+            $saved['newsletter_embed']
+        )
+    )
+        ? $saved['newsletter_embed']
+        : $defaults['newsletter_embed'];
+
+    return wp_parse_args(
+        $settings,
+        $defaults
+    );
 }
 
 /**
