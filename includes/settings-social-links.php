@@ -15,6 +15,10 @@ if (!defined('ABSPATH')) {
  * Core owns the data model. Themes remain responsible for icons, markup,
  * layout, and presentation.
  *
+ * Third-party platform definitions are normalized at this public extension
+ * boundary so malformed filter data cannot generate warnings in
+ * administration or frontend rendering.
+ *
  * @return array
  */
 function mpc_get_social_link_items() {
@@ -102,10 +106,71 @@ function mpc_get_social_link_items() {
         return [];
     }
 
+    /**
+     * Normalize a boolean-style extension value.
+     *
+     * @param mixed $value   Submitted value.
+     * @param bool  $default Default when the value is malformed.
+     * @return bool
+     */
+    $normalize_boolean = static function (
+        $value,
+        $default
+    ) {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (!is_scalar($value)) {
+            return (bool) $default;
+        }
+
+        $value = strtolower(
+            trim(
+                (string) $value
+            )
+        );
+
+        if (
+            in_array(
+                $value,
+                [
+                    '1',
+                    'true',
+                    'yes',
+                    'on',
+                ],
+                true
+            )
+        ) {
+            return true;
+        }
+
+        if (
+            in_array(
+                $value,
+                [
+                    '',
+                    '0',
+                    'false',
+                    'no',
+                    'off',
+                ],
+                true
+            )
+        ) {
+            return false;
+        }
+
+        return (bool) $default;
+    };
+
     $normalized = [];
 
     foreach ($items as $key => $item) {
-        $key = sanitize_key((string) $key);
+        $key = sanitize_key(
+            (string) $key
+        );
 
         if (
             $key === ''
@@ -114,42 +179,80 @@ function mpc_get_social_link_items() {
             continue;
         }
 
-        $type = isset($item['type'])
-            ? sanitize_key((string) $item['type'])
+        $type = (
+            isset($item['type'])
+            && is_scalar($item['type'])
+        )
+            ? sanitize_key(
+                (string) $item['type']
+            )
             : 'url';
 
-        if (!in_array($type, ['url', 'email'], true)) {
+        if (
+            !in_array(
+                $type,
+                [
+                    'url',
+                    'email',
+                ],
+                true
+            )
+        ) {
             $type = 'url';
         }
 
-        $label = isset($item['label'])
-            ? sanitize_text_field((string) $item['label'])
+        $label = (
+            isset($item['label'])
+            && is_scalar($item['label'])
+        )
+            ? sanitize_text_field(
+                (string) $item['label']
+            )
             : '';
 
         if ($label === '') {
             $label = ucwords(
                 str_replace(
-                    ['_', '-'],
+                    [
+                        '_',
+                        '-',
+                    ],
                     ' ',
                     $key
                 )
             );
         }
 
+        $placeholder = (
+            isset($item['placeholder'])
+            && is_scalar(
+                $item['placeholder']
+            )
+        )
+            ? sanitize_text_field(
+                (string) $item['placeholder']
+            )
+            : '';
+
+        $external = $type === 'email'
+            ? false
+            : (
+                array_key_exists(
+                    'external',
+                    $item
+                )
+                    ? $normalize_boolean(
+                        $item['external'],
+                        true
+                    )
+                    : true
+            );
+
         $normalized[$key] = [
             'label'       => $label,
             'type'        => $type,
-            'placeholder' => isset($item['placeholder'])
-                ? sanitize_text_field(
-                    (string) $item['placeholder']
-                )
-                : '',
-            'external'    => $type === 'email'
-                ? false
-                : (
-                    !array_key_exists('external', $item)
-                    || !empty($item['external'])
-                ),
+            'placeholder' => $placeholder,
+            'external'    => $external,
         ];
     }
 
