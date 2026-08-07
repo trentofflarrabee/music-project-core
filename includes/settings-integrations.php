@@ -277,13 +277,34 @@ function mpc_sanitize_embed_content($content) {
  * Content is sanitized when settings are saved. Administrators with the
  * unfiltered_html capability may intentionally save provider scripts.
  *
- * @param string $content Stored integration content.
- * @param string $context Integration context, such as shows or newsletter.
+ * Public caller and filter boundaries are normalized so malformed extension
+ * data cannot generate PHP type warnings.
+ *
+ * @param mixed $content Stored integration content.
+ * @param mixed $context Integration context, such as shows or newsletter.
  * @return string
  */
-function mpc_render_integration_content($content, $context = 'general') {
-    $content = trim((string) $content);
-    $context = sanitize_key((string) $context);
+function mpc_render_integration_content(
+    $content,
+    $context = 'general'
+) {
+    if (!is_scalar($content)) {
+        return '';
+    }
+
+    $content = trim(
+        (string) $content
+    );
+
+    $context = is_scalar($context)
+        ? sanitize_key(
+            (string) $context
+        )
+        : 'general';
+
+    if ($context === '') {
+        $context = 'general';
+    }
 
     if ($content === '') {
         return '';
@@ -295,10 +316,24 @@ function mpc_render_integration_content($content, $context = 'general') {
      * A URL on its own is treated as an oEmbed candidate. When WordPress
      * cannot embed it, retain a safe link instead of displaying a raw URL.
      */
-    if (preg_match('#^https?://[^\s]+$#i', $content)) {
-        $url = esc_url_raw($content);
+    if (
+        preg_match(
+            '#^https?://[^\s]+$#i',
+            $content
+        )
+    ) {
+        $url = esc_url_raw(
+            $content,
+            [
+                'http',
+                'https',
+            ]
+        );
 
-        if ($url && wp_http_validate_url($url)) {
+        if (
+            $url
+            && wp_http_validate_url($url)
+        ) {
             $oembed = wp_oembed_get($url);
 
             if ($oembed) {
@@ -325,19 +360,30 @@ function mpc_render_integration_content($content, $context = 'general') {
     /**
      * Filter rendered integration content.
      *
-     * This provides an optional extension point for integrations that need
-     * custom handling without making them hard dependencies of Core or Base.
+     * Returning a scalar value or null is supported. Null and false suppress
+     * the rendered output. Malformed array or object returns are ignored and
+     * the previously rendered output is used instead.
      *
      * @param string $rendered Rendered output.
      * @param string $content  Original stored content.
      * @param string $context  Integration context.
      */
-    return (string) apply_filters(
+    $filtered = apply_filters(
         'mpc_render_integration_content',
         $rendered,
         $content,
         $context
     );
+
+    if ($filtered === null) {
+        return '';
+    }
+
+    if (!is_scalar($filtered)) {
+        return $rendered;
+    }
+
+    return (string) $filtered;
 }
 
 /**
