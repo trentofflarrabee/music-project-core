@@ -117,6 +117,40 @@ function mpc_get_homepage_section_order() {
 }
 
 /**
+ * Normalize a Homepage section visibility value.
+ *
+ * This is a read-boundary helper for canonical, legacy, and extension-provided
+ * values. Only recognized checkbox-style scalar values are treated as enabled.
+ *
+ * @param mixed $value Stored visibility value.
+ * @return int
+ */
+function mpc_normalize_homepage_visibility_value($value) {
+    if (!is_scalar($value)) {
+        return 0;
+    }
+
+    $value = strtolower(
+        trim(
+            (string) $value
+        )
+    );
+
+    return in_array(
+        $value,
+        [
+            '1',
+            'true',
+            'yes',
+            'on',
+        ],
+        true
+    )
+        ? 1
+        : 0;
+}
+
+/**
  * Build homepage visibility from legacy per-section settings.
  *
  * This is used only when a saved canonical section_visibility map does not
@@ -125,31 +159,47 @@ function mpc_get_homepage_section_order() {
  * @return array
  */
 function mpc_get_legacy_homepage_section_visibility() {
-    $visibility = mpc_get_homepage_section_default_visibility();
+    $visibility =
+        mpc_get_homepage_section_default_visibility();
 
-    $homepage_settings = get_option('mpc_homepage_settings', []);
+    $homepage_settings = get_option(
+        'mpc_homepage_settings',
+        []
+    );
 
     if (!is_array($homepage_settings)) {
         $homepage_settings = [];
     }
 
-    $integration_settings = get_option('mpc_integrations_settings', []);
+    $integration_settings = get_option(
+        'mpc_integrations_settings',
+        []
+    );
 
     if (!is_array($integration_settings)) {
         $integration_settings = [];
     }
 
     $homepage_legacy_map = [
-        'hero'             => 'hero_enabled',
+        'hero'            => 'hero_enabled',
         'featured-content' => 'featured_enabled',
-        'blog'             => 'blog_enabled',
+        'blog'            => 'blog_enabled',
     ];
 
-    foreach ($homepage_legacy_map as $section => $legacy_key) {
-        if (array_key_exists($legacy_key, $homepage_settings)) {
-            $visibility[$section] = !empty(
-                $homepage_settings[$legacy_key]
-            ) ? 1 : 0;
+    foreach (
+        $homepage_legacy_map
+        as $section => $legacy_key
+    ) {
+        if (
+            array_key_exists(
+                $legacy_key,
+                $homepage_settings
+            )
+        ) {
+            $visibility[$section] =
+                mpc_normalize_homepage_visibility_value(
+                    $homepage_settings[$legacy_key]
+                );
         }
     }
 
@@ -158,11 +208,20 @@ function mpc_get_legacy_homepage_section_visibility() {
         'newsletter' => 'newsletter_enabled',
     ];
 
-    foreach ($integration_legacy_map as $section => $legacy_key) {
-        if (array_key_exists($legacy_key, $integration_settings)) {
-            $visibility[$section] = !empty(
-                $integration_settings[$legacy_key]
-            ) ? 1 : 0;
+    foreach (
+        $integration_legacy_map
+        as $section => $legacy_key
+    ) {
+        if (
+            array_key_exists(
+                $legacy_key,
+                $integration_settings
+            )
+        ) {
+            $visibility[$section] =
+                mpc_normalize_homepage_visibility_value(
+                    $integration_settings[$legacy_key]
+                );
         }
     }
 
@@ -178,7 +237,10 @@ function mpc_get_legacy_homepage_section_visibility() {
  * @return array
  */
 function mpc_get_homepage_section_visibility() {
-    $saved = get_option('mpc_homepage_settings', []);
+    $saved = get_option(
+        'mpc_homepage_settings',
+        []
+    );
 
     if (!is_array($saved)) {
         $saved = [];
@@ -186,21 +248,40 @@ function mpc_get_homepage_section_visibility() {
 
     if (
         empty($saved['section_visibility'])
-        || !is_array($saved['section_visibility'])
+        || !is_array(
+            $saved['section_visibility']
+        )
     ) {
-        return mpc_get_legacy_homepage_section_visibility();
+        return
+            mpc_get_legacy_homepage_section_visibility();
     }
 
-    $defaults = mpc_get_homepage_section_default_visibility();
+    $defaults =
+        mpc_get_homepage_section_default_visibility();
+
     $visibility = [];
 
-    foreach (array_keys($defaults) as $section) {
-        if (array_key_exists($section, $saved['section_visibility'])) {
-            $visibility[$section] = !empty(
-                $saved['section_visibility'][$section]
-            ) ? 1 : 0;
+    foreach (
+        array_keys($defaults)
+        as $section
+    ) {
+        if (
+            array_key_exists(
+                $section,
+                $saved['section_visibility']
+            )
+        ) {
+            $visibility[$section] =
+                mpc_normalize_homepage_visibility_value(
+                    $saved[
+                        'section_visibility'
+                    ][$section]
+                );
         } else {
-            $visibility[$section] = $defaults[$section];
+            $visibility[$section] =
+                mpc_normalize_homepage_visibility_value(
+                    $defaults[$section]
+                );
         }
     }
 
@@ -210,14 +291,27 @@ function mpc_get_homepage_section_visibility() {
 /**
  * Determine whether a homepage section is visible.
  *
- * @param string $section Section identifier.
+ * @param mixed $section Section identifier.
  * @return bool
  */
 function mpc_is_homepage_section_visible($section) {
-    $section = sanitize_key($section);
-    $visibility = mpc_get_homepage_section_visibility();
+    if (!is_scalar($section)) {
+        return false;
+    }
 
-    return !empty($visibility[$section]);
+    $section = sanitize_key(
+        (string) $section
+    );
+
+    if ($section === '') {
+        return false;
+    }
+
+    $visibility =
+        mpc_get_homepage_section_visibility();
+
+    return isset($visibility[$section])
+        && $visibility[$section] === 1;
 }
 
 /**
