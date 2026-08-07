@@ -199,21 +199,47 @@ function mpc_get_social_links_defaults() {
 /**
  * Get normalized Social Links settings.
  *
+ * Stored values may originate from an earlier release, direct database
+ * editing, or third-party code. Core-owned platform values and display modes
+ * are normalized before they reach administration or frontend rendering.
+ * Unknown extension-owned scalar values remain available.
+ *
  * @return array
  */
 function mpc_get_social_links_settings() {
-    $settings = get_option(
+    $defaults = mpc_get_social_links_defaults();
+
+    $saved = get_option(
         'mpc_social_links_settings',
         []
     );
 
-    if (!is_array($settings)) {
-        $settings = [];
+    if (!is_array($saved)) {
+        $saved = [];
+    }
+
+    $settings = wp_parse_args(
+        $saved,
+        $defaults
+    );
+
+    /*
+     * Reuse the Settings API sanitizer as the read boundary. The sanitizer
+     * does not update the database here and already preserves unknown scalar
+     * extension settings.
+     */
+    $normalized =
+        mpc_sanitize_social_links_settings(
+            $settings
+        );
+
+    if (!is_array($normalized)) {
+        $normalized = $defaults;
     }
 
     return wp_parse_args(
-        $settings,
-        mpc_get_social_links_defaults()
+        $normalized,
+        $defaults
     );
 }
 
