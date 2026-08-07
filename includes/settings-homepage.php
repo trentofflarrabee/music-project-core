@@ -506,25 +506,28 @@ function mpc_sanitize_homepage_settings($input) {
         ? implode(',', mpc_normalize_homepage_section_order($input['section_order']))
         : implode(',', $known_sections);
 
-$submitted_visibility = (
-    isset($input['section_visibility'])
-    && is_array($input['section_visibility'])
-)
-    ? $input['section_visibility']
-    : [];
-
-$section_visibility = [];
-
-foreach ($known_sections as $section) {
-    $section_visibility[$section] = !empty(
-        $submitted_visibility[$section]
+    $submitted_visibility = (
+        isset($input['section_visibility'])
+        && is_array($input['section_visibility'])
     )
-        ? 1
-        : 0;
-}
+        ? $input['section_visibility']
+        : [];
 
-$output['section_visibility'] =
-    $section_visibility;
+    $section_visibility = [];
+
+    foreach ($known_sections as $section) {
+        $section_visibility[$section] = array_key_exists(
+            $section,
+            $submitted_visibility
+        )
+            ? $sanitize_homepage_toggle(
+                $submitted_visibility[$section]
+            )
+            : 0;
+    }
+
+    $output['section_visibility'] =
+        $section_visibility;
 
 // Hero.
 $allowed_hero_layouts = [
