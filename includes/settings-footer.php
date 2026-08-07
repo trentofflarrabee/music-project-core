@@ -54,21 +54,46 @@ function mpc_get_footer_defaults() {
 /**
  * Get normalized Footer settings.
  *
+ * Stored values may originate from an earlier release, direct database
+ * editing, or third-party code. Core-owned values are normalized before they
+ * reach administration or frontend rendering. Unknown extension-owned scalar
+ * values remain available.
+ *
  * @return array
  */
 function mpc_get_footer_settings() {
-    $settings = get_option(
+    $defaults = mpc_get_footer_defaults();
+
+    $saved = get_option(
         'mpc_footer_settings',
         []
     );
 
-    if (!is_array($settings)) {
-        $settings = [];
+    if (!is_array($saved)) {
+        $saved = [];
+    }
+
+    $settings = wp_parse_args(
+        $saved,
+        $defaults
+    );
+
+    /*
+     * Reuse the Settings API sanitizer as the read boundary. It does not
+     * update the database here and already preserves unknown scalar settings.
+     */
+    $normalized =
+        mpc_sanitize_footer_settings(
+            $settings
+        );
+
+    if (!is_array($normalized)) {
+        $normalized = $defaults;
     }
 
     return wp_parse_args(
-        $settings,
-        mpc_get_footer_defaults()
+        $normalized,
+        $defaults
     );
 }
 
