@@ -189,6 +189,37 @@ function mpc_sanitize_footer_settings($input) {
         }
     }
 
+    /**
+     * Normalize a checkbox-style Footer value.
+     *
+     * @param mixed $value Submitted value.
+     * @return int
+     */
+    $sanitize_toggle = static function ($value) {
+        if (!is_scalar($value)) {
+            return 0;
+        }
+
+        $value = strtolower(
+            trim(
+                (string) $value
+            )
+        );
+
+        return in_array(
+            $value,
+            [
+                '1',
+                'true',
+                'yes',
+                'on',
+            ],
+            true
+        )
+            ? 1
+            : 0;
+    };
+
     $footer_tagline = (
         isset($input['footer_tagline'])
         && is_scalar($input['footer_tagline'])
@@ -225,22 +256,28 @@ function mpc_sanitize_footer_settings($input) {
     $output['footer_copyright'] =
         $footer_copyright;
 
-    $output['footer_show_brand'] = !empty(
+    $output['footer_show_brand'] = isset(
         $input['footer_show_brand']
     )
-        ? 1
+        ? $sanitize_toggle(
+            $input['footer_show_brand']
+        )
         : 0;
 
-    $output['footer_show_menu'] = !empty(
+    $output['footer_show_menu'] = isset(
         $input['footer_show_menu']
     )
-        ? 1
+        ? $sanitize_toggle(
+            $input['footer_show_menu']
+        )
         : 0;
 
-    $output['footer_show_socials'] = !empty(
+    $output['footer_show_socials'] = isset(
         $input['footer_show_socials']
     )
-        ? 1
+        ? $sanitize_toggle(
+            $input['footer_show_socials']
+        )
         : 0;
 
     $output['footer_layout'] = in_array(
