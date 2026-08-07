@@ -366,29 +366,58 @@ function mpc_get_homepage_setting($key, $default = '') {
     return isset($settings[$key]) ? $settings[$key] : $default;
 }
 
+/**
+ * Sanitize the optional Featured Content video URL.
+ *
+ * Only supported YouTube and Vimeo hosts are permitted. HTTP URLs are
+ * normalized to HTTPS so stored video URLs cannot cause mixed-content
+ * failures on secure sites.
+ *
+ * @param mixed $url Submitted video URL.
+ * @return string Sanitized HTTPS video URL, or an empty string.
+ */
 function mpc_sanitize_featured_video_url($url) {
     if (!is_scalar($url)) {
         return '';
     }
 
-    $url = esc_url_raw(
-        trim((string) $url)
+    $url = trim(
+        wp_unslash(
+            (string) $url
+        )
     );
 
     if ($url === '') {
         return '';
     }
 
-    $host = wp_parse_url(
+    $url = esc_url_raw(
         $url,
-        PHP_URL_HOST
+        [
+            'http',
+            'https',
+        ]
     );
 
-    if (!is_string($host) || $host === '') {
+    if ($url === '') {
         return '';
     }
 
-    $host = strtolower($host);
+    $parts = wp_parse_url($url);
+
+    if (!is_array($parts)) {
+        return '';
+    }
+
+    $host = isset($parts['host'])
+        ? strtolower(
+            (string) $parts['host']
+        )
+        : '';
+
+    if ($host === '') {
+        return '';
+    }
 
     $host = preg_replace(
         '/^www\./',
@@ -407,13 +436,25 @@ function mpc_sanitize_featured_video_url($url) {
         'player.vimeo.com',
     ];
 
-    return in_array(
-        $host,
-        $allowed_hosts,
-        true
-    )
-        ? $url
-        : '';
+    if (
+        !in_array(
+            $host,
+            $allowed_hosts,
+            true
+        )
+    ) {
+        return '';
+    }
+
+    return esc_url_raw(
+        set_url_scheme(
+            $url,
+            'https'
+        ),
+        [
+            'https',
+        ]
+    );
 }
 
 /**
