@@ -100,9 +100,108 @@ function mpc_get_theme_style_defaults() {
 }
 
 /**
- * Get all theme style settings.
+ * Get normalized Theme Style settings.
+ *
+ * Stored values may originate from an earlier release, direct database
+ * editing, or third-party code. Core-owned settings are normalized before
+ * they reach administration or frontend rendering. Unknown extension-owned
+ * values remain available without being rewritten or deleted.
+ *
+ * @return array
  */
-function mpc_get_theme_style_settings() { $saved = get_option( 'mpc_theme_style_settings', [] ); if (!is_array($saved)) { $saved = []; } $settings = wp_parse_args( $saved, mpc_get_theme_style_defaults() ); /* * Before Texture V2, the broad Body Background option was the closest * equivalent to the new Pages and Posts zone. * * Carry that preference forward only until the new setting has been * explicitly saved. Afterward, the new setting is authoritative. */ if ( !array_key_exists( 'texture_apply_editorial', $saved ) ) { $settings['texture_apply_editorial'] = !empty( $saved['texture_apply_body'] ) ? 1 : 0; } return $settings; }
+function mpc_get_theme_style_settings() {
+    $defaults = mpc_get_theme_style_defaults();
+
+    $saved = get_option(
+        'mpc_theme_style_settings',
+        []
+    );
+
+    if (!is_array($saved)) {
+        $saved = [];
+    }
+
+    $settings = wp_parse_args(
+        $saved,
+        $defaults
+    );
+
+    /*
+     * Before Texture V2, the broad Body Background option was the closest
+     * equivalent to the Pages and Posts zone. Carry that preference forward
+     * only until the current setting has been explicitly saved.
+     */
+    if (
+        !array_key_exists(
+            'texture_apply_editorial',
+            $saved
+        )
+    ) {
+        $legacy_editorial_value = array_key_exists(
+            'texture_apply_body',
+            $saved
+        )
+            ? $saved['texture_apply_body']
+            : $defaults['texture_apply_body'];
+
+        if (is_scalar($legacy_editorial_value)) {
+            $legacy_editorial_value = strtolower(
+                trim(
+                    (string) $legacy_editorial_value
+                )
+            );
+
+            $settings['texture_apply_editorial'] =
+                in_array(
+                    $legacy_editorial_value,
+                    [
+                        '1',
+                        'true',
+                        'yes',
+                        'on',
+                    ],
+                    true
+                )
+                    ? 1
+                    : 0;
+        } else {
+            $settings['texture_apply_editorial'] = 0;
+        }
+    }
+
+    /*
+     * Reuse the Settings API sanitizer as the read boundary for every
+     * Core-owned value. The sanitizer does not update the database here.
+     */
+    $normalized =
+        mpc_sanitize_theme_style_settings(
+            $settings
+        );
+
+    if (!is_array($normalized)) {
+        $normalized = $defaults;
+    }
+
+    /*
+     * Preserve unknown extension-owned values exactly as stored. Core does
+     * not interpret or render these keys.
+     */
+    foreach ($saved as $key => $value) {
+        if (
+            !array_key_exists(
+                $key,
+                $defaults
+            )
+        ) {
+            $normalized[$key] = $value;
+        }
+    }
+
+    return wp_parse_args(
+        $normalized,
+        $defaults
+    );
+}
 
 /**
  * Get one theme style setting.
