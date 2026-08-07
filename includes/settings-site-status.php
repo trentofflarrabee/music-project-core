@@ -116,6 +116,12 @@ function mpc_get_site_status_preview_url() {
     );
 }
 
+/**
+ * Sanitize Site Status settings.
+ *
+ * @param mixed $input Submitted settings.
+ * @return array
+ */
 function mpc_sanitize_site_status_settings($input) {
     $defaults = mpc_get_site_status_defaults();
 
@@ -170,9 +176,34 @@ function mpc_sanitize_site_status_settings($input) {
         && is_scalar($input['button_url'])
     )
         ? esc_url_raw(
-            (string) $input['button_url']
+            (string) $input['button_url'],
+            [
+                'http',
+                'https',
+            ]
         )
         : $defaults['button_url'];
+
+    $show_social_links = (
+        isset($input['show_social_links'])
+        && is_scalar($input['show_social_links'])
+        && in_array(
+            strtolower(
+                trim(
+                    (string) $input['show_social_links']
+                )
+            ),
+            [
+                '1',
+                'true',
+                'yes',
+                'on',
+            ],
+            true
+        )
+    )
+        ? 1
+        : 0;
 
     return [
         'mode' => in_array(
@@ -182,15 +213,11 @@ function mpc_sanitize_site_status_settings($input) {
         )
             ? $mode
             : $defaults['mode'],
-
         'heading'           => $heading,
         'message'           => $message,
         'button_text'       => $button_text,
         'button_url'        => $button_url,
-        'show_social_links' =>
-            !empty($input['show_social_links'])
-                ? 1
-                : 0,
+        'show_social_links' => $show_social_links,
     ];
 }
 
