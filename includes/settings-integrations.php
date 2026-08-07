@@ -161,7 +161,13 @@ function mpc_render_integration_content($content, $context = 'general') {
 }
 
 /**
- * Sanitize integration settings.
+ * Sanitize Integration settings.
+ *
+ * Existing unknown scalar values are preserved so an extension temporarily
+ * becoming unavailable does not silently delete its stored Integration data.
+ *
+ * @param mixed $input Submitted settings.
+ * @return array
  */
 function mpc_sanitize_integrations_settings($input) {
     $input = is_array($input)
@@ -180,6 +186,68 @@ function mpc_sanitize_integrations_settings($input) {
     }
 
     $output = [];
+
+    $known_keys = array_keys($defaults);
+
+    /*
+     * Preserve extension-owned scalar settings that Core does not currently
+     * manage. Known Core fields are rebuilt below using their normal
+     * sanitization rules.
+     */
+    foreach ($current as $key => $value) {
+        $key = sanitize_key(
+            (string) $key
+        );
+
+        if (
+            $key === ''
+            || in_array(
+                $key,
+                $known_keys,
+                true
+            )
+        ) {
+            continue;
+        }
+
+        if (
+            is_scalar($value)
+            || $value === null
+        ) {
+            $output[$key] = $value;
+        }
+    }
+
+    /**
+     * Normalize a stored checkbox-style value.
+     *
+     * @param mixed $value Submitted or stored value.
+     * @return int
+     */
+    $sanitize_toggle = static function ($value) {
+        if (!is_scalar($value)) {
+            return 0;
+        }
+
+        $value = strtolower(
+            trim(
+                (string) $value
+            )
+        );
+
+        return in_array(
+            $value,
+            [
+                '1',
+                'true',
+                'yes',
+                'on',
+            ],
+            true
+        )
+            ? 1
+            : 0;
+    };
 
     /*
      * These keys remain stored for compatibility, but their values mirror
@@ -208,10 +276,8 @@ function mpc_sanitize_integrations_settings($input) {
             'shows_enabled',
             $current
         )
-            ? (
-                !empty($current['shows_enabled'])
-                    ? 1
-                    : 0
+            ? $sanitize_toggle(
+                $current['shows_enabled']
             )
             : $defaults['shows_enabled'];
 
@@ -220,14 +286,8 @@ function mpc_sanitize_integrations_settings($input) {
                 'newsletter_enabled',
                 $current
             )
-                ? (
-                    !empty(
-                        $current[
-                            'newsletter_enabled'
-                        ]
-                    )
-                        ? 1
-                        : 0
+                ? $sanitize_toggle(
+                    $current['newsletter_enabled']
                 )
                 : $defaults[
                     'newsletter_enabled'
