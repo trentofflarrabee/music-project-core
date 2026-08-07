@@ -20,15 +20,134 @@ function mpc_get_site_status_defaults() {
     ];
 }
 
+/**
+ * Get normalized Site Status settings.
+ *
+ * Stored options may come from an earlier release, direct database editing,
+ * or third-party code. Normalize Core-owned values before they reach public
+ * rendering while retaining unknown extension-owned settings.
+ *
+ * @return array
+ */
 function mpc_get_site_status_settings() {
     $defaults = mpc_get_site_status_defaults();
-    $settings = get_option('mpc_site_status_settings', []);
+
+    $settings = get_option(
+        'mpc_site_status_settings',
+        []
+    );
 
     if (!is_array($settings)) {
         $settings = [];
     }
 
-    return wp_parse_args($settings, $defaults);
+    $settings = wp_parse_args(
+        $settings,
+        $defaults
+    );
+
+    /*
+     * Retain unknown keys for future extensions, then overwrite Core-owned
+     * values with their normalized forms.
+     */
+    $normalized = $settings;
+
+    $allowed_modes = [
+        'disabled',
+        'coming_soon',
+        'maintenance',
+    ];
+
+    $mode = (
+        isset($settings['mode'])
+        && is_scalar($settings['mode'])
+    )
+        ? sanitize_key(
+            (string) $settings['mode']
+        )
+        : $defaults['mode'];
+
+    $normalized['mode'] = in_array(
+        $mode,
+        $allowed_modes,
+        true
+    )
+        ? $mode
+        : $defaults['mode'];
+
+    $normalized['heading'] = (
+        isset($settings['heading'])
+        && is_scalar($settings['heading'])
+    )
+        ? sanitize_text_field(
+            (string) $settings['heading']
+        )
+        : $defaults['heading'];
+
+    $normalized['message'] = (
+        isset($settings['message'])
+        && is_scalar($settings['message'])
+    )
+        ? sanitize_textarea_field(
+            (string) $settings['message']
+        )
+        : $defaults['message'];
+
+    $normalized['button_text'] = (
+        isset($settings['button_text'])
+        && is_scalar($settings['button_text'])
+    )
+        ? sanitize_text_field(
+            (string) $settings['button_text']
+        )
+        : $defaults['button_text'];
+
+    $normalized['button_url'] = (
+        isset($settings['button_url'])
+        && is_scalar($settings['button_url'])
+    )
+        ? esc_url_raw(
+            (string) $settings['button_url'],
+            [
+                'http',
+                'https',
+            ]
+        )
+        : $defaults['button_url'];
+
+    $show_social_links = (
+        isset($settings['show_social_links'])
+        && is_scalar(
+            $settings['show_social_links']
+        )
+    )
+        ? strtolower(
+            trim(
+                (string) $settings[
+                    'show_social_links'
+                ]
+            )
+        )
+        : (
+            !empty($defaults['show_social_links'])
+                ? '1'
+                : '0'
+        );
+
+    $normalized['show_social_links'] = in_array(
+        $show_social_links,
+        [
+            '1',
+            'true',
+            'yes',
+            'on',
+        ],
+        true
+    )
+        ? 1
+        : 0;
+
+    return $normalized;
 }
 
 function mpc_get_site_status_setting($key, $fallback = null) {
