@@ -82,30 +82,46 @@ function mpc_option_exists($option_name) {
  * @return void
  */
 function mpc_migrate_homepage_schema_1() {
-    $homepage_exists = mpc_option_exists('mpc_homepage_settings');
-    $integrations_exist = mpc_option_exists('mpc_integrations_settings');
+    $homepage_exists = mpc_option_exists(
+        'mpc_homepage_settings'
+    );
+
+    $integrations_exist = mpc_option_exists(
+        'mpc_integrations_settings'
+    );
 
     /*
      * A new installation has nothing to migrate. Defaults and sanitizers
      * already create data in the current shape when settings are first saved.
      */
-    if (!$homepage_exists && !$integrations_exist) {
+    if (
+        !$homepage_exists
+        && !$integrations_exist
+    ) {
         return;
     }
 
     $original_homepage = $homepage_exists
-        ? get_option('mpc_homepage_settings', [])
+        ? get_option(
+            'mpc_homepage_settings',
+            []
+        )
         : [];
 
     $original_integrations = $integrations_exist
-        ? get_option('mpc_integrations_settings', [])
+        ? get_option(
+            'mpc_integrations_settings',
+            []
+        )
         : [];
 
     $homepage = is_array($original_homepage)
         ? $original_homepage
         : [];
 
-    $integrations = is_array($original_integrations)
+    $integrations = is_array(
+        $original_integrations
+    )
         ? $original_integrations
         : [];
 
@@ -123,9 +139,53 @@ function mpc_migrate_homepage_schema_1() {
             'newsletter'       => 1,
         ];
 
+    /**
+     * Normalize legacy or canonical visibility values.
+     *
+     * @param mixed $value Stored visibility value.
+     * @return int
+     */
+    $normalize_visibility = static function ($value) {
+        if (
+            function_exists(
+                'mpc_normalize_homepage_visibility_value'
+            )
+        ) {
+            return
+                mpc_normalize_homepage_visibility_value(
+                    $value
+                );
+        }
+
+        if (!is_scalar($value)) {
+            return 0;
+        }
+
+        $value = strtolower(
+            trim(
+                (string) $value
+            )
+        );
+
+        return in_array(
+            $value,
+            [
+                '1',
+                'true',
+                'yes',
+                'on',
+            ],
+            true
+        )
+            ? 1
+            : 0;
+    };
+
     $saved_visibility = (
         isset($homepage['section_visibility'])
-        && is_array($homepage['section_visibility'])
+        && is_array(
+            $homepage['section_visibility']
+        )
     )
         ? $homepage['section_visibility']
         : [];
@@ -136,14 +196,20 @@ function mpc_migrate_homepage_schema_1() {
      */
     $visibility = [];
 
-    foreach ($saved_visibility as $section => $visible) {
-        $section = sanitize_key((string) $section);
+    foreach (
+        $saved_visibility
+        as $section => $visible
+    ) {
+        $section = sanitize_key(
+            (string) $section
+        );
 
         if ($section === '') {
             continue;
         }
 
-        $visibility[$section] = !empty($visible) ? 1 : 0;
+        $visibility[$section] =
+            $normalize_visibility($visible);
     }
 
     $homepage_legacy_map = [
@@ -157,14 +223,23 @@ function mpc_migrate_homepage_schema_1() {
         'newsletter' => 'newsletter_enabled',
     ];
 
-    foreach ($default_visibility as $section => $default) {
+    foreach (
+        $default_visibility
+        as $section => $default
+    ) {
         /*
          * An existing canonical value always takes precedence.
          */
-        if (array_key_exists($section, $saved_visibility)) {
-            $visibility[$section] = !empty(
-                $saved_visibility[$section]
-            ) ? 1 : 0;
+        if (
+            array_key_exists(
+                $section,
+                $saved_visibility
+            )
+        ) {
+            $visibility[$section] =
+                $normalize_visibility(
+                    $saved_visibility[$section]
+                );
 
             continue;
         }
@@ -179,59 +254,76 @@ function mpc_migrate_homepage_schema_1() {
                 $homepage
             )
         ) {
-            $visibility[$section] = !empty(
-                $homepage[$homepage_legacy_map[$section]]
-            ) ? 1 : 0;
+            $visibility[$section] =
+                $normalize_visibility(
+                    $homepage[
+                        $homepage_legacy_map[$section]
+                    ]
+                );
 
             continue;
         }
 
         /*
          * Shows and Newsletter historically stored visibility with
-         * integration settings.
+         * Integration settings.
          */
         if (
-            isset($integration_legacy_map[$section])
+            isset(
+                $integration_legacy_map[$section]
+            )
             && array_key_exists(
                 $integration_legacy_map[$section],
                 $integrations
             )
         ) {
-            $visibility[$section] = !empty(
-                $integrations[$integration_legacy_map[$section]]
-            ) ? 1 : 0;
+            $visibility[$section] =
+                $normalize_visibility(
+                    $integrations[
+                        $integration_legacy_map[
+                            $section
+                        ]
+                    ]
+                );
 
             continue;
         }
 
-        $visibility[$section] = !empty($default) ? 1 : 0;
+        $visibility[$section] =
+            $normalize_visibility($default);
     }
 
-    $homepage['section_visibility'] = $visibility;
+    $homepage['section_visibility'] =
+        $visibility;
 
     /*
      * Preserve the old keys as mirrors for older theme versions and custom
      * integrations that still read them directly.
      */
-    $homepage['hero_enabled'] = !empty(
-        $visibility['hero']
-    ) ? 1 : 0;
+    $homepage['hero_enabled'] =
+        $normalize_visibility(
+            $visibility['hero']
+        );
 
-    $homepage['featured_enabled'] = !empty(
-        $visibility['featured-content']
-    ) ? 1 : 0;
+    $homepage['featured_enabled'] =
+        $normalize_visibility(
+            $visibility['featured-content']
+        );
 
-    $homepage['blog_enabled'] = !empty(
-        $visibility['blog']
-    ) ? 1 : 0;
+    $homepage['blog_enabled'] =
+        $normalize_visibility(
+            $visibility['blog']
+        );
 
-    $integrations['shows_enabled'] = !empty(
-        $visibility['shows']
-    ) ? 1 : 0;
+    $integrations['shows_enabled'] =
+        $normalize_visibility(
+            $visibility['shows']
+        );
 
-    $integrations['newsletter_enabled'] = !empty(
-        $visibility['newsletter']
-    ) ? 1 : 0;
+    $integrations['newsletter_enabled'] =
+        $normalize_visibility(
+            $visibility['newsletter']
+        );
 
     /*
      * Establish an order only when one has never been stored. Existing order
@@ -239,7 +331,9 @@ function mpc_migrate_homepage_schema_1() {
      */
     if (
         empty($homepage['section_order'])
-        && function_exists('mpc_get_homepage_section_default_order')
+        && function_exists(
+            'mpc_get_homepage_section_default_order'
+        )
     ) {
         $homepage['section_order'] = implode(
             ',',
@@ -254,7 +348,10 @@ function mpc_migrate_homepage_schema_1() {
         );
     }
 
-    if ($integrations !== $original_integrations) {
+    if (
+        $integrations
+        !== $original_integrations
+    ) {
         update_option(
             'mpc_integrations_settings',
             $integrations
