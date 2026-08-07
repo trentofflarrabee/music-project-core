@@ -370,22 +370,40 @@ function mpc_get_social_links_setting(
  * Hero and Footer have saved display settings. Other contexts may pass
  * their own default, such as Icons Only for the mobile navigation.
  *
- * @param string $context Context identifier.
- * @param string $default Default display mode.
+ * Filter output is validated again before returning so malformed or
+ * unsupported extension values cannot reach frontend rendering.
+ *
+ * @param mixed $context Context identifier.
+ * @param mixed $default Default display mode.
  * @return string
  */
 function mpc_get_social_display_mode(
     $context,
     $default = 'labels'
 ) {
-    $context = sanitize_key((string) $context);
+    $context = is_scalar($context)
+        ? sanitize_key(
+            (string) $context
+        )
+        : '';
+
     $allowed = array_keys(
         mpc_get_social_display_options()
     );
 
-    $default = sanitize_key((string) $default);
+    $default = is_scalar($default)
+        ? sanitize_key(
+            (string) $default
+        )
+        : 'labels';
 
-    if (!in_array($default, $allowed, true)) {
+    if (
+        !in_array(
+            $default,
+            $allowed,
+            true
+        )
+    ) {
         $default = 'labels';
     }
 
@@ -393,30 +411,59 @@ function mpc_get_social_display_mode(
         ? $context . '_display'
         : '';
 
-    $display = $setting_key !== ''
-        ? sanitize_key(
-            (string) mpc_get_social_links_setting(
-                $setting_key,
-                $default
-            )
+    $stored_display = $setting_key !== ''
+        ? mpc_get_social_links_setting(
+            $setting_key,
+            $default
         )
         : $default;
 
-    if (!in_array($display, $allowed, true)) {
+    $display = is_scalar($stored_display)
+        ? sanitize_key(
+            (string) $stored_display
+        )
+        : $default;
+
+    if (
+        !in_array(
+            $display,
+            $allowed,
+            true
+        )
+    ) {
         $display = $default;
     }
 
     /**
      * Filter the social-link display mode.
      *
+     * Extensions may select one of the supported display modes returned by
+     * mpc_get_social_display_options().
+     *
      * @param string $display Validated display mode.
      * @param string $context Rendering context.
      */
-    return (string) apply_filters(
+    $filtered_display = apply_filters(
         'mpc_social_display_mode',
         $display,
         $context
     );
+
+    if (!is_scalar($filtered_display)) {
+        return $display;
+    }
+
+    $filtered_display = sanitize_key(
+        (string) $filtered_display
+    );
+
+    return in_array(
+        $filtered_display,
+        $allowed,
+        true
+    )
+        ? $filtered_display
+        : $display;
 }
 
 /**
