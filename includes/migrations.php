@@ -369,7 +369,11 @@ function mpc_migrate_homepage_schema_1() {
  * @return void
  */
 function mpc_migrate_theme_style_schema_1() {
-    if (!mpc_option_exists('mpc_theme_style_settings')) {
+    if (
+        !mpc_option_exists(
+            'mpc_theme_style_settings'
+        )
+    ) {
         return;
     }
 
@@ -382,7 +386,9 @@ function mpc_migrate_theme_style_schema_1() {
         ? $original
         : [];
 
-    $defaults = function_exists('mpc_get_theme_style_defaults')
+    $defaults = function_exists(
+        'mpc_get_theme_style_defaults'
+    )
         ? mpc_get_theme_style_defaults()
         : [];
 
@@ -405,6 +411,7 @@ function mpc_migrate_theme_style_schema_1() {
     $font_role_keys = [
         'font_role_body',
         'font_role_heading',
+        'font_role_blog_heading',
         'font_role_hero_heading',
         'font_role_nav',
         'font_role_button',
@@ -414,15 +421,25 @@ function mpc_migrate_theme_style_schema_1() {
 
     foreach ($font_role_keys as $key) {
         /*
-         * This keeps the migration compatible with local branches that do
-         * not yet contain the Typography role-assignment settings.
+         * Keep the migration compatible with installations whose current
+         * defaults do not yet include a particular typography role.
          */
-        if (!array_key_exists($key, $defaults)) {
+        if (
+            !array_key_exists(
+                $key,
+                $defaults
+            )
+        ) {
             continue;
         }
 
-        $value = isset($settings[$key])
-            ? sanitize_key((string) $settings[$key])
+        $value = (
+            isset($settings[$key])
+            && is_scalar($settings[$key])
+        )
+            ? sanitize_key(
+                (string) $settings[$key]
+            )
             : '';
 
         $settings[$key] = in_array(
