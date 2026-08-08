@@ -1774,8 +1774,21 @@ function mpc_admin_panel_close() {
 <?php
 }
 
-// HTML editor?
-function mpc_render_homepage_rich_text_editor($editor_id, $textarea_name, $value = '', $rows = 5) {
+/**
+ * Render the compact rich-text editor used by Homepage settings.
+ *
+ * @param string $editor_id    Editor element ID.
+ * @param string $textarea_name Submitted field name.
+ * @param string $value        Current editor value.
+ * @param int    $rows         Editor row count.
+ * @return void
+ */
+function mpc_render_homepage_rich_text_editor(
+    $editor_id,
+    $textarea_name,
+    $value = '',
+    $rows = 5
+) {
     wp_editor(
         $value,
         $editor_id,
@@ -1783,14 +1796,709 @@ function mpc_render_homepage_rich_text_editor($editor_id, $textarea_name, $value
             'textarea_name' => $textarea_name,
             'textarea_rows' => $rows,
             'media_buttons' => false,
-            'teeny' => true,
-            'quicktags' => true,
-            'tinymce' => [
-                'toolbar1' => 'bold,italic,bullist,numlist,link,unlink,undo,redo',
+            'teeny'         => true,
+            'quicktags'     => true,
+            'tinymce'       => [
+                'toolbar1' =>
+                    'bold,italic,bullist,numlist,link,unlink,undo,redo',
                 'toolbar2' => '',
             ],
         ]
     );
+}
+
+/**
+ * Determine whether a post is a published WordPress page suitable for
+ * Homepage or Posts-page routing.
+ *
+ * @param mixed $page_id Page ID.
+ * @return bool
+ */
+function mpc_is_valid_routing_page($page_id) {
+    if (!is_scalar($page_id)) {
+        return false;
+    }
+
+    $page_id = absint(
+        (string) $page_id
+    );
+
+    if (!$page_id) {
+        return false;
+    }
+
+    $page = get_post($page_id);
+
+    return (
+        $page instanceof WP_Post
+        && $page->post_type === 'page'
+        && $page->post_status === 'publish'
+    );
+}
+
+/**
+ * Find an existing published page suitable for a routing assignment.
+ *
+ * The preferred slug is checked first. An exact title match is used as a
+ * secondary fallback so established sites do not receive unnecessary pages.
+ *
+ * @param string $slug       Preferred page slug.
+ * @param string $title      Preferred page title.
+ * @param int    $exclude_id Page ID that must not be returned.
+ * @return int
+ */
+function mpc_find_routing_page(
+    $slug,
+    $title,
+    $exclude_id = 0
+) {
+    $slug = sanitize_title(
+        (string) $slug
+    );
+
+    $title = sanitize_text_field(
+        (string) $title
+    );
+
+    $exclude_id = absint(
+        $exclude_id
+    );
+
+    if ($slug !== '') {
+        $page = get_page_by_path(
+            $slug,
+            OBJECT,
+            'page'
+        );
+
+        if (
+            $page instanceof WP_Post
+            && $page->ID !== $exclude_id
+            && mpc_is_valid_routing_page(
+                $page->ID
+            )
+        ) {
+            return (int) $page->ID;
+        }
+    }
+
+    if ($title === '') {
+        return 0;
+    }
+
+    $candidate_ids = get_posts(
+        [
+            'post_type'           => 'page',
+            'post_status'         => 'publish',
+            'posts_per_page'      => 20,
+            'orderby'             => 'ID',
+            'order'               => 'ASC',
+            'fields'              => 'ids',
+            's'                   => $title,
+            'no_found_rows'       => true,
+            'ignore_sticky_posts' => true,
+        ]
+    );
+
+    foreach ($candidate_ids as $candidate_id) {
+        $candidate_id = absint(
+            $candidate_id
+        );
+
+        if (
+            !$candidate_id
+            || $candidate_id === $exclude_id
+        ) {
+            continue;
+        }
+
+        $candidate_title =
+            get_the_title($candidate_id);
+
+        if (
+            is_string($candidate_title)
+            && strcasecmp(
+                trim($candidate_title),
+                trim($title)
+            ) === 0
+            && mpc_is_valid_routing_page(
+                $candidate_id
+            )
+        ) {
+            return $candidate_id;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Find or create a published page for WordPress routing.
+ *
+ * Existing published pages are always preferred. New pages are created only
+ * after an administrator explicitly requests automatic routing setup.
+ *
+ * @param string $title      Page title.
+ * @param string $slug       Preferred page slug.
+ * @param int    $exclude_id Page ID that must not be reused.
+ * @return int|WP_Error
+ */
+function mpc_get_or_create_routing_page(
+    $title,
+    $slug,
+    $exclude_id = 0
+) {
+    $existing_id = mpc_find_routing_page(
+        $slug,
+        $title,
+        $exclude_id
+    );
+
+    if ($existing_id) {
+        return $existing_id;
+    }
+
+    $page_id = wp_insert_post(
+        [
+            'post_type'    => 'page',
+            'post_status'  => 'publish',
+            'post_title'   => sanitize_text_field(
+                (string) $title
+            ),
+            'post_name'    => sanitize_title(
+                (string) $slug
+            ),
+            'post_content' => '',
+            'post_author'  =>
+                get_current_user_id(),
+        ],
+        true
+    );
+
+    if (is_wp_error($page_id)) {
+        return $page_id;
+    }
+
+    $page_id = absint($page_id);
+
+    if (
+        !$page_id
+        || !mpc_is_valid_routing_page(
+            $page_id
+        )
+    ) {
+        return new WP_Error(
+            'mpc_routing_page_creation_failed',
+            __(
+                'WordPress did not create a usable published page.',
+                'music-project-core'
+            )
+        );
+    }
+
+    return $page_id;
+}
+
+/**
+ * Get the current WordPress Homepage and Posts-page routing state.
+ *
+ * @return array
+ */
+function mpc_get_wordpress_routing_status() {
+    $show_on_front = get_option(
+        'show_on_front',
+        'posts'
+    );
+
+    $front_page_id = absint(
+        get_option(
+            'page_on_front',
+            0
+        )
+    );
+
+    $posts_page_id = absint(
+        get_option(
+            'page_for_posts',
+            0
+        )
+    );
+
+    $front_valid =
+        mpc_is_valid_routing_page(
+            $front_page_id
+        );
+
+    $posts_valid =
+        mpc_is_valid_routing_page(
+            $posts_page_id
+        );
+
+    $configured = (
+        $show_on_front === 'page'
+        && $front_valid
+        && $posts_valid
+        && $front_page_id !== $posts_page_id
+    );
+
+    return [
+        'show_on_front' => $show_on_front,
+        'front_page_id' => $front_page_id,
+        'posts_page_id' => $posts_page_id,
+        'front_valid'   => $front_valid,
+        'posts_valid'   => $posts_valid,
+        'configured'    => $configured,
+    ];
+}
+
+/**
+ * Configure conventional WordPress Homepage and Posts-page routing.
+ *
+ * This action is deliberately administrator initiated. Core never changes
+ * Reading Settings merely because the plugin was activated.
+ *
+ * Valid existing assignments are preserved. Missing assignments first reuse
+ * suitable published pages and create Home or Blog only when necessary.
+ *
+ * @return void
+ */
+function mpc_handle_configure_wordpress_routing() {
+    if (!current_user_can('manage_options')) {
+        wp_die(
+            esc_html__(
+                'You do not have permission to configure site routing.',
+                'music-project-core'
+            )
+        );
+    }
+
+    check_admin_referer(
+        'mpc_configure_wordpress_routing'
+    );
+
+    $status =
+        mpc_get_wordpress_routing_status();
+
+    $front_page_id = $status['front_valid']
+        ? $status['front_page_id']
+        : 0;
+
+    $posts_page_id = $status['posts_valid']
+        ? $status['posts_page_id']
+        : 0;
+
+    if (!$front_page_id) {
+        $front_page_id =
+            mpc_get_or_create_routing_page(
+                __(
+                    'Home',
+                    'music-project-core'
+                ),
+                'home',
+                $posts_page_id
+            );
+
+        if (is_wp_error($front_page_id)) {
+            wp_die(
+                esc_html(
+                    $front_page_id
+                        ->get_error_message()
+                ),
+                esc_html__(
+                    'Music Project Routing Setup',
+                    'music-project-core'
+                ),
+                [
+                    'back_link' => true,
+                ]
+            );
+        }
+
+        $front_page_id =
+            absint($front_page_id);
+    }
+
+    if (
+        !$posts_page_id
+        || $posts_page_id === $front_page_id
+    ) {
+        $posts_page_id =
+            mpc_get_or_create_routing_page(
+                __(
+                    'Blog',
+                    'music-project-core'
+                ),
+                'blog',
+                $front_page_id
+            );
+
+        if (is_wp_error($posts_page_id)) {
+            wp_die(
+                esc_html(
+                    $posts_page_id
+                        ->get_error_message()
+                ),
+                esc_html__(
+                    'Music Project Routing Setup',
+                    'music-project-core'
+                ),
+                [
+                    'back_link' => true,
+                ]
+            );
+        }
+
+        $posts_page_id =
+            absint($posts_page_id);
+    }
+
+    if (
+        !$front_page_id
+        || !$posts_page_id
+        || $front_page_id === $posts_page_id
+    ) {
+        wp_die(
+            esc_html__(
+                'Music Project could not establish separate Homepage and Posts pages.',
+                'music-project-core'
+            ),
+            esc_html__(
+                'Music Project Routing Setup',
+                'music-project-core'
+            ),
+            [
+                'back_link' => true,
+            ]
+        );
+    }
+
+    update_option(
+        'page_on_front',
+        $front_page_id
+    );
+
+    update_option(
+        'page_for_posts',
+        $posts_page_id
+    );
+
+    update_option(
+        'show_on_front',
+        'page'
+    );
+
+    $updated_status =
+        mpc_get_wordpress_routing_status();
+
+    if (!$updated_status['configured']) {
+        wp_die(
+            esc_html__(
+                'WordPress did not retain the requested Homepage and Posts-page configuration.',
+                'music-project-core'
+            ),
+            esc_html__(
+                'Music Project Routing Setup',
+                'music-project-core'
+            ),
+            [
+                'back_link' => true,
+            ]
+        );
+    }
+
+    $redirect_url = add_query_arg(
+        [
+            'page' => 'mpc-homepage',
+        ],
+        admin_url('admin.php')
+    );
+
+    wp_safe_redirect(
+        $redirect_url
+            . '#mpc-panel-wordpress-routing'
+    );
+
+    exit;
+}
+
+add_action(
+    'admin_post_mpc_configure_wordpress_routing',
+    'mpc_handle_configure_wordpress_routing'
+);
+
+/**
+ * Render a WordPress Page Routing status row.
+ *
+ * @param int  $page_id Page ID.
+ * @param bool $valid   Whether the page is currently suitable.
+ * @return void
+ */
+function mpc_render_routing_page_status(
+    $page_id,
+    $valid
+) {
+    $page_id = absint($page_id);
+
+    if (
+        !$valid
+        || !$page_id
+    ) {
+        ?>
+        <span>
+            <?php
+            esc_html_e(
+                'Not assigned or not published',
+                'music-project-core'
+            );
+            ?>
+        </span>
+        <?php
+
+        return;
+    }
+
+    $title = get_the_title($page_id);
+
+    if (
+        !is_string($title)
+        || trim($title) === ''
+    ) {
+        $title = __(
+            '(Untitled page)',
+            'music-project-core'
+        );
+    }
+
+    echo esc_html($title);
+
+    $edit_link =
+        get_edit_post_link(
+            $page_id,
+            ''
+        );
+
+    if ($edit_link) {
+        ?>
+        &mdash;
+        <a href="<?php echo esc_url($edit_link); ?>">
+            <?php
+            esc_html_e(
+                'Edit page',
+                'music-project-core'
+            );
+            ?>
+        </a>
+        <?php
+    }
+}
+
+/**
+ * Render WordPress Homepage / Posts-page routing guidance.
+ *
+ * @return void
+ */
+function mpc_render_wordpress_routing_panel() {
+    $status =
+        mpc_get_wordpress_routing_status();
+
+    $title = $status['configured']
+        ? __(
+            'WordPress Page Routing — Configured',
+            'music-project-core'
+        )
+        : __(
+            'WordPress Page Routing — Needs Attention',
+            'music-project-core'
+        );
+
+    mpc_admin_panel_open(
+        'wordpress-routing',
+        $title,
+        __(
+            'Keep WordPress Homepage and Posts-page routing predictable, including when Music Project Core is unavailable.',
+            'music-project-core'
+        ),
+        !$status['configured']
+    );
+    ?>
+
+    <p>
+        <?php
+        esc_html_e(
+            'Music Project Core supplies the configured homepage content when the companion Base theme is active. WordPress should still have separate published Homepage and Posts pages assigned so the blog has a canonical route and Base has a safe fallback if Core is temporarily inactive.',
+            'music-project-core'
+        );
+        ?>
+    </p>
+
+    <?php if ($status['configured']) : ?>
+        <div class="notice notice-success inline">
+            <p>
+                <strong>
+                    <?php
+                    esc_html_e(
+                        'WordPress page routing is configured.',
+                        'music-project-core'
+                    );
+                    ?>
+                </strong>
+            </p>
+        </div>
+    <?php else : ?>
+        <div class="notice notice-warning inline">
+            <p>
+                <strong>
+                    <?php
+                    esc_html_e(
+                        'WordPress Reading Settings need attention.',
+                        'music-project-core'
+                    );
+                    ?>
+                </strong>
+                <?php
+                esc_html_e(
+                    'Music Project can configure missing pages without replacing valid existing assignments.',
+                    'music-project-core'
+                );
+                ?>
+            </p>
+        </div>
+    <?php endif; ?>
+
+    <table class="form-table" role="presentation">
+        <tbody>
+            <tr>
+                <th scope="row">
+                    <?php
+                    esc_html_e(
+                        'Reading mode',
+                        'music-project-core'
+                    );
+                    ?>
+                </th>
+                <td>
+                    <?php
+                    echo $status['show_on_front'] === 'page'
+                        ? esc_html__(
+                            'A static page',
+                            'music-project-core'
+                        )
+                        : esc_html__(
+                            'Your latest posts',
+                            'music-project-core'
+                        );
+                    ?>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <?php
+                    esc_html_e(
+                        'Homepage',
+                        'music-project-core'
+                    );
+                    ?>
+                </th>
+                <td>
+                    <?php
+                    mpc_render_routing_page_status(
+                        $status['front_page_id'],
+                        $status['front_valid']
+                    );
+                    ?>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <?php
+                    esc_html_e(
+                        'Posts page',
+                        'music-project-core'
+                    );
+                    ?>
+                </th>
+                <td>
+                    <?php
+                    mpc_render_routing_page_status(
+                        $status['posts_page_id'],
+                        $status['posts_valid']
+                    );
+                    ?>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <?php if (!$status['configured']) : ?>
+        <form
+            method="post"
+            action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+        >
+            <input
+                type="hidden"
+                name="action"
+                value="mpc_configure_wordpress_routing"
+            >
+
+            <?php
+            wp_nonce_field(
+                'mpc_configure_wordpress_routing'
+            );
+            ?>
+
+            <?php
+            submit_button(
+                __(
+                    'Configure Missing Pages',
+                    'music-project-core'
+                ),
+                'primary',
+                'submit',
+                false
+            );
+            ?>
+
+            <a
+                class="button"
+                href="<?php echo esc_url(admin_url('options-reading.php')); ?>"
+            >
+                <?php
+                esc_html_e(
+                    'Open Reading Settings',
+                    'music-project-core'
+                );
+                ?>
+            </a>
+        </form>
+
+        <p class="description">
+            <?php
+            esc_html_e(
+                'This preserves valid assigned pages. When required, Music Project reuses an existing published Home or Blog page, creates only the missing page, and switches WordPress to the standard static-page Reading configuration.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    <?php else : ?>
+        <p>
+            <a
+                class="button"
+                href="<?php echo esc_url(admin_url('options-reading.php')); ?>"
+            >
+                <?php
+                esc_html_e(
+                    'Open Reading Settings',
+                    'music-project-core'
+                );
+                ?>
+            </a>
+        </p>
+    <?php endif; ?>
+
+    <?php
+    mpc_admin_panel_close();
 }
 
 /**
@@ -1807,6 +2515,7 @@ function mpc_render_homepage_settings_page() {
 <div class="wrap">
     <h1><?php esc_html_e('Music Project Homepage', 'music-project-core'); ?></h1>
 
+    <?php mpc_render_wordpress_routing_panel(); ?>
     <form method="post" action="options.php" class="mpc-homepage-settings-form">
         <?php settings_fields('mpc_homepage_settings_group'); ?>
 
