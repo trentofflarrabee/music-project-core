@@ -4,7 +4,9 @@ All notable changes to Music Project Core will be documented in this file.
 
 This project follows the Keep a Changelog structure and intends to use Semantic Versioning for production releases.
 
-## \[Unreleased\]
+## [Unreleased]
+
+## [1.0.0] - 2026-08-08
 
 ### Added
 
@@ -16,9 +18,10 @@ This project follows the Keep a Changelog structure and intends to use Semantic 
 - Provider-neutral Shows and Newsletter integration fields.
 - An optional Bandsintown shows shortcode adapter.
 - Versioned settings-schema migrations with activation and administration update checks.
-- Translation support using the music-project-core text domain.
+- Translation support using the `music-project-core` text domain.
 - Site Status modes for Coming Soon and Maintenance pages.
 - Administrative preview support for Site Status pages.
+- Administrator-assisted WordPress Homepage and Posts-page routing setup that preserves valid existing page assignments and creates only missing pages when explicitly requested.
 
 ### Changed
 
@@ -27,6 +30,7 @@ This project follows the Keep a Changelog structure and intends to use Semantic 
 - Deactivation, deletion, and reinstallation preserve plugin settings, schema-version data, Quotes / Testimonials, and quote metadata.
 - Footer and Social Links configuration use consolidated reusable settings.
 - Integration settings remain provider-neutral so providers can be changed without restructuring stored content.
+- Homepage Blog / News routing can follow the Posts page assigned in WordPress Reading Settings when no custom View All URL is supplied.
 
 ### Security
 
