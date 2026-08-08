@@ -418,7 +418,7 @@ function mpc_get_homepage_defaults() {
             'View All Posts',
             'music-project-core'
         ),
-        'blog_view_all_url' => '/blog',
+        'blog_view_all_url' => '',
     ];
 }
 
@@ -3898,10 +3898,14 @@ mpc_admin_panel_open(
                 <td>
                     <input type="text" id="blog_view_all_url" name="mpc_homepage_settings[blog_view_all_url]"
                         class="regular-text" value="<?php echo esc_attr($settings['blog_view_all_url']); ?>"
-                        placeholder="/blog">
-
+                        placeholder="<?php esc_attr_e('Optional custom URL', 'music-project-core'); ?>">
                     <p class="description">
-                        <?php esc_html_e('Usually /blog or the URL of your posts page.', 'music-project-core'); ?>
+                        <?php
+                        esc_html_e(
+                            'Leave blank to use the Posts page assigned in WordPress Reading Settings. Enter a URL only to override that destination.',
+                            'music-project-core'
+                        );
+                        ?>
                     </p>
                 </td>
             </tr>
