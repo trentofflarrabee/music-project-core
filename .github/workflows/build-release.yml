@@ -1,0 +1,118 @@
+name: Build Release ZIP
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and verify release ZIP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Build release ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git archive \
+            --format=zip \
+            --prefix=music-project-core/ \
+            --output=music-project-core.zip \
+            HEAD
+
+      - name: Verify release ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          unzip -t music-project-core.zip
+
+          mapfile -t files < <(
+            unzip -Z1 music-project-core.zip
+          )
+
+          printf '%s\n' "${files[@]}"
+
+          required_files=(
+            "music-project-core/music-project-core.php"
+            "music-project-core/uninstall.php"
+            "music-project-core/README.md"
+            "music-project-core/CHANGELOG.md"
+            "music-project-core/LICENSE"
+          )
+
+          for path in "${required_files[@]}"; do
+            if ! printf '%s\n' "${files[@]}" | grep -Fqx "$path"; then
+              echo "::error::Missing required release file: $path"
+              exit 1
+            fi
+          done
+
+          required_prefixes=(
+            "music-project-core/assets/"
+            "music-project-core/includes/"
+          )
+
+          for prefix in "${required_prefixes[@]}"; do
+            if ! printf '%s\n' "${files[@]}" | grep -Fq "$prefix"; then
+              echo "::error::Missing required release directory: $prefix"
+              exit 1
+            fi
+          done
+
+          forbidden_files=(
+            "music-project-core/.gitattributes"
+            "music-project-core/.gitignore"
+          )
+
+          for path in "${forbidden_files[@]}"; do
+            if printf '%s\n' "${files[@]}" | grep -Fqx "$path"; then
+              echo "::error::Repository-only file found in release ZIP: $path"
+              exit 1
+            fi
+          done
+
+          if printf '%s\n' "${files[@]}" | grep -Fq "music-project-core/.github/"; then
+            echo "::error::.github directory found in release ZIP."
+            exit 1
+          fi
+
+          if printf '%s\n' "${files[@]}" | grep -Fq "music-project-core/music-project-core/"; then
+            echo "::error::Nested plugin directory found in release ZIP."
+            exit 1
+          fi
+
+          if printf '%s\n' "${files[@]}" | grep -vE '^music-project-core(/|$)' | grep -q .; then
+            echo "::error::Release ZIP contains files outside the top-level music-project-core directory."
+            exit 1
+          fi
+
+      - name: Record release ZIP checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          checksum="$(sha256sum music-project-core.zip)"
+
+          echo "### Release ZIP" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          echo "$checksum" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload release ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          path: music-project-core.zip
+          archive: false
+          if-no-files-found: error
+          retention-days: 14
