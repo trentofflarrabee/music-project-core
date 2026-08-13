@@ -1522,7 +1522,29 @@ function mpc_render_theme_style_settings_page() {
                     </select>
 
                     <p class="description">
-                        <?php esc_html_e('Controls how the site brand appears in the header.', 'music-project-core'); ?>
+                        <?php
+                        esc_html_e(
+                            'Controls how the site brand appears in the header.',
+                            'music-project-core'
+                        );
+                        ?>
+                        <br>
+                        <?php
+                        esc_html_e(
+                            'The Custom Logo is separate from the Site Icon / favicon.',
+                            'music-project-core'
+                        );
+                        ?>
+                        <a
+                            href="<?php echo esc_url(admin_url('customize.php?autofocus[control]=custom_logo')); ?>"
+                        >
+                            <?php
+                            esc_html_e(
+                                'Set or change the Custom Logo in Site Identity.',
+                                'music-project-core'
+                            );
+                            ?>
+                        </a>
                     </p>
                 </td>
             </tr>
