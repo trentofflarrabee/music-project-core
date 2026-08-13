@@ -6,9 +6,20 @@ This project follows the Keep a Changelog structure and intends to use Semantic 
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-08-08
+## [1.1.0] - 2026-08-13
 
 ### Added
+
+- Added separate Blog / Editorial Body and Site Branding typography role assignments.
+- Added Compact, Standard, and Large Single Post Body Size presets.
+- Added Theme Style guidance clarifying that the WordPress Custom Logo is separate from the Site Icon and linking administrators to the Custom Logo control.
+
+### Changed
+
+- Split Navigation typography from textual site branding so each can use its own configured font role.
+- Recalibrated texture intensity presets to Soft (`0.45`), Standard (`0.72`), and Strong (`0.99`), with Standard as the default.
+
+## [1.0.0] - 2026-08-08
 
 - WordPress administration screens for Homepage, Theme Style, Social Links, Footer, Integrations, and Site Status configuration.
 - A homepage section registry with configurable visibility and ordering.
