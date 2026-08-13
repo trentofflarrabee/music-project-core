@@ -79,7 +79,7 @@ function mpc_get_theme_style_defaults() {
         // Texture V2.
         'texture_enabled' => 0,
         'texture_image_id' => 0,
-        'texture_opacity' => '0.14',
+        'texture_opacity' => '0.72',
         'texture_size' => '420px',
         'texture_repeat' => 'repeat',
 
@@ -298,7 +298,7 @@ function mpc_sanitize_google_fonts_url($url) {
  * Sanitize opacity value.
  */
 function mpc_sanitize_opacity($value) {
-    $value = is_numeric($value) ? (float) $value : 0.08;
+    $value = is_numeric($value) ? (float) $value : 0.72;
 
     if ($value < 0) {
         $value = 0;
@@ -2054,13 +2054,13 @@ function mpc_render_theme_style_settings_page() {
 
 <?php
 $texture_opacity_value = mpc_sanitize_opacity(
-    $settings['texture_opacity'] ?? '0.14'
+    $settings['texture_opacity'] ?? '0.72'
 );
 
 $texture_opacity_presets = [
-    '0.08',
-    '0.14',
-    '0.22',
+    '0.45',
+    '0.72',
+    '0.99',
 ];
 
 $texture_size_value = mpc_sanitize_texture_size(
@@ -2138,15 +2138,15 @@ $primary_repeat_options = [
 		</th>
 		<td>
 			<select id="texture_opacity" name="mpc_theme_style_settings[texture_opacity]">
-				<option value="0.08" <?php selected( $texture_opacity_value, '0.08' ); ?>>
-					<?php esc_html_e( 'Soft', 'music-project-core' ); ?>
-				</option>
-				<option value="0.14" <?php selected( $texture_opacity_value, '0.14' ); ?>>
-					<?php esc_html_e( 'Standard', 'music-project-core' ); ?>
-				</option>
-				<option value="0.22" <?php selected( $texture_opacity_value, '0.22' ); ?>>
-					<?php esc_html_e( 'Strong', 'music-project-core' ); ?>
-				</option>
+                <option value="0.45" <?php selected( $texture_opacity_value, '0.45' ); ?>>
+                    <?php esc_html_e( 'Soft', 'music-project-core' ); ?>
+                </option>
+                <option value="0.72" <?php selected( $texture_opacity_value, '0.72' ); ?>>
+                    <?php esc_html_e( 'Standard', 'music-project-core' ); ?>
+                </option>
+                <option value="0.99" <?php selected( $texture_opacity_value, '0.99' ); ?>>
+                    <?php esc_html_e( 'Strong', 'music-project-core' ); ?>
+                </option>
 				<?php if ( ! in_array( $texture_opacity_value, $texture_opacity_presets, true ) ) : ?>
 					<option value="<?php echo esc_attr( $texture_opacity_value ); ?>" selected>
 						<?php
