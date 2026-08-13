@@ -50,8 +50,10 @@ function mpc_get_theme_style_defaults() {
         'font_role_body' => 'body',
         'font_role_heading' => 'heading',
         'font_role_blog_heading' => 'heading',
+        'font_role_blog_body' => 'body',
         'font_role_hero_heading' => 'heading',
         'font_role_nav' => 'accent',
+        'font_role_brand' => 'accent',
         'font_role_button' => 'accent',
         'font_role_accent' => 'accent',
         'font_role_quote' => 'quote',
@@ -696,8 +698,10 @@ $font_role_fields = [
     'font_role_body',
     'font_role_heading',
     'font_role_blog_heading',
+    'font_role_blog_body',
     'font_role_hero_heading',
     'font_role_nav',
+    'font_role_brand',
     'font_role_button',
     'font_role_accent',
     'font_role_quote',
@@ -1772,17 +1776,43 @@ function mpc_render_theme_style_settings_page() {
     );
 
     mpc_render_font_assignment_select(
+        'font_role_blog_body',
+        __('Blog / Editorial Body', 'music-project-core'),
+        $settings,
+        __(
+            'Post excerpts, archive summaries, single-post content, and other editorial body copy.',
+            'music-project-core'
+        )
+    );
+
+    mpc_render_font_assignment_select(
         'font_role_hero_heading',
         __('Hero Heading', 'music-project-core'),
         $settings,
-        __('The main homepage hero heading and site-status headline.', 'music-project-core')
+        __(
+            'The main homepage hero heading and site-status headline.',
+            'music-project-core'
+        )
     );
 
     mpc_render_font_assignment_select(
         'font_role_nav',
-        __('Navigation / Branding', 'music-project-core'),
+        __('Navigation', 'music-project-core'),
         $settings,
-        __('Header and footer menus, site name, and navigation controls.', 'music-project-core')
+        __(
+            'Header and footer menus and navigation controls.',
+            'music-project-core'
+        )
+    );
+
+    mpc_render_font_assignment_select(
+        'font_role_brand',
+        __('Site Branding', 'music-project-core'),
+        $settings,
+        __(
+            'The textual site name in the header and footer. This does not affect the Custom Logo image.',
+            'music-project-core'
+        )
     );
 
     mpc_render_font_assignment_select(
