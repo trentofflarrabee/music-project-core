@@ -58,6 +58,9 @@ function mpc_get_theme_style_defaults() {
         'font_role_accent' => 'accent',
         'font_role_quote' => 'quote',
 
+        // Editorial presentation.
+        'blog_body_size' => 'standard',
+
         // Heading presentation.
         'heading_text_transform' => 'none',
         'heading_letter_spacing' => '-0.04em',
@@ -725,6 +728,29 @@ foreach ($font_role_fields as $field) {
         ? $role
         : $defaults[$field];
 }
+
+$allowed_blog_body_sizes = [
+    'compact',
+    'standard',
+    'large',
+];
+
+$blog_body_size = (
+    isset($input['blog_body_size'])
+    && is_scalar($input['blog_body_size'])
+)
+    ? sanitize_key(
+        (string) $input['blog_body_size']
+    )
+    : $defaults['blog_body_size'];
+
+$output['blog_body_size'] = in_array(
+    $blog_body_size,
+    $allowed_blog_body_sizes,
+    true
+)
+    ? $blog_body_size
+    : $defaults['blog_body_size'];
 
 
 // Texture V2.
@@ -1784,6 +1810,88 @@ function mpc_render_theme_style_settings_page() {
             'music-project-core'
         )
     );
+
+        ?>
+    <tr>
+        <th scope="row">
+            <label for="mpc_theme_style_blog_body_size">
+                <?php
+                esc_html_e(
+                    'Single Post Body Size',
+                    'music-project-core'
+                );
+                ?>
+            </label>
+        </th>
+
+        <td>
+            <select
+                id="mpc_theme_style_blog_body_size"
+                name="mpc_theme_style_settings[blog_body_size]"
+            >
+                <option
+                    value="compact"
+                    <?php
+                    selected(
+                        $settings['blog_body_size'] ?? 'standard',
+                        'compact'
+                    );
+                    ?>
+                >
+                    <?php
+                    esc_html_e(
+                        'Compact',
+                        'music-project-core'
+                    );
+                    ?>
+                </option>
+
+                <option
+                    value="standard"
+                    <?php
+                    selected(
+                        $settings['blog_body_size'] ?? 'standard',
+                        'standard'
+                    );
+                    ?>
+                >
+                    <?php
+                    esc_html_e(
+                        'Standard',
+                        'music-project-core'
+                    );
+                    ?>
+                </option>
+
+                <option
+                    value="large"
+                    <?php
+                    selected(
+                        $settings['blog_body_size'] ?? 'standard',
+                        'large'
+                    );
+                    ?>
+                >
+                    <?php
+                    esc_html_e(
+                        'Large',
+                        'music-project-core'
+                    );
+                    ?>
+                </option>
+            </select>
+
+            <p class="description">
+                <?php
+                esc_html_e(
+                    'Controls long-form body text size on individual blog posts only. Blog cards and archive excerpts keep their existing component sizes.',
+                    'music-project-core'
+                );
+                ?>
+            </p>
+        </td>
+    </tr>
+    <?php
 
     mpc_render_font_assignment_select(
         'font_role_hero_heading',
