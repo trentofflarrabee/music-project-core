@@ -27,6 +27,7 @@ if (!defined('WP_UNINSTALL_PLUGIN')) {
  * - mpc_footer_settings
  * - mpc_social_links_settings
  * - mpc_site_status_settings
+ * - mpc_link_hub_settings
  * - mpc_schema_versions
  * - mpc_press_quote posts and their post metadata
  */

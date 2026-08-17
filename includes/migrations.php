@@ -21,6 +21,7 @@ function mpc_get_current_schema_versions() {
     return [
         'homepage'   => 1,
         'theme_style' => 1,
+        'link_hub'    => 1,
     ];
 }
 
@@ -460,6 +461,74 @@ function mpc_migrate_theme_style_schema_1() {
 }
 
 /**
+ * Migrate Link Hub settings to schema version 1.
+ *
+ * Version 1 establishes the initial normalized Link Hub settings shape.
+ * Brand-new installations do not receive a settings row merely because the
+ * migration runs.
+ *
+ * @return void
+ */
+function mpc_migrate_link_hub_schema_1() {
+    /*
+     * Nothing exists yet on a brand-new installation. Link Hub defaults and
+     * sanitization establish the current shape when settings are first saved.
+     */
+    if (
+        !mpc_option_exists(
+            'mpc_link_hub_settings'
+        )
+    ) {
+        return;
+    }
+
+    $original = get_option(
+        'mpc_link_hub_settings',
+        []
+    );
+
+    $settings = is_array($original)
+        ? $original
+        : [];
+
+    $defaults = function_exists(
+        'mpc_get_link_hub_defaults'
+    )
+        ? mpc_get_link_hub_defaults()
+        : [];
+
+    /*
+     * Fill missing current keys while preserving existing stored values.
+     */
+    $settings = wp_parse_args(
+        $settings,
+        $defaults
+    );
+
+    /*
+     * Pass the resulting structure through Link Hub's canonical sanitizer so
+     * malformed legacy/customized values cannot survive migration.
+     */
+    if (
+        function_exists(
+            'mpc_sanitize_link_hub_settings'
+        )
+    ) {
+        $settings =
+            mpc_sanitize_link_hub_settings(
+                $settings
+            );
+    }
+
+    if ($settings !== $original) {
+        update_option(
+            'mpc_link_hub_settings',
+            $settings
+        );
+    }
+}
+
+/**
  * Run outstanding Music Project Core settings migrations.
  *
  * Migrations run only for an administrator in the normal WordPress admin.
@@ -521,6 +590,20 @@ function mpc_run_schema_migrations(
         mpc_migrate_theme_style_schema_1();
 
         $stored['theme_style'] = 1;
+        $changed = true;
+    }
+
+    $link_hub_version = isset($stored['link_hub'])
+        ? absint($stored['link_hub'])
+        : 0;
+
+    if (
+        $link_hub_version
+        < $current['link_hub']
+    ) {
+        mpc_migrate_link_hub_schema_1();
+
+        $stored['link_hub'] = 1;
         $changed = true;
     }
 
