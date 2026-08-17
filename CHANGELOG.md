@@ -6,6 +6,31 @@ This project follows the Keep a Changelog structure and intends to use Semantic 
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-17
+
+### Added
+
+- Added curated Page Title Presentation controls for standard WordPress Pages.
+- Added Standard, Editorial Panel, and Minimal Overlay Page title styles.
+- Added global Page title panel tone controls using existing Theme Style palette roles.
+- Added Soft, Strong, and Solid title-panel strength presets.
+- Added Compact, Standard, and Large responsive Page-title size presets.
+- Added per-Page title-style overrides with a Use Theme Default option.
+- Added the public `mpc_get_page_title_style()` resolver for rendering-neutral Page presentation state.
+
+### Changed
+
+- Page Title Presentation is explicitly scoped to ordinary WordPress Pages.
+- The static Homepage, Posts page, and assigned Link Hub Page are excluded from Page Title Presentation.
+- Existing sites continue to use the Standard Page presentation by default.
+- Per-Page overrides preserve global panel tone, strength, and title-size settings rather than creating Page-specific design systems.
+
+### Security
+
+- Page Title Presentation settings are restricted to curated allowlists.
+- Per-Page presentation metadata is protected by WordPress capability and nonce checks.
+- Invalid Page presentation values fall back safely to the Standard presentation.
+
 ## [1.2.0] - 2026-08-17
 
 ### Added
