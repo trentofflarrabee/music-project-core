@@ -1,30 +1,63 @@
-Music Project Core
-==================
+# Music Project Core
 
-Music Project Core is a WordPress plugin that provides reusable settings, content tools, integrations, and site-management features for music project websites.
+Music Project Core is a WordPress plugin that provides reusable settings, content tools, integrations, routing state, and site-management features for music project websites.
 
-It is designed to pair with the [Music Project Base](https://github.com/trentofflarrabee/music-project-base) theme.
+It is designed to pair with the **Music Project Base** theme.
 
-Requirements
-------------
+## Requirements
 
 - WordPress 6.8 or newer
 - PHP 7.4 or newer
 - Administrator access for plugin configuration
 
-Architecture
-------------
+## Architecture
 
-Music Project Core owns site configuration and reusable content.
+Music Project Core owns reusable site configuration and reusable content.
 
-The companion Music Project Base theme owns frontend templates, markup, responsive layout, and visual presentation.
+The companion Music Project Base theme owns frontend templates, markup, responsive layout, accessibility presentation, animation, and visual styling.
 
-This separation allows important content and settings to remain available when the active theme changes.
+This separation allows important content and configuration to remain available when the active theme changes.
 
-Features
---------
+### Music Project Core owns
 
-### Homepage Section Manager
+- Homepage configuration
+- Homepage section visibility and order
+- Hero configuration
+- Featured Content configuration
+- Services configuration
+- Quotes / Testimonials
+- Integrations
+- Social Links
+- Theme Style
+- Footer configuration
+- Site Status
+- Link Hub / Link in Bio configuration
+- Link Hub routing state
+- Link Hub sanitization and normalization
+- Settings schemas and migrations
+- Public rendering-neutral data APIs
+
+### Music Project Base owns
+
+- Frontend templates
+- Header and navigation markup
+- Footer markup
+- Homepage section markup
+- Link Hub frontend markup
+- Link Hub layouts and styling
+- Blog and editorial templates
+- Responsive behavior
+- Frontend JavaScript
+- Accessibility presentation
+- Theme presentation defaults
+
+Core should not contain Base-specific frontend markup or visual layout assumptions.
+
+Themes and extensions should consume documented Core APIs rather than reading or modifying Core option arrays directly.
+
+# Features
+
+## Homepage Section Manager
 
 Control the visibility and order of these homepage sections:
 
@@ -38,31 +71,15 @@ Control the visibility and order of these homepage sections:
 
 Sections can be reordered through drag-and-drop or keyboard-accessible move controls.
 
-### Hero
+## Hero
 
-Configure:
+Configure split or full-bleed layouts, responsive media, overlay treatment, content placement, heading, supporting text, calls to action, and Social Links.
 
-- Split or full-bleed layouts
-- Compact, standard, or full-screen height
-- Desktop video
-- Mobile image
-- Overlay style and opacity
-- Content placement and alignment
-- Heading, supporting text, and call to action
-- Social-link display
+## Featured Content
 
-### Featured Content
+Create promotional sections for releases, videos, announcements, featured messages, images, supported video URLs, and optional embedded featured quotes.
 
-Create a promotional section for:
-
-- Releases
-- Videos
-- Announcements
-- Featured messages
-- Images or supported video URLs
-- Optional embedded featured quotes
-
-### Services
+## Services
 
 Create, remove, and reorder up to eight service items.
 
@@ -73,44 +90,19 @@ Each service supports:
 - Link text
 - Link URL
 
-Curated layouts and column choices are included.
+## Quotes / Testimonials
 
-### Quotes / Testimonials
+Quotes and testimonials are stored as reusable WordPress content and support featured status, attribution, source URLs, ordering, homepage counts, layout, and background tone.
 
-Quotes and testimonials are stored as reusable WordPress content.
+## Blog / News
 
-Available controls include:
+Configure homepage blog presentation including Grid, Featured First, or Compact layouts; featured-post selection; post counts; featured images; dates; excerpts; and call-to-action labels.
 
-- Featured status
-- Source or client
-- Source URL
-- Manual ordering
-- Homepage count
-- Layout
-- Attribution visibility
-- Background tone
+## Shows and Newsletter
 
-### Blog / News
+The Integrations screen provides provider-neutral fields for shows/event embeds and newsletter signup embeds.
 
-Configure homepage blog presentation, including:
-
-- Grid, Featured First, or Compact layouts
-- Latest or manually selected featured post
-- Post counts
-- Featured images
-- Dates
-- Excerpts
-- Read More and View All labels
-
-### Shows and Newsletter
-
-The Integrations screen provides provider-neutral fields for:
-
-- Shows or event embeds
-- Newsletter signup embeds
-- Section headings and supporting text
-
-An optional Bandsintown adapter is included through the following shortcode:
+An optional Bandsintown adapter is available through:
 
 ```text
 [mpc_bandsintown_shows artist="Artist Name" app_id="your-app-id" signup_target="#signup"]
@@ -118,7 +110,7 @@ An optional Bandsintown adapter is included through the following shortcode:
 
 The application ID may also be supplied through the `BIT_APP_ID` environment variable.
 
-### Social Links
+## Social Links
 
 Manage reusable social and contact links for supported placements such as:
 
@@ -126,57 +118,144 @@ Manage reusable social and contact links for supported placements such as:
 - Mobile navigation
 - Footer
 - Site Status page
+- Link Hub / Link in Bio
 
-Display modes include labels, icons, or icons with labels.
+Display modes include labels, icons, and icons with labels.
 
-### Theme Style
+Social account data is stored once in Core and reused by compatible presentation surfaces.
 
-Theme Style provides curated controls for:
+## Link in Bio / Link Hub
 
-- Core colors
-- Header, mobile-navigation, and footer colors
-- Header behavior
-- Brand display
-- Corner styles
-- Card shadows
-- Border strength
-- Font stacks
-- Semantic typography assignments
-- Blog and editorial typography
-- Hero typography
-- Environmental background texture
+Music Project Core includes a first-party, artist-focused Link Hub intended to provide a canonical link-in-bio destination on the artist's own WordPress site.
 
-Texture placements include:
+Configure it under:
 
-- Desktop header
-- Mobile navigation
-- Footer
-- Homepage section backgrounds
-- Pages and posts
+```text
+Music Project → Link in Bio
+```
 
-### Footer
+The Link Hub is intentionally a curated microsite feature rather than a general-purpose page builder.
 
-Configure:
+### Link Hub capabilities
 
-- Tagline
-- Copyright text
-- `{year}` and `{site_name}` tokens
-- Brand visibility
-- Footer menu visibility
-- Social-link visibility
-- Simple, Stacked, or Split layouts
+- One Link Hub per site
+- One assigned WordPress Page
+- Explicit Page configuration
+- Enable / disable control
+- Auto, Custom, or None profile-image modes
+- Custom Media Library profile image
+- Display-name override
+- Site Title fallback
+- Optional tagline
+- Spotlight layout
+- Stack layout
+- Poster layout
+- Ordered links
+- Ordered section headings
+- Enabled / disabled link states
+- Optional link subtitles
+- Curated icons
+- One Featured link
+- Optional new-window behavior
+- Keyboard-accessible Move Up / Move Down controls
+- Drag-and-drop ordering enhancement
+- Reuse of existing Music Project Social Links
+- Optional minimal footer branding
+- Maximum of 30 total ordered items
 
-### Site Status
+### Link Hub routing
 
-Temporarily place the public site into:
+The assigned WordPress Page ID is the routing contract.
 
-- Coming Soon mode
-- Maintenance mode
+The Link Hub does **not** depend on a hard-coded `/links/` slug.
+
+The Page slug may be changed without breaking Link Hub configuration.
+
+The explicit **Configure Link Hub Page** action:
+
+1. Preserves a valid existing assignment.
+2. Otherwise reuses a suitable existing published `Links` Page when possible.
+3. Otherwise creates a new published `Links` Page.
+4. Never runs merely because Core was activated or updated.
+5. Never silently replaces a valid assigned Page.
+6. Never uses the WordPress Homepage or Posts page as the Link Hub route.
+
+Administrators may also assign another suitable existing published Page manually.
+
+### Link Hub ownership boundary
+
+Core owns:
+
+- `mpc_link_hub_settings`
+- Defaults
+- Sanitization
+- Normalization
+- Item ordering
+- Media Library selections
+- Page assignment
+- Page configuration
+- Routing state
+- Public data helpers
+- Public extension filters
+- Schema tracking
+
+Compatible themes such as Music Project Base own:
+
+- Specialized frontend template
+- Markup
+- Layouts
+- Responsive behavior
+- Icon markup
+- Image rendering
+- Social-link presentation
+- Focus states
+- Reduced-motion behavior
+- Visual styling
+
+### Link Hub security
+
+Link Hub settings do not accept arbitrary HTML, JavaScript, raw SVG markup, arbitrary CSS, or inline event handlers.
+
+Supported destination protocols are intentionally limited to:
+
+```text
+http
+https
+mailto
+tel
+```
+
+Icons, layouts, item types, and visual variants are restricted to curated allowlists.
+
+Malformed or incomplete enabled links are prevented from reaching the frontend data API.
+
+At most one enabled link may use the Featured visual variant.
+
+### Link Hub privacy
+
+The first-party Link Hub does not record visitor or click analytics.
+
+No third-party social feed, analytics SDK, tracking pixel, or external embed is loaded merely because a visitor views the Link Hub.
+
+External services are contacted only through normal visitor actions such as following a configured external link.
+
+## Theme Style
+
+Theme Style provides curated controls for colors, header behavior, brand display, corner styles, card shadows, border strength, font stacks, semantic typography assignments, and environmental texture.
+
+Compatible themes may reuse these shared values for additional curated presentation surfaces such as Link Hub.
+
+## Footer
+
+Configure tagline, copyright text, token replacement, brand visibility, footer menu visibility, Social Links visibility, and curated footer layouts.
+
+## Site Status
+
+Temporarily place the public site into Coming Soon or Maintenance mode.
 
 Administrators retain access and can preview the status page before enabling it publicly.
 
-Installation
-------------
+# Installation
 
 1. Download or clone this repository.
 2. Place the plugin directory at:
@@ -186,11 +265,10 @@ Installation
    ```
 
 3. Activate **Music Project Core** under **Plugins** in WordPress.
-4. Install and activate the companion Music Project Base theme.
+4. Install and activate the companion Music Project Base theme for the complete presentation experience.
 5. Open the **Music Project** menu in WordPress administration.
 
-Suggested Setup Order
----------------------
+# Suggested Setup Order
 
 1. Configure Homepage section visibility and order.
 2. Add Hero and Featured Content.
@@ -199,10 +277,10 @@ Suggested Setup Order
 5. Add Social Links.
 6. Configure Theme Style.
 7. Configure the Footer.
-8. Review Site Status settings.
+8. Configure Link in Bio if required.
+9. Review Site Status settings.
 
-Stored Data
------------
+# Stored Data
 
 Music Project Core stores configuration in these WordPress options:
 
@@ -213,40 +291,51 @@ mpc_integrations_settings
 mpc_footer_settings
 mpc_social_links_settings
 mpc_site_status_settings
+mpc_link_hub_settings
 mpc_schema_versions
 ```
 
-Quotes and testimonials use the following custom post type:
+Quotes and testimonials use the custom post type:
 
 ```text
 mpc_press_quote
 ```
 
-Activation and Updates
-----------------------
+Link Hub destinations are stored as bounded configuration within `mpc_link_hub_settings`.
+
+Individual Link Hub links are not WordPress posts and do not use a custom post type.
+
+The assigned Link Hub WordPress Page remains an ordinary WordPress Page.
+
+# Activation and Updates
 
 Outstanding schema migrations run when the plugin is activated.
 
-A lightweight migration check also runs in WordPress administration so normal plugin updates can apply new schema changes without requiring deactivation and reactivation.
+A lightweight migration check also runs in WordPress administration so normal plugin updates can apply schema changes without requiring deactivation and reactivation.
 
-Deactivation and Uninstall Policy
----------------------------------
+Activation and updates do not automatically create a Link Hub Page.
+
+Link Hub Page creation occurs only through an explicit administrator action.
+
+# Deactivation and Uninstall Policy
 
 Deactivating Music Project Core does not delete settings or content.
 
-Deleting the plugin also preserves:
+Deleting the plugin also preserves plugin settings, Link Hub settings, Link Hub Page assignment data, schema-version information, Quotes / Testimonials, and quote metadata.
 
-- Plugin settings
-- Schema-version information
-- Quotes / Testimonials
-- Quote metadata
+The Link Hub WordPress Page is not deleted automatically.
 
-This non-destructive policy prevents accidental data loss and allows the plugin to be reinstalled later.
+# Theme Changes
 
-A future explicitly opt-in cleanup tool may provide permanent data removal.
+Changing away from Music Project Base does not delete Core-owned data.
 
-Translation
------------
+The assigned Link Hub WordPress Page remains in WordPress.
+
+A different theme may render that Page using its ordinary Page template.
+
+Returning to Music Project Base restores the specialized Link Hub presentation when Link Hub remains enabled and the assigned Page is valid.
+
+# Translation
 
 The plugin uses the text domain:
 
@@ -260,8 +349,7 @@ Local translation files may be placed in:
 languages/
 ```
 
-Packaging
----------
+# Packaging
 
 Create a release ZIP from a clean, committed checkout of the intended release branch:
 
@@ -292,48 +380,21 @@ music-project-core/
 └── uninstall.php
 ```
 
-The repository's `.gitattributes` rules exclude `.gitattributes`, `.gitignore`, and `.github` from archives created with `git archive`.
-
-Do not include development-only or local files such as:
-
-```text
-.git/
-.DS_Store
-Thumbs.db
-node_modules/
-vendor/
-IDE project files
-local database exports
-environment files
-temporary or test ZIP files
-```
-
 Install and test the generated ZIP on a clean WordPress site before publishing it.
 
-Development
------------
+# Development
 
-The plugin uses WordPress-native APIs, including:
+The plugin uses WordPress-native APIs, including the Settings API, custom post types, Media Library, shortcodes, nonces, capabilities, translation functions, activation hooks, WordPress hooks and filters, Page APIs, and URL sanitization APIs.
 
-- Settings API
-- Custom post types
-- Media Library
-- Shortcodes
-- Nonces and capabilities
-- Translation functions
-- Activation hooks
-- WordPress hooks and filters
+Asset versions use file modification times when available for cache busting.
 
-Source assets are loaded directly from the repository. Asset versions use file modification times when available for cache busting.
-
-Extension Boundaries
---------------------
+# Extension Boundaries
 
 Music Project Core provides curated extension points for integrations and project-specific functionality.
 
 Extensions should use documented public functions and WordPress hooks rather than directly modifying Core option arrays or including Core files manually.
 
-### Public Data Access
+## Public Data Access
 
 The following functions are intended as stable read boundaries for Core-owned data:
 
@@ -362,300 +423,102 @@ mpc_render_integration_content()
 
 mpc_get_site_status_settings()
 mpc_get_site_status_setting()
+
+mpc_get_link_hub_settings()
+mpc_get_link_hub_setting()
+mpc_get_link_hub_items()
+mpc_get_link_hub_url()
+mpc_is_link_hub_enabled()
+mpc_get_link_hub_page_id()
 ```
 
 Callers should check `function_exists()` when Core may be inactive.
 
-Extensions should not assume that every stored value is present or that internal option-array ordering is significant.
+Themes should consume the public Link Hub functions instead of reading `mpc_link_hub_settings` directly.
 
-### Public Filters
+## Public Filters
 
-Core currently exposes these intentional extension filters.
+Core exposes intentional extension filters including:
 
-#### `mpc_social_link_items`
+- `mpc_social_link_items`
+- `mpc_social_links`
+- `mpc_social_display_mode`
+- `mpc_link_hub_items`
+- `mpc_link_hub_url`
+- `mpc_footer_token_replacements`
+- `mpc_render_integration_content`
+- `mpc_site_status_preview_url`
+- `mpc_site_status_request_should_bypass`
+- `mpc_site_status_is_machine_request`
+- `mpc_site_status_retry_after`
+- `mpc_site_status_template`
 
-Adds or modifies supported Social Links platforms.
+### `mpc_link_hub_items`
 
-Each platform definition uses:
+Filters the normalized ordered Link Hub item collection before frontend cleanup.
 
-```php
-[
-    'label'       => 'Platform Name',
-    'type'        => 'url',
-    'placeholder' => 'https://example.com/profile',
-    'external'    => true,
-]
-```
+Filtered values are normalized again before they are returned to frontend consumers.
 
-Supported types are:
+Extensions should use this boundary rather than directly modifying `mpc_link_hub_settings`.
 
-```text
-url
-email
-```
+### `mpc_link_hub_url`
 
-Core normalizes filtered definitions before use.
+Filters the resolved public URL of the assigned Link Hub WordPress Page.
 
-#### `mpc_social_links`
+The assigned Page ID remains the routing authority.
 
-Filters configured Social Links after Core has converted stored settings into a rendering-neutral list.
+Consumers should use this API/filter rather than infer a `/links/` slug.
 
-Each returned item contains:
+# Extension Compatibility
 
-```php
-[
-    'key'      => 'platform',
-    'label'    => 'Platform',
-    'url'      => 'https://example.com/profile',
-    'type'     => 'url',
-    'external' => true,
-]
-```
+Extensions should:
 
-Filtered values are normalized again before frontend use.
-
-#### `mpc_social_display_mode`
-
-Filters the Social Links display mode for a rendering context.
-
-Supported modes are limited to the values returned by:
-
-```php
-mpc_get_social_display_options()
-```
-
-Unsupported filter results fall back to the previously validated mode.
-
-#### `mpc_footer_token_replacements`
-
-Adds or changes Footer text tokens.
-
-Core provides:
-
-```text
-{year}
-{site_name}
-```
-
-Extensions may add additional token/value pairs without changing the stored Footer settings shape.
-
-#### `mpc_render_integration_content`
-
-Filters rendered Shows, Newsletter, or other provider content after Core processes the stored integration value.
-
-The filter receives:
-
-```text
-rendered output
-original stored content
-integration context
-```
-
-Returning `null` suppresses output.
-
-Malformed array or object results are ignored rather than passed to frontend rendering.
-
-#### `mpc_site_status_preview_url`
-
-Filters the administrator Site Status preview URL.
-
-#### `mpc_site_status_request_should_bypass`
-
-Filters whether the current request bypasses an active Coming Soon or Maintenance page.
-
-Extensions adding API, authentication, monitoring, or other special routes may use this boundary when necessary.
-
-#### `mpc_site_status_is_machine_request`
-
-Filters whether a request should receive the machine-readable Site Status response rather than the public HTML status page.
-
-This is intended for additional feed, sitemap, or similar machine-readable routes.
-
-#### `mpc_site_status_retry_after`
-
-Filters the `Retry-After` value used for Maintenance responses.
-
-The default is:
-
-```text
-3600 seconds
-```
-
-#### `mpc_site_status_template`
-
-Filters the Site Status template path.
-
-Returning an empty path causes Core to use its plugin-owned minimal fallback instead.
-
-Extension Compatibility
------------------------
-
-Extensions should follow these rules:
-
-1. Do not rename or delete existing Core option keys.
-2. Do not overwrite complete Core option arrays when changing one extension-owned value.
-3. Use unique extension-owned keys when storing additional scalar data in an existing extensible Core option.
+1. Avoid renaming or deleting existing Core option keys.
+2. Avoid overwriting complete Core option arrays when changing one extension-owned value.
+3. Use unique extension-owned keys where supported.
 4. Preserve unknown values when processing shared settings.
 5. Use documented filters rather than replacing Core rendering functions.
-6. Check Core availability before calling Core functions from themes or other plugins.
-7. Treat undocumented administration and rendering helpers as internal implementation details.
-8. Do not depend on the physical location or load order of individual files under `includes/`.
+6. Check Core availability before calling Core functions.
+7. Treat undocumented helpers as internal implementation details.
+8. Avoid depending on physical file locations under `includes/`.
+9. Avoid requiring Base or another theme to inspect raw Link Hub option data.
+10. Keep presentation markup outside Core.
 
-Core sanitizers intentionally preserve unknown scalar settings in extensible option groups where appropriate so a temporarily unavailable extension does not silently lose its configuration.
+# Schema and Upgrade Compatibility
 
-Schema and Upgrade Compatibility
---------------------------------
-
-Core uses the following option to track settings-schema versions:
+Core uses:
 
 ```text
 mpc_schema_versions
 ```
 
+to track settings-schema versions.
+
 Schema migrations are versioned separately from the public plugin version.
 
-Future migrations must:
+Current schema groups include Link Hub.
 
-- Preserve existing user settings.
-- Preserve Quotes / Testimonials and their metadata.
-- Avoid destructive resets.
-- Be safe to run more than once.
-- Tolerate malformed or legacy stored values.
-- Preserve unknown extension-owned data where the option is designed to be extensible.
-- Update the schema version only after the corresponding migration has completed.
+Future migrations must preserve existing settings and content, be idempotent, tolerate malformed legacy values, preserve extension-owned data where appropriate, and update schema versions only after successful migration.
 
 Extensions should not modify `mpc_schema_versions`.
 
-Public Versioning
------------------
+# Public Versioning
 
 Music Project Core intends to use Semantic Versioning for production releases.
-
-Once a production public API is declared stable:
 
 - Patch releases should contain backward-compatible fixes.
 - Minor releases may add backward-compatible settings, functions, filters, and features.
 - Breaking changes to documented public APIs should be reserved for a major version.
 
-Internal functions that are not documented as public extension boundaries may change between releases.
-
-Future Update Strategy
-----------------------
-
-The plugin header contains an explicit `Update URI` so WordPress does not confuse Music Project Core with an unrelated plugin using the same slug.
-
-A future commercial update system may replace or supplement the current distribution process, but it should remain separate from Core's content and settings architecture.
-
-A future updater should:
-
-- Use WordPress-native update APIs.
-- Verify package integrity and authorization.
-- Fail without deleting or resetting user data.
-- Allow the installed plugin to continue operating when the update service is unavailable.
-- Keep schema migrations independent from the transport used to deliver the update.
-- Avoid requiring a proprietary update mechanism for local development builds.
-
-No proprietary update server is currently implemented.
-
-Future License Integration Boundary
------------------------------------
-
-Music Project Core does not currently contain license-key validation or license enforcement.
-
-If commercial licensing is introduced later, license state should be isolated from reusable site content and normal Core settings.
-
-A future licensing layer should:
-
-- Use its own namespaced option or storage boundary.
-- Avoid placing license credentials inside Homepage, Theme Style, Footer, Social Links, Integration, or Site Status settings.
-- Avoid deleting or disabling stored user content when a license expires.
-- Avoid preventing administrators from exporting or recovering their own content.
-- Treat temporary licensing-server failures as recoverable failures.
-- Avoid remote telemetry unless it is separately disclosed and intentionally enabled where required.
-- Keep payment processing and subscription billing outside this plugin.
-
-No payment processing, subscription billing, or license enforcement is currently implemented.
-
-Privacy and Remote Services
----------------------------
+# Privacy and Remote Services
 
 Music Project Core does not send product analytics or telemetry by default.
 
-Core stores its configuration in the site's WordPress database.
+Some user-configured features may intentionally communicate with third-party services, including Google Fonts, Shows or Newsletter providers, Bandsintown, WordPress oEmbed providers, Social Links, and Link Hub destinations.
 
-Some user-configured features may intentionally communicate with third-party services, including:
+The Link Hub itself does not bundle a third-party analytics SDK or load third-party social content merely because the Link Hub is viewed.
 
-- Google Fonts when a Google Fonts stylesheet URL is configured.
-- Shows or Newsletter providers when their embeds are configured.
-- Bandsintown when its optional integration is used.
-- WordPress oEmbed providers when a supported external URL is rendered.
-- Social platforms when visitors follow configured external links.
-
-Site owners are responsible for evaluating the privacy, cookie, consent, and disclosure requirements of third-party services they choose to configure.
-
-Core itself does not require a remote Music Project service to operate.
-
-Free, Premium, and Project-Specific Functionality
--------------------------------------------------
-
-Future product tiers should preserve the current ownership boundary.
-
-### Music Project Core
-
-Owns reusable settings, reusable content, schemas, migrations, and provider-neutral integration data.
-
-### Music Project Base
-
-Owns frontend markup, templates, CSS, JavaScript, responsive behavior, accessibility behavior, and presentation defaults.
-
-### Future Premium Extensions
-
-Should add functionality through documented Core APIs, filters, additional modules, or separately namespaced settings rather than forking the Core data model.
-
-### Project-Specific Functionality
-
-Should live in a project plugin, child theme, or another appropriate extension rather than being hard-coded into the reusable Core or Base products.
-
-Premium functionality should not require moving reusable user content into the theme.
-
-Branding and White-Label Considerations
----------------------------------------
-
-The current product uses the Music Project Core and Music Project Base names in plugin, theme, documentation, and administration interfaces.
-
-Future white-label functionality, if offered, should change presentation and branding without changing:
-
-- Option names
-- Custom post type identifiers
-- Schema-version keys
-- Public function names
-- Public filter names
-- Stored reusable content
-
-Changing those internal identifiers for branding purposes would create unnecessary upgrade and compatibility risk.
-
-Deferred Commercialization Work
--------------------------------
-
-The following work is intentionally deferred until a commercial distribution model is selected:
-
-- License-key storage and validation
-- Paid entitlement checks
-- Subscription billing
-- Payment processing
-- Customer-account infrastructure
-- Proprietary update delivery
-- Package-signing infrastructure
-- Commercial download authorization
-- Optional product analytics or telemetry
-- Premium-feature packaging strategy
-- Automated license activation and deactivation
-- Customer support portal integration
-
-These features should not be added to the production foundation until their requirements are defined.
-
-Companion Theme
----------------
+# Companion Theme
 
 Music Project Base:
 
@@ -663,37 +526,32 @@ Music Project Base:
 https://github.com/trentofflarrabee/music-project-base
 ```
 
-Support and Issues
-------------------
+# Support and Issues
 
-Report reproducible problems through the repository issue tracker:
+Report reproducible problems through:
 
 ```text
 https://github.com/trentofflarrabee/music-project-core/issues
 ```
 
-Include:
+Include WordPress version, PHP version, active theme, Music Project Base version when relevant, reproduction steps, and relevant PHP/browser errors.
 
-- WordPress version
-- PHP version
-- Active theme
-- Steps to reproduce
-- Relevant PHP or browser-console errors
-
-Version
--------
+# Version
 
 Current version:
 
 ```text
-1.1.0
+1.2.0
 ```
 
-License
--------
+# License
 
 Music Project Core is licensed under the GNU General Public License, version 2 or any later version.
 
-SPDX license identifier: `GPL-2.0-or-later`.
+SPDX license identifier:
 
-See [LICENSE](LICENSE) for the complete license terms.
+```text
+GPL-2.0-or-later
+```
+
+See `LICENSE` for the complete license terms.

@@ -6,6 +6,44 @@ This project follows the Keep a Changelog structure and intends to use Semantic 
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-17
+
+### Added
+
+- Added the first-party Link Hub feature, presented in WordPress administration as **Link in Bio**.
+- Added the dedicated `mpc_link_hub_settings` option for persistent Link Hub configuration.
+- Added an explicit **Configure Link Hub Page** action that preserves valid assignments, reuses suitable existing Pages, and creates a new `Links` Page only when explicitly requested.
+- Added profile-image modes for automatic Custom Logo reuse, a custom Media Library image, or no profile image.
+- Added optional display-name and tagline overrides.
+- Added Spotlight, Stack, and Poster layout selections.
+- Added an ordered Link Hub editor supporting links and section headings.
+- Added keyboard-accessible Move Up / Move Down controls and drag-and-drop enhancement for item ordering.
+- Added curated Link Hub icons, optional subtitles, enabled states, new-window behavior, and one featured-link presentation state.
+- Added a 30-item server-side Link Hub limit.
+- Added public Link Hub data helpers:
+  - `mpc_get_link_hub_settings()`
+  - `mpc_get_link_hub_setting()`
+  - `mpc_get_link_hub_items()`
+  - `mpc_get_link_hub_url()`
+  - `mpc_is_link_hub_enabled()`
+  - `mpc_get_link_hub_page_id()`
+- Added `mpc_link_hub_items` and `mpc_link_hub_url` extension filters.
+- Added Link Hub schema-version tracking.
+
+### Changed
+
+- Link Hub reuses existing Music Project Social Links rather than storing duplicate social-account configuration.
+- Link Hub page routing is based on the assigned WordPress Page ID rather than a hard-coded `/links/` slug.
+- Link Hub settings remain non-destructive across plugin deactivation, deletion, theme changes, and page reassignment.
+
+### Security
+
+- Added strict Link Hub normalization and sanitization for settings and ordered items.
+- Restricted Link Hub URL protocols to validated `http`, `https`, `mailto`, and `tel` destinations.
+- Restricted icons, layouts, item types, and visual variants to curated allowlists.
+- Added capability and nonce protection for Link Hub administration and Page configuration actions.
+- Prevented malformed or incomplete enabled links from being exposed through the frontend data API.
+
 ## [1.1.0] - 2026-08-13
 
 ### Added
