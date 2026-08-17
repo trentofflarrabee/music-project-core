@@ -61,6 +61,12 @@ function mpc_get_theme_style_defaults() {
         // Editorial presentation.
         'blog_body_size' => 'standard',
 
+        // Page title presentation.
+        'page_title_style'          => 'standard',
+        'page_title_panel_tone'     => 'surface',
+        'page_title_panel_strength' => 'strong',
+        'page_title_size'           => 'standard',
+
         // Heading presentation.
         'heading_text_transform' => 'none',
         'heading_letter_spacing' => '-0.04em',
@@ -752,6 +758,99 @@ $output['blog_body_size'] = in_array(
     ? $blog_body_size
     : $defaults['blog_body_size'];
 
+    // Page title presentation.
+$allowed_page_title_styles = [
+    'standard',
+    'editorial-panel',
+    'minimal-overlay',
+];
+
+$page_title_style = (
+    isset($input['page_title_style'])
+    && is_scalar($input['page_title_style'])
+)
+    ? sanitize_key(
+        (string) $input['page_title_style']
+    )
+    : $defaults['page_title_style'];
+
+$output['page_title_style'] = in_array(
+    $page_title_style,
+    $allowed_page_title_styles,
+    true
+)
+    ? $page_title_style
+    : $defaults['page_title_style'];
+
+$allowed_page_title_panel_tones = [
+    'background',
+    'surface',
+    'accent',
+    'button',
+];
+
+$page_title_panel_tone = (
+    isset($input['page_title_panel_tone'])
+    && is_scalar($input['page_title_panel_tone'])
+)
+    ? sanitize_key(
+        (string) $input['page_title_panel_tone']
+    )
+    : $defaults['page_title_panel_tone'];
+
+$output['page_title_panel_tone'] = in_array(
+    $page_title_panel_tone,
+    $allowed_page_title_panel_tones,
+    true
+)
+    ? $page_title_panel_tone
+    : $defaults['page_title_panel_tone'];
+
+$allowed_page_title_panel_strengths = [
+    'soft',
+    'strong',
+    'solid',
+];
+
+$page_title_panel_strength = (
+    isset($input['page_title_panel_strength'])
+    && is_scalar($input['page_title_panel_strength'])
+)
+    ? sanitize_key(
+        (string) $input['page_title_panel_strength']
+    )
+    : $defaults['page_title_panel_strength'];
+
+$output['page_title_panel_strength'] = in_array(
+    $page_title_panel_strength,
+    $allowed_page_title_panel_strengths,
+    true
+)
+    ? $page_title_panel_strength
+    : $defaults['page_title_panel_strength'];
+
+$allowed_page_title_sizes = [
+    'compact',
+    'standard',
+    'large',
+];
+
+$page_title_size = (
+    isset($input['page_title_size'])
+    && is_scalar($input['page_title_size'])
+)
+    ? sanitize_key(
+        (string) $input['page_title_size']
+    )
+    : $defaults['page_title_size'];
+
+$output['page_title_size'] = in_array(
+    $page_title_size,
+    $allowed_page_title_sizes,
+    true
+)
+    ? $page_title_size
+    : $defaults['page_title_size'];
 
 // Texture V2.
 
@@ -1143,6 +1242,18 @@ function mpc_render_theme_style_settings_page() {
 
                 <button
                     type="button"
+                    id="mpc-theme-style-tab-pages"
+                    class="mpc-theme-style-tabs__tab"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="mpc-theme-style-panel-pages"
+                    tabindex="-1"
+                >
+                    <?php esc_html_e('Pages', 'music-project-core'); ?>
+                </button>
+
+                <button
+                    type="button"
                     id="mpc-theme-style-tab-chrome"
                     class="mpc-theme-style-tabs__tab"
                     role="tab"
@@ -1438,6 +1549,251 @@ function mpc_render_theme_style_settings_page() {
 
                     <p class="description">
                         <?php esc_html_e('Useful when shadows are disabled or when you want sharper editorial card edges.', 'music-project-core'); ?>
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </section>
+
+        <section
+        id="mpc-theme-style-panel-pages"
+        class="mpc-theme-style-tabs__panel"
+        role="tabpanel"
+        aria-labelledby="mpc-theme-style-tab-pages"
+        tabindex="0"
+    >
+        <h2>
+            <?php esc_html_e('Page Presentation', 'music-project-core'); ?>
+        </h2>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Control the title and featured-image presentation for ordinary WordPress Pages. The homepage, Posts page, Link Hub, blog posts, archives, and homepage previews are not affected.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+
+        <table class="form-table" role="presentation">
+            <tr>
+                <th scope="row">
+                    <label for="mpc_theme_style_page_title_style">
+                        <?php esc_html_e('Page Title Style', 'music-project-core'); ?>
+                    </label>
+                </th>
+                <td>
+                    <select
+                        id="mpc_theme_style_page_title_style"
+                        name="mpc_theme_style_settings[page_title_style]"
+                    >
+                        <option
+                            value="standard"
+                            <?php selected(
+                                $settings['page_title_style'] ?? 'standard',
+                                'standard'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Standard', 'music-project-core'); ?>
+                        </option>
+
+                        <option
+                            value="editorial-panel"
+                            <?php selected(
+                                $settings['page_title_style'] ?? 'standard',
+                                'editorial-panel'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Editorial Panel', 'music-project-core'); ?>
+                        </option>
+
+                        <option
+                            value="minimal-overlay"
+                            <?php selected(
+                                $settings['page_title_style'] ?? 'standard',
+                                'minimal-overlay'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Minimal Overlay', 'music-project-core'); ?>
+                        </option>
+                    </select>
+
+                    <p class="description">
+                        <?php
+                        esc_html_e(
+                            'Standard keeps the traditional title-above-image layout. Editorial Panel creates a prominent title panel associated with the featured image. Minimal Overlay places the title directly over the image when one is available.',
+                            'music-project-core'
+                        );
+                        ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_theme_style_page_title_panel_tone">
+                        <?php esc_html_e('Title Panel Tone', 'music-project-core'); ?>
+                    </label>
+                </th>
+                <td>
+                    <select
+                        id="mpc_theme_style_page_title_panel_tone"
+                        name="mpc_theme_style_settings[page_title_panel_tone]"
+                    >
+                        <option
+                            value="background"
+                            <?php selected(
+                                $settings['page_title_panel_tone'] ?? 'surface',
+                                'background'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Background', 'music-project-core'); ?>
+                        </option>
+
+                        <option
+                            value="surface"
+                            <?php selected(
+                                $settings['page_title_panel_tone'] ?? 'surface',
+                                'surface'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Surface', 'music-project-core'); ?>
+                        </option>
+
+                        <option
+                            value="accent"
+                            <?php selected(
+                                $settings['page_title_panel_tone'] ?? 'surface',
+                                'accent'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Accent', 'music-project-core'); ?>
+                        </option>
+
+                        <option
+                            value="button"
+                            <?php selected(
+                                $settings['page_title_panel_tone'] ?? 'surface',
+                                'button'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Button', 'music-project-core'); ?>
+                        </option>
+                    </select>
+
+                    <p class="description">
+                        <?php
+                        esc_html_e(
+                            'Uses an existing Theme Style color rather than introducing a separate Page color. Base will handle the appropriate accompanying text treatment.',
+                            'music-project-core'
+                        );
+                        ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_theme_style_page_title_panel_strength">
+                        <?php esc_html_e('Title Panel Strength', 'music-project-core'); ?>
+                    </label>
+                </th>
+                <td>
+                    <select
+                        id="mpc_theme_style_page_title_panel_strength"
+                        name="mpc_theme_style_settings[page_title_panel_strength]"
+                    >
+                        <option
+                            value="soft"
+                            <?php selected(
+                                $settings['page_title_panel_strength'] ?? 'strong',
+                                'soft'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Soft', 'music-project-core'); ?>
+                        </option>
+
+                        <option
+                            value="strong"
+                            <?php selected(
+                                $settings['page_title_panel_strength'] ?? 'strong',
+                                'strong'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Strong', 'music-project-core'); ?>
+                        </option>
+
+                        <option
+                            value="solid"
+                            <?php selected(
+                                $settings['page_title_panel_strength'] ?? 'strong',
+                                'solid'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Solid', 'music-project-core'); ?>
+                        </option>
+                    </select>
+
+                    <p class="description">
+                        <?php
+                        esc_html_e(
+                            'Controls how transparent or solid the title treatment appears. Exact opacity values are curated by the active theme.',
+                            'music-project-core'
+                        );
+                        ?>
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_theme_style_page_title_size">
+                        <?php esc_html_e('Page Title Size', 'music-project-core'); ?>
+                    </label>
+                </th>
+                <td>
+                    <select
+                        id="mpc_theme_style_page_title_size"
+                        name="mpc_theme_style_settings[page_title_size]"
+                    >
+                        <option
+                            value="compact"
+                            <?php selected(
+                                $settings['page_title_size'] ?? 'standard',
+                                'compact'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Compact', 'music-project-core'); ?>
+                        </option>
+
+                        <option
+                            value="standard"
+                            <?php selected(
+                                $settings['page_title_size'] ?? 'standard',
+                                'standard'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Standard', 'music-project-core'); ?>
+                        </option>
+
+                        <option
+                            value="large"
+                            <?php selected(
+                                $settings['page_title_size'] ?? 'standard',
+                                'large'
+                            ); ?>
+                        >
+                            <?php esc_html_e('Large', 'music-project-core'); ?>
+                        </option>
+                    </select>
+
+                    <p class="description">
+                        <?php
+                        esc_html_e(
+                            'Selects a curated responsive Page-title scale. The active theme controls the exact sizes at each viewport width.',
+                            'music-project-core'
+                        );
+                        ?>
                     </p>
                 </td>
             </tr>
