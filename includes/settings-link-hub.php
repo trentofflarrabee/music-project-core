@@ -1927,6 +1927,629 @@ add_action(
 );
 
 /**
+ * Save the ordered Link Hub item collection.
+ *
+ * Existing status, page, identity, and presentation settings are preserved.
+ *
+ * @return void
+ */
+function mpc_handle_save_link_hub_items() {
+    if (!current_user_can('manage_options')) {
+        wp_die(
+            esc_html__(
+                'You do not have permission to manage Link in Bio settings.',
+                'music-project-core'
+            )
+        );
+    }
+
+    check_admin_referer(
+        'mpc_save_link_hub_items'
+    );
+
+    $submitted_items = [];
+
+    if (
+        isset($_POST['mpc_link_hub_items'])
+        && is_array($_POST['mpc_link_hub_items'])
+    ) {
+        $submitted_items = wp_unslash(
+            $_POST['mpc_link_hub_items']
+        );
+    }
+
+    $settings =
+        mpc_get_link_hub_settings();
+
+    $settings['items'] =
+        mpc_normalize_link_hub_items(
+            $submitted_items
+        );
+
+    $settings =
+        mpc_sanitize_link_hub_settings(
+            $settings
+        );
+
+    update_option(
+        'mpc_link_hub_settings',
+        $settings
+    );
+
+    $redirect_url = add_query_arg(
+        [
+            'page' =>
+                'mpc-link-hub',
+            'mpc_link_hub_notice' =>
+                'items_saved',
+        ],
+        admin_url('admin.php')
+    );
+
+    wp_safe_redirect(
+        $redirect_url
+    );
+
+    exit;
+}
+
+add_action(
+    'admin_post_mpc_save_link_hub_items',
+    'mpc_handle_save_link_hub_items'
+);
+
+/**
+ * Render one Link Hub item editor card.
+ *
+ * @param array      $item  Normalized item data.
+ * @param int|string $index Item index or template placeholder.
+ * @return void
+ */
+function mpc_render_link_hub_item_editor(
+    $item,
+    $index
+) {
+    $item = is_array($item)
+        ? $item
+        : [];
+
+    $type = (
+        isset($item['type'])
+        && $item['type'] === 'section'
+    )
+        ? 'section'
+        : 'link';
+
+    $index_token =
+        (string) $index;
+
+    $visible_number =
+        is_numeric($index)
+            ? absint($index) + 1
+            : 1;
+
+    $field_name_base = sprintf(
+        'mpc_link_hub_items[%s]',
+        $index_token
+    );
+
+    $field_id_base = sprintf(
+        'mpc_link_hub_item_%s',
+        $index_token
+    );
+
+    $body_id =
+        $field_id_base . '_body';
+
+    $id = isset($item['id'])
+        ? (string) $item['id']
+        : '';
+
+    $label = isset($item['label'])
+        ? (string) $item['label']
+        : '';
+
+    if ($type === 'section') {
+        ?>
+        <div
+            class="mpc-link-hub-item mpc-link-hub-item--section"
+            data-link-hub-item
+            data-link-hub-type="section"
+        >
+            <header class="mpc-link-hub-item__header">
+                <span
+                    class="mpc-link-hub-item__handle"
+                    aria-hidden="true"
+                    title="<?php esc_attr_e('Drag to reorder', 'music-project-core'); ?>"
+                >
+                    ↕
+                </span>
+
+                <div class="mpc-link-hub-item__heading">
+                    <span class="mpc-link-hub-item__type">
+                        <?php
+                        esc_html_e(
+                            'Section',
+                            'music-project-core'
+                        );
+                        ?>
+                    </span>
+
+                    <strong
+                        class="mpc-link-hub-item__summary-label"
+                        data-link-hub-summary-label
+                    >
+                        <?php
+                        echo esc_html(
+                            $label !== ''
+                                ? $label
+                                : sprintf(
+                                    __(
+                                        'Section %d',
+                                        'music-project-core'
+                                    ),
+                                    $visible_number
+                                )
+                        );
+                        ?>
+                    </strong>
+                </div>
+
+                <div
+                    class="mpc-link-hub-item__controls"
+                    role="group"
+                    aria-label="<?php esc_attr_e('Section controls', 'music-project-core'); ?>"
+                >
+                    <button
+                        type="button"
+                        class="button button-small mpc-link-hub-item__toggle"
+                        aria-expanded="true"
+                        aria-controls="<?php echo esc_attr($body_id); ?>"
+                    >
+                        <?php
+                        esc_html_e(
+                            'Collapse',
+                            'music-project-core'
+                        );
+                        ?>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button-small mpc-link-hub-item__move mpc-link-hub-item__move--up"
+                        data-link-hub-direction="up"
+                    >
+                        <span aria-hidden="true">↑</span>
+                        <?php
+                        esc_html_e(
+                            'Move up',
+                            'music-project-core'
+                        );
+                        ?>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button-small mpc-link-hub-item__move mpc-link-hub-item__move--down"
+                        data-link-hub-direction="down"
+                    >
+                        <span aria-hidden="true">↓</span>
+                        <?php
+                        esc_html_e(
+                            'Move down',
+                            'music-project-core'
+                        );
+                        ?>
+                    </button>
+
+                    <button
+                        type="button"
+                        class="button button-small mpc-link-hub-item__remove"
+                    >
+                        <?php
+                        esc_html_e(
+                            'Remove',
+                            'music-project-core'
+                        );
+                        ?>
+                    </button>
+                </div>
+            </header>
+
+            <div
+                class="mpc-link-hub-item__body"
+                id="<?php echo esc_attr($body_id); ?>"
+            >
+                <input
+                    type="hidden"
+                    data-link-hub-field="id"
+                    name="<?php echo esc_attr($field_name_base . '[id]'); ?>"
+                    value="<?php echo esc_attr($id); ?>"
+                >
+
+                <input
+                    type="hidden"
+                    data-link-hub-field="type"
+                    name="<?php echo esc_attr($field_name_base . '[type]'); ?>"
+                    value="section"
+                >
+
+                <div class="mpc-link-hub-item__field">
+                    <label
+                        data-link-hub-label-for="label"
+                        for="<?php echo esc_attr($field_id_base . '_label'); ?>"
+                    >
+                        <?php
+                        esc_html_e(
+                            'Section Heading',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+
+                    <input
+                        type="text"
+                        class="regular-text"
+                        id="<?php echo esc_attr($field_id_base . '_label'); ?>"
+                        data-link-hub-field="label"
+                        name="<?php echo esc_attr($field_name_base . '[label]'); ?>"
+                        value="<?php echo esc_attr($label); ?>"
+                        placeholder="<?php esc_attr_e('Listen', 'music-project-core'); ?>"
+                    >
+                </div>
+            </div>
+        </div>
+        <?php
+
+        return;
+    }
+
+    $enabled =
+        !empty($item['enabled']);
+
+    $subtitle = isset($item['subtitle'])
+        ? (string) $item['subtitle']
+        : '';
+
+    $url = isset($item['url'])
+        ? (string) $item['url']
+        : '';
+
+    $icon = isset($item['icon'])
+        ? (string) $item['icon']
+        : 'link';
+
+    $variant = isset($item['variant'])
+        ? (string) $item['variant']
+        : 'standard';
+
+    $new_window =
+        !empty($item['new_window']);
+    ?>
+    <div
+        class="mpc-link-hub-item mpc-link-hub-item--link"
+        data-link-hub-item
+        data-link-hub-type="link"
+    >
+        <header class="mpc-link-hub-item__header">
+            <span
+                class="mpc-link-hub-item__handle"
+                aria-hidden="true"
+                title="<?php esc_attr_e('Drag to reorder', 'music-project-core'); ?>"
+            >
+                ↕
+            </span>
+
+            <div class="mpc-link-hub-item__heading">
+                <span class="mpc-link-hub-item__type">
+                    <?php
+                    esc_html_e(
+                        'Link',
+                        'music-project-core'
+                    );
+                    ?>
+                </span>
+
+                <strong
+                    class="mpc-link-hub-item__summary-label"
+                    data-link-hub-summary-label
+                >
+                    <?php
+                    echo esc_html(
+                        $label !== ''
+                            ? $label
+                            : sprintf(
+                                __(
+                                    'Link %d',
+                                    'music-project-core'
+                                ),
+                                $visible_number
+                            )
+                    );
+                    ?>
+                </strong>
+            </div>
+
+            <div
+                class="mpc-link-hub-item__controls"
+                role="group"
+                aria-label="<?php esc_attr_e('Link controls', 'music-project-core'); ?>"
+            >
+                <button
+                    type="button"
+                    class="button button-small mpc-link-hub-item__toggle"
+                    aria-expanded="true"
+                    aria-controls="<?php echo esc_attr($body_id); ?>"
+                >
+                    <?php
+                    esc_html_e(
+                        'Collapse',
+                        'music-project-core'
+                    );
+                    ?>
+                </button>
+
+                <button
+                    type="button"
+                    class="button button-small mpc-link-hub-item__move mpc-link-hub-item__move--up"
+                    data-link-hub-direction="up"
+                >
+                    <span aria-hidden="true">↑</span>
+                    <?php
+                    esc_html_e(
+                        'Move up',
+                        'music-project-core'
+                    );
+                    ?>
+                </button>
+
+                <button
+                    type="button"
+                    class="button button-small mpc-link-hub-item__move mpc-link-hub-item__move--down"
+                    data-link-hub-direction="down"
+                >
+                    <span aria-hidden="true">↓</span>
+                    <?php
+                    esc_html_e(
+                        'Move down',
+                        'music-project-core'
+                    );
+                    ?>
+                </button>
+
+                <button
+                    type="button"
+                    class="button button-small mpc-link-hub-item__remove"
+                >
+                    <?php
+                    esc_html_e(
+                        'Remove',
+                        'music-project-core'
+                    );
+                    ?>
+                </button>
+            </div>
+        </header>
+
+        <div
+            class="mpc-link-hub-item__body"
+            id="<?php echo esc_attr($body_id); ?>"
+        >
+            <input
+                type="hidden"
+                data-link-hub-field="id"
+                name="<?php echo esc_attr($field_name_base . '[id]'); ?>"
+                value="<?php echo esc_attr($id); ?>"
+            >
+
+            <input
+                type="hidden"
+                data-link-hub-field="type"
+                name="<?php echo esc_attr($field_name_base . '[type]'); ?>"
+                value="link"
+            >
+
+            <div class="mpc-link-hub-item__field mpc-link-hub-item__field--checkbox">
+                <label>
+                    <input
+                        type="checkbox"
+                        data-link-hub-field="enabled"
+                        name="<?php echo esc_attr($field_name_base . '[enabled]'); ?>"
+                        value="1"
+                        <?php checked($enabled); ?>
+                    >
+
+                    <?php
+                    esc_html_e(
+                        'Enabled',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </div>
+
+            <div class="mpc-link-hub-item__field">
+                <label
+                    data-link-hub-label-for="label"
+                    for="<?php echo esc_attr($field_id_base . '_label'); ?>"
+                >
+                    <?php
+                    esc_html_e(
+                        'Label',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+
+                <input
+                    type="text"
+                    class="regular-text"
+                    id="<?php echo esc_attr($field_id_base . '_label'); ?>"
+                    data-link-hub-field="label"
+                    name="<?php echo esc_attr($field_name_base . '[label]'); ?>"
+                    value="<?php echo esc_attr($label); ?>"
+                    placeholder="<?php esc_attr_e('Listen to the new single', 'music-project-core'); ?>"
+                >
+            </div>
+
+            <div class="mpc-link-hub-item__field">
+                <label
+                    data-link-hub-label-for="subtitle"
+                    for="<?php echo esc_attr($field_id_base . '_subtitle'); ?>"
+                >
+                    <?php
+                    esc_html_e(
+                        'Subtitle',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+
+                <input
+                    type="text"
+                    class="regular-text"
+                    id="<?php echo esc_attr($field_id_base . '_subtitle'); ?>"
+                    data-link-hub-field="subtitle"
+                    name="<?php echo esc_attr($field_name_base . '[subtitle]'); ?>"
+                    value="<?php echo esc_attr($subtitle); ?>"
+                    placeholder="<?php esc_attr_e('Out now everywhere', 'music-project-core'); ?>"
+                >
+            </div>
+
+            <div class="mpc-link-hub-item__field mpc-link-hub-item__field--wide">
+                <label
+                    data-link-hub-label-for="url"
+                    for="<?php echo esc_attr($field_id_base . '_url'); ?>"
+                >
+                    <?php
+                    esc_html_e(
+                        'URL',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+
+                <input
+                    type="text"
+                    class="large-text"
+                    id="<?php echo esc_attr($field_id_base . '_url'); ?>"
+                    data-link-hub-field="url"
+                    name="<?php echo esc_attr($field_name_base . '[url]'); ?>"
+                    value="<?php echo esc_attr($url); ?>"
+                    placeholder="https://example.com"
+                    inputmode="url"
+                >
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Use an http, https, mailto, or tel destination.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </div>
+
+            <div class="mpc-link-hub-item__field">
+                <label
+                    data-link-hub-label-for="icon"
+                    for="<?php echo esc_attr($field_id_base . '_icon'); ?>"
+                >
+                    <?php
+                    esc_html_e(
+                        'Icon',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+
+                <select
+                    id="<?php echo esc_attr($field_id_base . '_icon'); ?>"
+                    data-link-hub-field="icon"
+                    name="<?php echo esc_attr($field_name_base . '[icon]'); ?>"
+                >
+                    <?php
+                    foreach (
+                        mpc_get_link_hub_icon_options()
+                        as $value => $option_label
+                    ) :
+                        ?>
+                        <option
+                            value="<?php echo esc_attr($value); ?>"
+                            <?php selected($icon, $value); ?>
+                        >
+                            <?php
+                            echo esc_html(
+                                $option_label
+                            );
+                            ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="mpc-link-hub-item__field">
+                <label
+                    data-link-hub-label-for="variant"
+                    for="<?php echo esc_attr($field_id_base . '_variant'); ?>"
+                >
+                    <?php
+                    esc_html_e(
+                        'Visual Style',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+
+                <select
+                    id="<?php echo esc_attr($field_id_base . '_variant'); ?>"
+                    data-link-hub-field="variant"
+                    name="<?php echo esc_attr($field_name_base . '[variant]'); ?>"
+                >
+                    <?php
+                    foreach (
+                        mpc_get_link_hub_variant_options()
+                        as $value => $option_label
+                    ) :
+                        ?>
+                        <option
+                            value="<?php echo esc_attr($value); ?>"
+                            <?php selected($variant, $value); ?>
+                        >
+                            <?php
+                            echo esc_html(
+                                $option_label
+                            );
+                            ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="mpc-link-hub-item__field mpc-link-hub-item__field--checkbox">
+                <label>
+                    <input
+                        type="checkbox"
+                        data-link-hub-field="new_window"
+                        name="<?php echo esc_attr($field_name_base . '[new_window]'); ?>"
+                        value="1"
+                        <?php checked($new_window); ?>
+                    >
+
+                    <?php
+                    esc_html_e(
+                        'Open in a new window/tab',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+
+/**
  * Render the Link in Bio administration screen.
  *
  * @return void
@@ -1995,6 +2618,21 @@ function mpc_render_link_hub_settings_page() {
 
     $show_footer_brand = !empty(
         $settings['show_footer_brand']
+    );
+
+    $items = (
+        isset($settings['items'])
+        && is_array($settings['items'])
+    )
+        ? array_values(
+            $settings['items']
+        )
+        : [];
+
+    $items = array_slice(
+        $items,
+        0,
+        mpc_get_link_hub_item_limit()
     );
 
     $notice = '';
@@ -2082,6 +2720,22 @@ function mpc_render_link_hub_settings_page() {
                     <?php
                     esc_html_e(
                         'Link Hub identity and presentation settings saved.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </div>
+
+                    <?php elseif (
+            $notice === 'items_saved'
+        ) : ?>
+            <div
+                class="notice notice-success is-dismissible"
+            >
+                <p>
+                    <?php
+                    esc_html_e(
+                        'Link Hub links and sections saved.',
                         'music-project-core'
                     );
                     ?>
@@ -2735,7 +3389,203 @@ function mpc_render_link_hub_settings_page() {
             );
             ?>
         </form>
-        
+
+                <hr>
+
+        <h2>
+            <?php
+            esc_html_e(
+                'Links',
+                'music-project-core'
+            );
+            ?>
+        </h2>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Add links and section headings, then arrange them in the order they should appear on the Link Hub.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+
+        <form
+            method="post"
+            action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+        >
+            <input
+                type="hidden"
+                name="action"
+                value="mpc_save_link_hub_items"
+            >
+
+            <?php
+            wp_nonce_field(
+                'mpc_save_link_hub_items'
+            );
+            ?>
+
+            <div
+                class="mpc-link-hub-editor"
+                data-link-hub-max="<?php echo esc_attr(mpc_get_link_hub_item_limit()); ?>"
+                data-link-hub-link-added="<?php esc_attr_e('Link added.', 'music-project-core'); ?>"
+                data-link-hub-section-added="<?php esc_attr_e('Section added.', 'music-project-core'); ?>"
+                data-link-hub-removed="<?php esc_attr_e('%s removed.', 'music-project-core'); ?>"
+                data-link-hub-moved="<?php esc_attr_e('%1$s moved to position %2$d of %3$d.', 'music-project-core'); ?>"
+                data-link-hub-limit="<?php esc_attr_e('You can add up to %d Link Hub items.', 'music-project-core'); ?>"
+                data-link-hub-expand="<?php esc_attr_e('Edit', 'music-project-core'); ?>"
+                data-link-hub-collapse="<?php esc_attr_e('Collapse', 'music-project-core'); ?>"
+            >
+                <div class="mpc-link-hub-editor__toolbar">
+                    <div>
+                        <p class="description">
+                            <?php
+                            printf(
+                                esc_html__(
+                                    'Maximum %d total items, including section headings.',
+                                    'music-project-core'
+                                ),
+                                esc_html(
+                                    mpc_get_link_hub_item_limit()
+                                )
+                            );
+                            ?>
+                        </p>
+                    </div>
+
+                    <div class="mpc-link-hub-editor__actions">
+                        <button
+                            type="button"
+                            class="button mpc-link-hub-editor__add"
+                            data-link-hub-add="link"
+                        >
+                            <?php
+                            esc_html_e(
+                                'Add Link',
+                                'music-project-core'
+                            );
+                            ?>
+                        </button>
+
+                        <button
+                            type="button"
+                            class="button mpc-link-hub-editor__add"
+                            data-link-hub-add="section"
+                        >
+                            <?php
+                            esc_html_e(
+                                'Add Section',
+                                'music-project-core'
+                            );
+                            ?>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mpc-link-hub-editor__list">
+                    <?php
+                    foreach (
+                        $items as $index => $item
+                    ) {
+                        mpc_render_link_hub_item_editor(
+                            $item,
+                            $index
+                        );
+                    }
+                    ?>
+                </div>
+
+                <p
+                    class="mpc-link-hub-editor__empty"
+                    <?php
+                    echo $items
+                        ? 'hidden'
+                        : '';
+                    ?>
+                >
+                    <?php
+                    esc_html_e(
+                        'No Link Hub items yet. Add a link or section heading to begin.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+
+                <div class="mpc-link-hub-editor__footer">
+                    <p class="mpc-link-hub-editor__count">
+                        <strong data-link-hub-count>
+                            <?php
+                            echo esc_html(
+                                count($items)
+                            );
+                            ?>
+                        </strong>
+
+                        /
+                        <?php
+                        echo esc_html(
+                            mpc_get_link_hub_item_limit()
+                        );
+                        ?>
+
+                        <?php
+                        esc_html_e(
+                            'items',
+                            'music-project-core'
+                        );
+                        ?>
+                    </p>
+                </div>
+
+                <p
+                    class="screen-reader-text mpc-link-hub-editor__status"
+                    role="status"
+                    aria-live="polite"
+                    aria-atomic="true"
+                ></p>
+
+                <template data-link-hub-template="link">
+                    <?php
+                    mpc_render_link_hub_item_editor(
+                        [
+                            'type'       => 'link',
+                            'enabled'    => 1,
+                            'label'      => '',
+                            'subtitle'   => '',
+                            'url'        => '',
+                            'icon'       => 'link',
+                            'variant'    => 'standard',
+                            'new_window' => 0,
+                        ],
+                        '__INDEX__'
+                    );
+                    ?>
+                </template>
+
+                <template data-link-hub-template="section">
+                    <?php
+                    mpc_render_link_hub_item_editor(
+                        [
+                            'type'  => 'section',
+                            'label' => '',
+                        ],
+                        '__INDEX__'
+                    );
+                    ?>
+                </template>
+            </div>
+
+            <?php
+            submit_button(
+                __(
+                    'Save Links',
+                    'music-project-core'
+                )
+            );
+            ?>
+        </form>
+
     </div>
     <?php
 }

@@ -1071,6 +1071,709 @@ const removeTemplate = editor.attr(
     updateEditorState();
 }
 
+function initLinkHubEditor() {
+    const editor = $('.mpc-link-hub-editor');
+
+    if (!editor.length) {
+        return;
+    }
+
+    const list = editor.find(
+        '.mpc-link-hub-editor__list'
+    );
+
+    const emptyMessage = editor.find(
+        '.mpc-link-hub-editor__empty'
+    );
+
+    const countOutput = editor.find(
+        '[data-link-hub-count]'
+    );
+
+    const status = editor.find(
+        '.mpc-link-hub-editor__status'
+    );
+
+    const addButtons = editor.find(
+        '[data-link-hub-add]'
+    );
+
+    const maxItems = parseInt(
+        editor.attr('data-link-hub-max'),
+        10
+    ) || 30;
+
+    const expandLabel =
+        editor.attr('data-link-hub-expand')
+        || 'Edit';
+
+    const collapseLabel =
+        editor.attr('data-link-hub-collapse')
+        || 'Collapse';
+
+    function getItems() {
+        return list.children(
+            '.mpc-link-hub-item[data-link-hub-item]'
+        );
+    }
+
+    function formatMessage(
+        message,
+        replacements
+    ) {
+        let output = String(
+            message || ''
+        );
+
+        Object.keys(
+            replacements
+        ).forEach(
+            (placeholder) => {
+                output = output.replace(
+                    placeholder,
+                    String(
+                        replacements[
+                            placeholder
+                        ]
+                    )
+                );
+            }
+        );
+
+        return output;
+    }
+
+    function announce(message) {
+        if (
+            !status.length
+            || !message
+        ) {
+            return;
+        }
+
+        status.text('');
+
+        window.setTimeout(
+            () => {
+                status.text(message);
+            },
+            20
+        );
+    }
+
+    function markDirty() {
+        const element = list.get(0);
+
+        if (!element) {
+            return;
+        }
+
+        element.dispatchEvent(
+            new Event(
+                'input',
+                {
+                    bubbles: true,
+                }
+            )
+        );
+    }
+
+    function getItemType(item) {
+        const type = String(
+            item.find(
+                '[data-link-hub-field="type"]'
+            ).val() || ''
+        );
+
+        return type === 'section'
+            ? 'section'
+            : 'link';
+    }
+
+    function getItemLabel(item) {
+        const label = String(
+            item.find(
+                '[data-link-hub-field="label"]'
+            ).val() || ''
+        ).trim();
+
+        if (label) {
+            return label;
+        }
+
+        const position =
+            getItems().index(item) + 1;
+
+        return getItemType(item)
+            === 'section'
+                ? `Section ${position}`
+                : `Link ${position}`;
+    }
+
+    function setExpanded(
+        item,
+        expanded
+    ) {
+        const toggle = item.find(
+            '.mpc-link-hub-item__toggle'
+        );
+
+        const body = item.find(
+            '.mpc-link-hub-item__body'
+        );
+
+        toggle.attr(
+            'aria-expanded',
+            expanded
+                ? 'true'
+                : 'false'
+        );
+
+        toggle.text(
+            expanded
+                ? collapseLabel
+                : expandLabel
+        );
+
+        body.prop(
+            'hidden',
+            !expanded
+        );
+
+        item.toggleClass(
+            'is-collapsed',
+            !expanded
+        );
+    }
+
+    function updateEditorState() {
+        const items = getItems();
+        const count = items.length;
+        const lastIndex = count - 1;
+
+        items.each(
+            function (index) {
+                const item = $(this);
+
+                item.attr(
+                    'data-link-hub-index',
+                    index
+                );
+
+                const bodyId =
+                    `mpc_link_hub_item_${index}_body`;
+
+                item.find(
+                    '.mpc-link-hub-item__body'
+                ).attr(
+                    'id',
+                    bodyId
+                );
+
+                item.find(
+                    '.mpc-link-hub-item__toggle'
+                ).attr(
+                    'aria-controls',
+                    bodyId
+                );
+
+                item.find(
+                    '[data-link-hub-field]'
+                ).each(
+                    function () {
+                        const field =
+                            $(this);
+
+                        const fieldName =
+                            field.attr(
+                                'data-link-hub-field'
+                            );
+
+                        if (!fieldName) {
+                            return;
+                        }
+
+                        const fieldId =
+                            `mpc_link_hub_item_${index}_${fieldName}`;
+
+                        field.attr({
+                            id: fieldId,
+                            name:
+                                `mpc_link_hub_items[${index}][${fieldName}]`,
+                        });
+
+                        item.find(
+                            `[data-link-hub-label-for="${fieldName}"]`
+                        ).attr(
+                            'for',
+                            fieldId
+                        );
+                    }
+                );
+
+                item.find(
+                    '[data-link-hub-summary-label]'
+                ).text(
+                    getItemLabel(item)
+                );
+
+                item.find(
+                    '.mpc-link-hub-item__move--up'
+                ).prop(
+                    'disabled',
+                    index === 0
+                );
+
+                item.find(
+                    '.mpc-link-hub-item__move--down'
+                ).prop(
+                    'disabled',
+                    index === lastIndex
+                );
+            }
+        );
+
+        countOutput.text(count);
+
+        emptyMessage.prop(
+            'hidden',
+            count > 0
+        );
+
+        addButtons.prop(
+            'disabled',
+            count >= maxItems
+        );
+    }
+
+    function announceMovement(item) {
+        const items = getItems();
+
+        const position =
+            items.index(item) + 1;
+
+        const message =
+            editor.attr(
+                'data-link-hub-moved'
+            )
+            || '%1$s moved to position %2$d of %3$d.';
+
+        announce(
+            formatMessage(
+                message,
+                {
+                    '%1$s':
+                        getItemLabel(item),
+                    '%2$d':
+                        position,
+                    '%3$d':
+                        items.length,
+                }
+            )
+        );
+    }
+
+    addButtons.on(
+        'click',
+        function (event) {
+            event.preventDefault();
+
+            if (
+                getItems().length
+                >= maxItems
+            ) {
+                const message =
+                    editor.attr(
+                        'data-link-hub-limit'
+                    )
+                    || 'You can add up to %d Link Hub items.';
+
+                announce(
+                    message.replace(
+                        '%d',
+                        String(maxItems)
+                    )
+                );
+
+                return;
+            }
+
+            const type = String(
+                $(this).attr(
+                    'data-link-hub-add'
+                ) || ''
+            );
+
+            if (
+                type !== 'link'
+                && type !== 'section'
+            ) {
+                return;
+            }
+
+            const template =
+                editor.find(
+                    `template[data-link-hub-template="${type}"]`
+                ).get(0);
+
+            if (
+                !template
+                || !template.content
+                || !list.get(0)
+            ) {
+                return;
+            }
+
+            const fragment =
+                template.content.cloneNode(
+                    true
+                );
+
+            list.get(0).appendChild(
+                fragment
+            );
+
+            updateEditorState();
+            markDirty();
+
+            const newItem =
+                getItems().last();
+
+            setExpanded(
+                newItem,
+                true
+            );
+
+            const message = type === 'section'
+                ? (
+                    editor.attr(
+                        'data-link-hub-section-added'
+                    )
+                    || 'Section added.'
+                )
+                : (
+                    editor.attr(
+                        'data-link-hub-link-added'
+                    )
+                    || 'Link added.'
+                );
+
+            announce(message);
+
+            window.requestAnimationFrame(
+                () => {
+                    newItem.find(
+                        '[data-link-hub-field="label"]'
+                    ).trigger('focus');
+                }
+            );
+        }
+    );
+
+    list.on(
+        'click',
+        '.mpc-link-hub-item__toggle',
+        function (event) {
+            event.preventDefault();
+
+            const button =
+                $(this);
+
+            const item =
+                button.closest(
+                    '.mpc-link-hub-item'
+                );
+
+            const expanded =
+                button.attr(
+                    'aria-expanded'
+                ) === 'true';
+
+            setExpanded(
+                item,
+                !expanded
+            );
+        }
+    );
+
+    list.on(
+        'click',
+        '.mpc-link-hub-item__remove',
+        function (event) {
+            event.preventDefault();
+
+            const item =
+                $(this).closest(
+                    '.mpc-link-hub-item'
+                );
+
+            if (!item.length) {
+                return;
+            }
+
+            const label =
+                getItemLabel(item);
+
+            const nextItem =
+                item.next(
+                    '.mpc-link-hub-item'
+                );
+
+            const previousItem =
+                item.prev(
+                    '.mpc-link-hub-item'
+                );
+
+            item.remove();
+
+            updateEditorState();
+            markDirty();
+
+            const message =
+                editor.attr(
+                    'data-link-hub-removed'
+                )
+                || '%s removed.';
+
+            announce(
+                message.replace(
+                    '%s',
+                    label
+                )
+            );
+
+            const focusItem =
+                nextItem.length
+                    ? nextItem
+                    : previousItem;
+
+            window.requestAnimationFrame(
+                () => {
+                    if (focusItem.length) {
+                        focusItem.find(
+                            '.mpc-link-hub-item__toggle'
+                        ).trigger('focus');
+
+                        return;
+                    }
+
+                    addButtons
+                        .first()
+                        .trigger('focus');
+                }
+            );
+        }
+    );
+
+    list.on(
+        'click',
+        '.mpc-link-hub-item__move',
+        function (event) {
+            event.preventDefault();
+
+            const button =
+                $(this);
+
+            if (
+                button.prop(
+                    'disabled'
+                )
+            ) {
+                return;
+            }
+
+            const item =
+                button.closest(
+                    '.mpc-link-hub-item'
+                );
+
+            const direction =
+                button.attr(
+                    'data-link-hub-direction'
+                );
+
+            if (direction === 'up') {
+                const target =
+                    item.prev(
+                        '.mpc-link-hub-item'
+                    );
+
+                if (!target.length) {
+                    return;
+                }
+
+                item.insertBefore(target);
+            } else if (
+                direction === 'down'
+            ) {
+                const target =
+                    item.next(
+                        '.mpc-link-hub-item'
+                    );
+
+                if (!target.length) {
+                    return;
+                }
+
+                item.insertAfter(target);
+            } else {
+                return;
+            }
+
+            updateEditorState();
+            markDirty();
+            announceMovement(item);
+
+            window.requestAnimationFrame(
+                () => {
+                    const sameButton =
+                        item.find(
+                            `.mpc-link-hub-item__move--${direction}`
+                        );
+
+                    if (
+                        !sameButton.prop(
+                            'disabled'
+                        )
+                    ) {
+                        sameButton.trigger(
+                            'focus'
+                        );
+
+                        return;
+                    }
+
+                    const opposite =
+                        direction === 'up'
+                            ? 'down'
+                            : 'up';
+
+                    item.find(
+                        `.mpc-link-hub-item__move--${opposite}`
+                    ).trigger('focus');
+                }
+            );
+        }
+    );
+
+    list.on(
+        'input',
+        '[data-link-hub-field="label"]',
+        function () {
+            const item =
+                $(this).closest(
+                    '.mpc-link-hub-item'
+                );
+
+            item.find(
+                '[data-link-hub-summary-label]'
+            ).text(
+                getItemLabel(item)
+            );
+        }
+    );
+
+    /*
+     * Give immediate feedback when another link is marked Featured.
+     * Core still enforces this rule server-side during normalization.
+     */
+    list.on(
+        'change',
+        '[data-link-hub-field="variant"]',
+        function () {
+            const current =
+                $(this);
+
+            if (
+                current.val()
+                !== 'featured'
+            ) {
+                return;
+            }
+
+            getItems()
+                .filter(
+                    '[data-link-hub-type="link"]'
+                )
+                .each(
+                    function () {
+                        const item =
+                            $(this);
+
+                        const select =
+                            item.find(
+                                '[data-link-hub-field="variant"]'
+                            );
+
+                        if (
+                            select.get(0)
+                            === current.get(0)
+                        ) {
+                            return;
+                        }
+
+                        select.val(
+                            'standard'
+                        );
+                    }
+                );
+        }
+    );
+
+    if ($.fn.sortable) {
+        list.sortable({
+            items:
+                '.mpc-link-hub-item',
+            handle:
+                '.mpc-link-hub-item__handle',
+            axis: 'y',
+            tolerance: 'pointer',
+            cursor: 'grabbing',
+            opacity: 0.85,
+            forcePlaceholderSize: true,
+            placeholder:
+                'mpc-link-hub-item mpc-link-hub-item--placeholder',
+
+            start(event, ui) {
+                ui.item.addClass(
+                    'is-dragging'
+                );
+            },
+
+            update(event, ui) {
+                updateEditorState();
+                markDirty();
+                announceMovement(
+                    ui.item
+                );
+            },
+
+            stop(event, ui) {
+                ui.item.removeClass(
+                    'is-dragging'
+                );
+
+                updateEditorState();
+            },
+        });
+    }
+
+    updateEditorState();
+
+    /*
+     * Collapse saved items after enhancement. If JavaScript fails, every
+     * field remains visible and editable.
+     */
+    getItems().each(
+        function () {
+            setExpanded(
+                $(this),
+                false
+            );
+        }
+    );
+}
+
 function initStickySubmit() {
     const form = document.querySelector('.mpc-homepage-settings-form');
 
@@ -1563,6 +2266,7 @@ function initStickySubmit() {
         initBlogAdminToggles();
         initSectionManager();
         initServicesEditor();
+        initLinkHubEditor();
         initStickySubmit();
         initAdminPanels();
     }
