@@ -1327,15 +1327,11 @@ function mpc_find_link_hub_page_candidate() {
 /**
  * Configure the canonical Link Hub WordPress Page.
  *
- * This function performs the work required by the explicit administrator
- * "Configure Link Hub Page" action.
+ * A valid current assignment is always preserved.
  *
- * A valid existing assignment is always preserved.
- *
- * If no valid assignment exists, an appropriate existing published Page is
- * reused where possible. Only then is a new published "Links" Page created.
- *
- * This function is never called automatically during activation or updates.
+ * Otherwise, an appropriate existing Links Page is reused when possible.
+ * A new published Links Page is created only after this explicit
+ * administrator action.
  *
  * @return int|WP_Error Assigned Link Hub Page ID on success.
  */
@@ -1350,62 +1346,108 @@ function mpc_configure_link_hub_page() {
         return $existing_page_id;
     }
 
+    $front_page_id = absint(
+        get_option(
+            'page_on_front',
+            0
+        )
+    );
+
+    $posts_page_id = absint(
+        get_option(
+            'page_for_posts',
+            0
+        )
+    );
+
     /*
-     * Reuse an appropriate existing Page before creating anything.
+     * First look for an existing suitable Link Hub candidate using our
+     * Link Hub-specific rules.
      */
     $page_id =
         mpc_find_link_hub_page_candidate();
 
+    /*
+     * If no suitable Page exists, reuse Core's established routing-page
+     * creation helper rather than maintaining a second creation path.
+     */
     if (!$page_id) {
-        $page_id = wp_insert_post(
-            [
-                'post_type'    => 'page',
-                'post_status'  => 'publish',
-                'post_title'   => __(
+        $exclude_id = $front_page_id
+            ? $front_page_id
+            : $posts_page_id;
+
+        $page_id =
+            mpc_get_or_create_routing_page(
+                __(
                     'Links',
                     'music-project-core'
                 ),
-                'post_name'    => 'links',
-                'post_content' => '',
-                'post_author'  =>
-                    get_current_user_id(),
-            ],
-            true
-        );
+                'links',
+                $exclude_id
+            );
 
         if (is_wp_error($page_id)) {
             return $page_id;
         }
 
-        $page_id =
-            absint($page_id);
-
-        if (
-            !$page_id
-            || !function_exists(
-                'mpc_is_valid_routing_page'
-            )
-            || !mpc_is_valid_routing_page(
-                $page_id
-            )
-        ) {
-            return new WP_Error(
-                'mpc_link_hub_page_creation_failed',
-                __(
-                    'WordPress did not create a usable Link Hub page.',
-                    'music-project-core'
-                )
-            );
-        }
+        $page_id = absint($page_id);
     }
 
-    $assigned =
-        mpc_assign_link_hub_page(
+    /*
+     * The generic routing helper accepts one excluded ID, while Link Hub
+     * reserves both the Homepage and Posts page. Verify both before assigning.
+     */
+    if (
+        !$page_id
+        || $page_id === $front_page_id
+        || $page_id === $posts_page_id
+        || !mpc_is_valid_routing_page(
             $page_id
+        )
+    ) {
+        return new WP_Error(
+            'mpc_link_hub_invalid_configured_page',
+            __(
+                'WordPress could not configure a suitable Link Hub page.',
+                'music-project-core'
+            )
+        );
+    }
+
+    /*
+     * Save the assignment directly after the Page has already passed the
+     * routing and reserved-page checks above.
+     */
+    $settings =
+        mpc_get_link_hub_settings();
+
+    $settings['page_id'] =
+        $page_id;
+
+    $settings =
+        mpc_sanitize_link_hub_settings(
+            $settings
         );
 
-    if (is_wp_error($assigned)) {
-        return $assigned;
+    update_option(
+        'mpc_link_hub_settings',
+        $settings
+    );
+
+    /*
+     * Verify that the assignment actually persisted.
+     */
+    $assigned_page_id =
+        mpc_get_link_hub_page_id();
+
+    if ($assigned_page_id !== $page_id) {
+        return new WP_Error(
+            'mpc_link_hub_page_assignment_failed',
+            __(
+                'The Link Hub Page was created, but WordPress could not save it as the Link Hub assignment.',
+                'music-project-core'
+            )
+        );
     }
 
     return $page_id;
