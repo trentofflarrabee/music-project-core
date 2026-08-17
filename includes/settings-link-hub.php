@@ -1482,6 +1482,59 @@ add_action(
 );
 
 /**
+ * Enqueue shared Music Project admin assets on the Link in Bio screen.
+ *
+ * @param string $hook Current admin page hook.
+ * @return void
+ */
+function mpc_enqueue_link_hub_admin_assets($hook) {
+    unset($hook);
+
+    if (
+        !isset($_GET['page'])
+        || !is_scalar($_GET['page'])
+        || sanitize_key(
+            wp_unslash(
+                (string) $_GET['page']
+            )
+        ) !== 'mpc-link-hub'
+    ) {
+        return;
+    }
+
+    wp_enqueue_media();
+
+    wp_enqueue_script(
+        'mpc-admin',
+        MPC_URL . 'assets/admin.js',
+        [
+            'jquery',
+            'jquery-ui-sortable',
+        ],
+        mpc_get_asset_version(
+            'assets/admin.js'
+        ),
+        true
+    );
+
+    mpc_localize_admin_script();
+
+    wp_enqueue_style(
+        'mpc-admin',
+        MPC_URL . 'assets/admin.css',
+        [],
+        mpc_get_asset_version(
+            'assets/admin.css'
+        )
+    );
+}
+
+add_action(
+    'admin_enqueue_scripts',
+    'mpc_enqueue_link_hub_admin_assets'
+);
+
+/**
  * Save the Link Hub status and manually assigned Page.
  *
  * This is intentionally a partial settings update so future Link Hub identity,
@@ -1644,6 +1697,236 @@ add_action(
 );
 
 /**
+ * Render the Link Hub profile-image Media Library field.
+ *
+ * @param int $attachment_id Current attachment ID.
+ * @return void
+ */
+function mpc_render_link_hub_profile_image_field(
+    $attachment_id
+) {
+    $attachment_id = absint(
+        $attachment_id
+    );
+
+    $field_id =
+        'mpc_link_hub_profile_image_id';
+
+    $preview = '';
+
+    if (
+        $attachment_id
+        && wp_attachment_is_image(
+            $attachment_id
+        )
+    ) {
+        $preview = wp_get_attachment_image(
+            $attachment_id,
+            'medium',
+            false,
+            [
+                'style' =>
+                    'max-width:180px;height:auto;',
+            ]
+        );
+    }
+    ?>
+    <div class="mpc-media-field">
+        <input
+            type="hidden"
+            id="<?php echo esc_attr($field_id); ?>"
+            name="mpc_link_hub_profile_image_id"
+            value="<?php echo esc_attr($attachment_id); ?>"
+        >
+
+        <div
+            class="mpc-media-preview"
+            data-preview-for="<?php echo esc_attr($field_id); ?>"
+        >
+            <?php
+            echo wp_kses_post(
+                $preview
+            );
+            ?>
+        </div>
+
+        <button
+            type="button"
+            class="button mpc-media-upload"
+            data-target="<?php echo esc_attr($field_id); ?>"
+            data-type="image"
+        >
+            <?php
+            echo $attachment_id
+                ? esc_html__(
+                    'Replace Image',
+                    'music-project-core'
+                )
+                : esc_html__(
+                    'Choose Image',
+                    'music-project-core'
+                );
+            ?>
+        </button>
+
+        <button
+            type="button"
+            class="button mpc-media-remove"
+            data-target="<?php echo esc_attr($field_id); ?>"
+        >
+            <?php
+            esc_html_e(
+                'Remove',
+                'music-project-core'
+            );
+            ?>
+        </button>
+    </div>
+    <?php
+}
+
+/**
+ * Save Link Hub identity and presentation settings.
+ *
+ * Existing page, status, and ordered-item data are preserved.
+ *
+ * @return void
+ */
+function mpc_handle_save_link_hub_identity_presentation() {
+    if (!current_user_can('manage_options')) {
+        wp_die(
+            esc_html__(
+                'You do not have permission to manage Link in Bio settings.',
+                'music-project-core'
+            )
+        );
+    }
+
+    check_admin_referer(
+        'mpc_save_link_hub_identity_presentation'
+    );
+
+    $settings =
+        mpc_get_link_hub_settings();
+
+    $settings['profile_image_mode'] =
+        isset(
+            $_POST[
+                'mpc_link_hub_profile_image_mode'
+            ]
+        )
+            ? wp_unslash(
+                $_POST[
+                    'mpc_link_hub_profile_image_mode'
+                ]
+            )
+            : 'auto';
+
+    $settings['profile_image_id'] =
+        isset(
+            $_POST[
+                'mpc_link_hub_profile_image_id'
+            ]
+        )
+            ? absint(
+                wp_unslash(
+                    $_POST[
+                        'mpc_link_hub_profile_image_id'
+                    ]
+                )
+            )
+            : 0;
+
+    $settings['display_name'] =
+        isset(
+            $_POST[
+                'mpc_link_hub_display_name'
+            ]
+        )
+            ? wp_unslash(
+                $_POST[
+                    'mpc_link_hub_display_name'
+                ]
+            )
+            : '';
+
+    $settings['tagline'] =
+        isset(
+            $_POST[
+                'mpc_link_hub_tagline'
+            ]
+        )
+            ? wp_unslash(
+                $_POST[
+                    'mpc_link_hub_tagline'
+                ]
+            )
+            : '';
+
+    $settings['layout'] =
+        isset(
+            $_POST[
+                'mpc_link_hub_layout'
+            ]
+        )
+            ? wp_unslash(
+                $_POST[
+                    'mpc_link_hub_layout'
+                ]
+            )
+            : 'spotlight';
+
+    $settings['show_social_links'] =
+        isset(
+            $_POST[
+                'mpc_link_hub_show_social_links'
+            ]
+        )
+            ? 1
+            : 0;
+
+    $settings['show_footer_brand'] =
+        isset(
+            $_POST[
+                'mpc_link_hub_show_footer_brand'
+            ]
+        )
+            ? 1
+            : 0;
+
+    $settings =
+        mpc_sanitize_link_hub_settings(
+            $settings
+        );
+
+    update_option(
+        'mpc_link_hub_settings',
+        $settings
+    );
+
+    $redirect_url = add_query_arg(
+        [
+            'page' =>
+                'mpc-link-hub',
+            'mpc_link_hub_notice' =>
+                'presentation_saved',
+        ],
+        admin_url('admin.php')
+    );
+
+    wp_safe_redirect(
+        $redirect_url
+    );
+
+    exit;
+}
+
+add_action(
+    'admin_post_mpc_save_link_hub_identity_presentation',
+    'mpc_handle_save_link_hub_identity_presentation'
+);
+
+/**
  * Render the Link in Bio administration screen.
  *
  * @return void
@@ -1669,6 +1952,50 @@ function mpc_render_link_hub_settings_page() {
 
     $enabled =
         mpc_is_link_hub_enabled();
+
+    $profile_image_mode = isset(
+        $settings['profile_image_mode']
+    )
+        ? (string)
+            $settings['profile_image_mode']
+        : 'auto';
+
+    $profile_image_id = isset(
+        $settings['profile_image_id']
+    )
+        ? absint(
+            $settings['profile_image_id']
+        )
+        : 0;
+
+    $display_name = isset(
+        $settings['display_name']
+    )
+        ? (string)
+            $settings['display_name']
+        : '';
+
+    $tagline = isset(
+        $settings['tagline']
+    )
+        ? (string)
+            $settings['tagline']
+        : '';
+
+    $layout = isset(
+        $settings['layout']
+    )
+        ? (string)
+            $settings['layout']
+        : 'spotlight';
+
+    $show_social_links = !empty(
+        $settings['show_social_links']
+    );
+
+    $show_footer_brand = !empty(
+        $settings['show_footer_brand']
+    );
 
     $notice = '';
 
@@ -1744,6 +2071,23 @@ function mpc_render_link_hub_settings_page() {
                     ?>
                 </p>
             </div>
+
+        <?php elseif (
+            $notice === 'presentation_saved'
+        ) : ?>
+            <div
+                class="notice notice-success is-dismissible"
+            >
+                <p>
+                    <?php
+                    esc_html_e(
+                        'Link Hub identity and presentation settings saved.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </div>
+
         <?php elseif ($notice === 'configured') : ?>
             <div
                 class="notice notice-success is-dismissible"
@@ -2063,6 +2407,335 @@ function mpc_render_link_hub_settings_page() {
             );
             ?>
         </p>
+
+                <hr>
+
+        <form
+            method="post"
+            action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+        >
+            <input
+                type="hidden"
+                name="action"
+                value="mpc_save_link_hub_identity_presentation"
+            >
+
+            <?php
+            wp_nonce_field(
+                'mpc_save_link_hub_identity_presentation'
+            );
+            ?>
+
+            <h2>
+                <?php
+                esc_html_e(
+                    'Identity',
+                    'music-project-core'
+                );
+                ?>
+            </h2>
+
+            <table
+                class="form-table"
+                role="presentation"
+            >
+                <tbody>
+                    <tr>
+                        <th scope="row">
+                            <label
+                                for="mpc_link_hub_profile_image_mode"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Profile Image',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </label>
+                        </th>
+
+                        <td>
+                            <select
+                                id="mpc_link_hub_profile_image_mode"
+                                name="mpc_link_hub_profile_image_mode"
+                            >
+                                <?php
+                                foreach (
+                                    mpc_get_link_hub_profile_image_options()
+                                    as $value => $label
+                                ) :
+                                    ?>
+                                    <option
+                                        value="<?php echo esc_attr($value); ?>"
+                                        <?php
+                                        selected(
+                                            $profile_image_mode,
+                                            $value
+                                        );
+                                        ?>
+                                    >
+                                        <?php
+                                        echo esc_html(
+                                            $label
+                                        );
+                                        ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+
+                            <p class="description">
+                                <?php
+                                esc_html_e(
+                                    'Auto uses the site Custom Logo when available. Custom uses the image selected below. None removes the profile image.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <?php
+                            esc_html_e(
+                                'Custom Profile Image',
+                                'music-project-core'
+                            );
+                            ?>
+                        </th>
+
+                        <td>
+                            <?php
+                            mpc_render_link_hub_profile_image_field(
+                                $profile_image_id
+                            );
+                            ?>
+
+                            <p class="description">
+                                <?php
+                                esc_html_e(
+                                    'This image is used only when Profile Image is set to Custom.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label
+                                for="mpc_link_hub_display_name"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Display Name',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </label>
+                        </th>
+
+                        <td>
+                            <input
+                                type="text"
+                                class="regular-text"
+                                id="mpc_link_hub_display_name"
+                                name="mpc_link_hub_display_name"
+                                value="<?php echo esc_attr($display_name); ?>"
+                            >
+
+                            <p class="description">
+                                <?php
+                                esc_html_e(
+                                    'Leave blank to use the WordPress site title.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label
+                                for="mpc_link_hub_tagline"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Tagline',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </label>
+                        </th>
+
+                        <td>
+                            <textarea
+                                class="large-text"
+                                id="mpc_link_hub_tagline"
+                                name="mpc_link_hub_tagline"
+                                rows="3"
+                            ><?php echo esc_textarea($tagline); ?></textarea>
+
+                            <p class="description">
+                                <?php
+                                esc_html_e(
+                                    'Optional short plain-text description.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>
+                <?php
+                esc_html_e(
+                    'Presentation',
+                    'music-project-core'
+                );
+                ?>
+            </h2>
+
+            <table
+                class="form-table"
+                role="presentation"
+            >
+                <tbody>
+                    <tr>
+                        <th scope="row">
+                            <label
+                                for="mpc_link_hub_layout"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Layout',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </label>
+                        </th>
+
+                        <td>
+                            <select
+                                id="mpc_link_hub_layout"
+                                name="mpc_link_hub_layout"
+                            >
+                                <?php
+                                foreach (
+                                    mpc_get_link_hub_layout_options()
+                                    as $value => $label
+                                ) :
+                                    ?>
+                                    <option
+                                        value="<?php echo esc_attr($value); ?>"
+                                        <?php
+                                        selected(
+                                            $layout,
+                                            $value
+                                        );
+                                        ?>
+                                    >
+                                        <?php
+                                        echo esc_html(
+                                            $label
+                                        );
+                                        ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+
+                            <p class="description">
+                                <?php
+                                esc_html_e(
+                                    'Compatible themes decide how Spotlight, Stack, and Poster are visually presented.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <?php
+                            esc_html_e(
+                                'Social Links',
+                                'music-project-core'
+                            );
+                            ?>
+                        </th>
+
+                        <td>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="mpc_link_hub_show_social_links"
+                                    value="1"
+                                    <?php checked($show_social_links); ?>
+                                >
+                                <?php
+                                esc_html_e(
+                                    'Show existing Music Project Social Links.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </label>
+
+                            <p class="description">
+                                <?php
+                                esc_html_e(
+                                    'Link Hub reuses your existing Social Links configuration rather than storing duplicate accounts.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <?php
+                            esc_html_e(
+                                'Footer Brand',
+                                'music-project-core'
+                            );
+                            ?>
+                        </th>
+
+                        <td>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="mpc_link_hub_show_footer_brand"
+                                    value="1"
+                                    <?php checked($show_footer_brand); ?>
+                                >
+                                <?php
+                                esc_html_e(
+                                    'Show minimal site branding beneath the Link Hub.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </label>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <?php
+            submit_button(
+                __(
+                    'Save Identity & Presentation',
+                    'music-project-core'
+                )
+            );
+            ?>
+        </form>
+        
     </div>
     <?php
 }
