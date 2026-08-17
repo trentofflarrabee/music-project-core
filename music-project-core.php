@@ -135,6 +135,7 @@ function mpc_get_asset_version($relative_path = '') {
 
 require_once MPC_PATH . 'includes/settings-homepage.php';
 require_once MPC_PATH . 'includes/settings-social-links.php';
+require_once MPC_PATH . 'includes/settings-link-hub.php';
 require_once MPC_PATH . 'includes/settings-integrations.php';
 require_once MPC_PATH . 'includes/shortcodes-bandsintown.php';
 require_once MPC_PATH . 'includes/press-quotes.php';
