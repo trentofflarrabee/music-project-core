@@ -810,3 +810,271 @@ add_action(
     'admin_init',
     'mpc_register_link_hub_settings'
 );
+
+/**
+ * Get normalized Link Hub settings.
+ *
+ * Stored data is treated as untrusted and normalized before it is returned
+ * to administration, themes, or integrations.
+ *
+ * @return array
+ */
+function mpc_get_link_hub_settings() {
+    $defaults = mpc_get_link_hub_defaults();
+
+    $saved = get_option(
+        'mpc_link_hub_settings',
+        []
+    );
+
+    if (!is_array($saved)) {
+        $saved = [];
+    }
+
+    $settings = wp_parse_args(
+        $saved,
+        $defaults
+    );
+
+    $settings = mpc_sanitize_link_hub_settings(
+        $settings
+    );
+
+    if (!is_array($settings)) {
+        return $defaults;
+    }
+
+    return wp_parse_args(
+        $settings,
+        $defaults
+    );
+}
+
+/**
+ * Get one normalized Link Hub setting.
+ *
+ * @param mixed $key     Setting key.
+ * @param mixed $default Fallback value.
+ * @return mixed
+ */
+function mpc_get_link_hub_setting(
+    $key,
+    $default = ''
+) {
+    if (!is_scalar($key)) {
+        return $default;
+    }
+
+    $key = sanitize_key(
+        (string) $key
+    );
+
+    if ($key === '') {
+        return $default;
+    }
+
+    $settings = mpc_get_link_hub_settings();
+
+    return array_key_exists(
+        $key,
+        $settings
+    )
+        ? $settings[$key]
+        : $default;
+}
+
+/**
+ * Determine whether Link Hub is enabled.
+ *
+ * This reflects the saved feature toggle only. Page validity is checked
+ * separately through mpc_get_link_hub_page_id().
+ *
+ * @return bool
+ */
+function mpc_is_link_hub_enabled() {
+    return mpc_normalize_link_hub_boolean(
+        mpc_get_link_hub_setting(
+            'enabled',
+            false
+        )
+    );
+}
+
+/**
+ * Get the assigned Link Hub WordPress Page ID.
+ *
+ * The stored ID is only returned when it still references a real WordPress
+ * Page that has not been moved to the trash.
+ *
+ * @return int
+ */
+function mpc_get_link_hub_page_id() {
+    $page_id = absint(
+        mpc_get_link_hub_setting(
+            'page_id',
+            0
+        )
+    );
+
+    if (!$page_id) {
+        return 0;
+    }
+
+    $page = get_post($page_id);
+
+    if (
+        !($page instanceof WP_Post)
+        || $page->post_type !== 'page'
+        || $page->post_status === 'trash'
+    ) {
+        return 0;
+    }
+
+    return $page_id;
+}
+
+/**
+ * Get normalized Link Hub items for frontend consumption.
+ *
+ * Disabled or incomplete links are omitted. Section headings are only
+ * returned when followed by at least one usable link, preventing empty
+ * section groups from reaching the frontend.
+ *
+ * @return array
+ */
+function mpc_get_link_hub_items() {
+    $settings = mpc_get_link_hub_settings();
+
+    $items = isset($settings['items'])
+        && is_array($settings['items'])
+            ? $settings['items']
+            : [];
+
+    /**
+     * Filter normalized Link Hub items before frontend cleanup.
+     *
+     * Filtered values are normalized again before they are returned.
+     *
+     * @param array $items    Ordered Link Hub items.
+     * @param array $settings Complete normalized Link Hub settings.
+     */
+    $items = apply_filters(
+        'mpc_link_hub_items',
+        $items,
+        $settings
+    );
+
+    $items = mpc_normalize_link_hub_items(
+        $items
+    );
+
+    $output = [];
+    $pending_section = null;
+
+    foreach ($items as $item) {
+        if (
+            !is_array($item)
+            || empty($item['type'])
+        ) {
+            continue;
+        }
+
+        if ($item['type'] === 'section') {
+            /*
+             * Hold the heading until we know a usable link actually follows
+             * it. If another section appears first, the previous group was
+             * empty and is discarded.
+             */
+            $pending_section = $item;
+
+            continue;
+        }
+
+        if ($item['type'] !== 'link') {
+            continue;
+        }
+
+        if (
+            empty($item['enabled'])
+            || empty($item['label'])
+            || empty($item['url'])
+        ) {
+            continue;
+        }
+
+        if ($pending_section !== null) {
+            $output[] = $pending_section;
+            $pending_section = null;
+        }
+
+        $output[] = $item;
+    }
+
+    return $output;
+}
+
+/**
+ * Get the public Link Hub URL.
+ *
+ * The assigned WordPress Page remains the routing authority. The URL filter
+ * allows integrations to adjust the resolved URL without requiring consumers
+ * to infer a page slug.
+ *
+ * @return string
+ */
+function mpc_get_link_hub_url() {
+    $page_id = mpc_get_link_hub_page_id();
+
+    if (!$page_id) {
+        return '';
+    }
+
+    $permalink = get_permalink($page_id);
+
+    if (
+        !is_string($permalink)
+        || $permalink === ''
+    ) {
+        return '';
+    }
+
+    $url = esc_url_raw(
+        $permalink,
+        [
+            'http',
+            'https',
+        ]
+    );
+
+    if ($url === '') {
+        return '';
+    }
+
+    /**
+     * Filter the resolved Link Hub URL.
+     *
+     * @param string $url     Valid assigned-page permalink.
+     * @param int    $page_id Assigned WordPress Page ID.
+     */
+    $filtered = apply_filters(
+        'mpc_link_hub_url',
+        $url,
+        $page_id
+    );
+
+    if (!is_scalar($filtered)) {
+        return $url;
+    }
+
+    $filtered = esc_url_raw(
+        (string) $filtered,
+        [
+            'http',
+            'https',
+        ]
+    );
+
+    return $filtered !== ''
+        ? $filtered
+        : $url;
+}
