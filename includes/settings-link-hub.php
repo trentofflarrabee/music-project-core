@@ -901,6 +901,60 @@ function mpc_is_link_hub_enabled() {
 }
 
 /**
+ * Determine whether a WordPress Page may be assigned to Link Hub.
+ *
+ * The normal WordPress Homepage and Posts page are reserved and must not
+ * become Link Hub routes.
+ *
+ * @param mixed $page_id Page ID.
+ * @return bool
+ */
+function mpc_is_link_hub_page_assignable($page_id) {
+    if (!is_scalar($page_id)) {
+        return false;
+    }
+
+    $page_id = absint(
+        (string) $page_id
+    );
+
+    if (
+        !$page_id
+        || !function_exists(
+            'mpc_is_valid_routing_page'
+        )
+        || !mpc_is_valid_routing_page(
+            $page_id
+        )
+    ) {
+        return false;
+    }
+
+    $reserved_ids = array_filter(
+        [
+            absint(
+                get_option(
+                    'page_on_front',
+                    0
+                )
+            ),
+            absint(
+                get_option(
+                    'page_for_posts',
+                    0
+                )
+            ),
+        ]
+    );
+
+    return !in_array(
+        $page_id,
+        $reserved_ids,
+        true
+    );
+}
+
+/**
  * Get the assigned Link Hub WordPress Page ID.
  *
  * The stored ID is only returned when it still references a real WordPress
@@ -920,12 +974,10 @@ function mpc_get_link_hub_page_id() {
         return 0;
     }
 
-    $page = get_post($page_id);
-
     if (
-        !($page instanceof WP_Post)
-        || $page->post_type !== 'page'
-        || $page->post_status === 'trash'
+        !mpc_is_link_hub_page_assignable(
+            $page_id
+        )
     ) {
         return 0;
     }
@@ -1077,4 +1129,898 @@ function mpc_get_link_hub_url() {
     return $filtered !== ''
         ? $filtered
         : $url;
+}
+
+/**
+ * Assign a published WordPress Page to Link Hub.
+ *
+ * This updates only Link Hub's page assignment while preserving all other
+ * normalized Link Hub configuration.
+ *
+ * Passing 0 intentionally clears the assignment.
+ *
+ * @param mixed $page_id Page ID.
+ * @return true|WP_Error
+ */
+function mpc_assign_link_hub_page($page_id) {
+    $page_id = absint($page_id);
+
+    if (
+        $page_id
+        && !mpc_is_link_hub_page_assignable(
+            $page_id
+        )
+    ) {
+        return new WP_Error(
+            'mpc_link_hub_invalid_page',
+            __(
+                'The selected Link Hub page must be a published WordPress Page that is not currently used as the Homepage or Posts page.',
+                'music-project-core'
+            )
+        );
+    } {
+        return new WP_Error(
+            'mpc_link_hub_invalid_page',
+            __(
+                'The selected Link Hub page must be a published WordPress Page.',
+                'music-project-core'
+            )
+        );
+    }
+
+    $settings =
+        mpc_get_link_hub_settings();
+
+    $settings['page_id'] =
+        $page_id;
+
+    $settings =
+        mpc_sanitize_link_hub_settings(
+            $settings
+        );
+
+    $updated = update_option(
+        'mpc_link_hub_settings',
+        $settings
+    );
+
+    /*
+     * update_option() returns false when the stored value is already
+     * identical. That is still a successful assignment.
+     */
+    $stored = get_option(
+        'mpc_link_hub_settings',
+        []
+    );
+
+    $stored_page_id = (
+        is_array($stored)
+        && isset($stored['page_id'])
+    )
+        ? absint($stored['page_id'])
+        : 0;
+
+    if ($stored_page_id !== $page_id) {
+        return new WP_Error(
+            'mpc_link_hub_page_assignment_failed',
+            __(
+                'WordPress could not save the Link Hub page assignment.',
+                'music-project-core'
+            )
+        );
+    }
+
+    return true;
+}
+
+/**
+ * Find an existing published Page suitable for Link Hub.
+ *
+ * The preferred /links/ slug is checked first, followed by an exact title
+ * match for "Links".
+ *
+ * The current WordPress Homepage and Posts page are never reused.
+ *
+ * @return int
+ */
+function mpc_find_link_hub_page_candidate() {
+    $excluded_ids = array_filter(
+        [
+            absint(
+                get_option(
+                    'page_on_front',
+                    0
+                )
+            ),
+            absint(
+                get_option(
+                    'page_for_posts',
+                    0
+                )
+            ),
+        ]
+    );
+
+    /*
+     * Prefer an existing published page using the conventional "links" slug.
+     */
+    $page = get_page_by_path(
+        'links',
+        OBJECT,
+        'page'
+    );
+
+    if (
+        $page instanceof WP_Post
+        && !in_array(
+            (int) $page->ID,
+            $excluded_ids,
+            true
+        )
+        && function_exists(
+            'mpc_is_valid_routing_page'
+        )
+        && mpc_is_valid_routing_page(
+            $page->ID
+        )
+    ) {
+        return (int) $page->ID;
+    }
+
+    /*
+     * As a secondary fallback, look for an exact "Links" page title.
+     */
+    $candidate_ids = get_posts(
+        [
+            'post_type'           => 'page',
+            'post_status'         => 'publish',
+            'posts_per_page'      => 20,
+            'orderby'             => 'ID',
+            'order'               => 'ASC',
+            'fields'              => 'ids',
+            's'                   => 'Links',
+            'no_found_rows'       => true,
+            'ignore_sticky_posts' => true,
+        ]
+    );
+
+    foreach ($candidate_ids as $candidate_id) {
+        $candidate_id =
+            absint($candidate_id);
+
+        if (
+            !$candidate_id
+            || in_array(
+                $candidate_id,
+                $excluded_ids,
+                true
+            )
+        ) {
+            continue;
+        }
+
+        $title =
+            get_the_title(
+                $candidate_id
+            );
+
+        if (
+            is_string($title)
+            && strcasecmp(
+                trim($title),
+                'Links'
+            ) === 0
+            && function_exists(
+                'mpc_is_valid_routing_page'
+            )
+            && mpc_is_valid_routing_page(
+                $candidate_id
+            )
+        ) {
+            return $candidate_id;
+        }
+    }
+
+    return 0;
+}
+
+/**
+ * Configure the canonical Link Hub WordPress Page.
+ *
+ * This function performs the work required by the explicit administrator
+ * "Configure Link Hub Page" action.
+ *
+ * A valid existing assignment is always preserved.
+ *
+ * If no valid assignment exists, an appropriate existing published Page is
+ * reused where possible. Only then is a new published "Links" Page created.
+ *
+ * This function is never called automatically during activation or updates.
+ *
+ * @return int|WP_Error Assigned Link Hub Page ID on success.
+ */
+function mpc_configure_link_hub_page() {
+    /*
+     * Never replace a valid existing assignment.
+     */
+    $existing_page_id =
+        mpc_get_link_hub_page_id();
+
+    if ($existing_page_id) {
+        return $existing_page_id;
+    }
+
+    /*
+     * Reuse an appropriate existing Page before creating anything.
+     */
+    $page_id =
+        mpc_find_link_hub_page_candidate();
+
+    if (!$page_id) {
+        $page_id = wp_insert_post(
+            [
+                'post_type'    => 'page',
+                'post_status'  => 'publish',
+                'post_title'   => __(
+                    'Links',
+                    'music-project-core'
+                ),
+                'post_name'    => 'links',
+                'post_content' => '',
+                'post_author'  =>
+                    get_current_user_id(),
+            ],
+            true
+        );
+
+        if (is_wp_error($page_id)) {
+            return $page_id;
+        }
+
+        $page_id =
+            absint($page_id);
+
+        if (
+            !$page_id
+            || !function_exists(
+                'mpc_is_valid_routing_page'
+            )
+            || !mpc_is_valid_routing_page(
+                $page_id
+            )
+        ) {
+            return new WP_Error(
+                'mpc_link_hub_page_creation_failed',
+                __(
+                    'WordPress did not create a usable Link Hub page.',
+                    'music-project-core'
+                )
+            );
+        }
+    }
+
+    $assigned =
+        mpc_assign_link_hub_page(
+            $page_id
+        );
+
+    if (is_wp_error($assigned)) {
+        return $assigned;
+    }
+
+    return $page_id;
+}
+
+/**
+ * Register the Link in Bio submenu.
+ *
+ * @return void
+ */
+function mpc_add_link_hub_admin_menu() {
+    add_submenu_page(
+        'mpc-homepage',
+        __(
+            'Link in Bio',
+            'music-project-core'
+        ),
+        __(
+            'Link in Bio',
+            'music-project-core'
+        ),
+        'manage_options',
+        'mpc-link-hub',
+        'mpc_render_link_hub_settings_page'
+    );
+}
+
+add_action(
+    'admin_menu',
+    'mpc_add_link_hub_admin_menu',
+    11
+);
+
+/**
+ * Save the Link Hub status and manually assigned Page.
+ *
+ * This is intentionally a partial settings update so future Link Hub identity,
+ * presentation, and item data are preserved.
+ *
+ * @return void
+ */
+function mpc_handle_save_link_hub_status() {
+    if (!current_user_can('manage_options')) {
+        wp_die(
+            esc_html__(
+                'You do not have permission to manage Link in Bio settings.',
+                'music-project-core'
+            )
+        );
+    }
+
+    check_admin_referer(
+        'mpc_save_link_hub_status'
+    );
+
+    $page_id = 0;
+
+    if (
+        isset($_POST['mpc_link_hub_page_id'])
+        && is_scalar(
+            $_POST['mpc_link_hub_page_id']
+        )
+    ) {
+        $page_id = absint(
+            wp_unslash(
+                (string)
+                    $_POST[
+                        'mpc_link_hub_page_id'
+                    ]
+            )
+        );
+    }
+
+    if (
+        $page_id
+        && !mpc_is_link_hub_page_assignable(
+            $page_id
+        )
+    ) {
+        $redirect_url = add_query_arg(
+            [
+                'page' => 'mpc-link-hub',
+                'mpc_link_hub_notice' =>
+                    'invalid_page',
+            ],
+            admin_url('admin.php')
+        );
+
+        wp_safe_redirect(
+            $redirect_url
+        );
+
+        exit;
+    }
+
+    $settings =
+        mpc_get_link_hub_settings();
+
+    $settings['enabled'] =
+        isset($_POST['mpc_link_hub_enabled'])
+            ? 1
+            : 0;
+
+    $settings['page_id'] =
+        $page_id;
+
+    $settings =
+        mpc_sanitize_link_hub_settings(
+            $settings
+        );
+
+    update_option(
+        'mpc_link_hub_settings',
+        $settings
+    );
+
+    $redirect_url = add_query_arg(
+        [
+            'page' => 'mpc-link-hub',
+            'mpc_link_hub_notice' =>
+                'saved',
+        ],
+        admin_url('admin.php')
+    );
+
+    wp_safe_redirect(
+        $redirect_url
+    );
+
+    exit;
+}
+
+add_action(
+    'admin_post_mpc_save_link_hub_status',
+    'mpc_handle_save_link_hub_status'
+);
+
+/**
+ * Handle the explicit Configure Link Hub Page administrator action.
+ *
+ * @return void
+ */
+function mpc_handle_configure_link_hub_page() {
+    if (!current_user_can('manage_options')) {
+        wp_die(
+            esc_html__(
+                'You do not have permission to configure the Link Hub page.',
+                'music-project-core'
+            )
+        );
+    }
+
+    check_admin_referer(
+        'mpc_configure_link_hub_page'
+    );
+
+    $page_id =
+        mpc_configure_link_hub_page();
+
+    if (is_wp_error($page_id)) {
+        wp_die(
+            esc_html(
+                $page_id->get_error_message()
+            ),
+            esc_html__(
+                'Link Hub Page Setup',
+                'music-project-core'
+            ),
+            [
+                'back_link' => true,
+            ]
+        );
+    }
+
+    $redirect_url = add_query_arg(
+        [
+            'page' => 'mpc-link-hub',
+            'mpc_link_hub_notice' =>
+                'configured',
+        ],
+        admin_url('admin.php')
+    );
+
+    wp_safe_redirect(
+        $redirect_url
+    );
+
+    exit;
+}
+
+add_action(
+    'admin_post_mpc_configure_link_hub_page',
+    'mpc_handle_configure_link_hub_page'
+);
+
+/**
+ * Render the Link in Bio administration screen.
+ *
+ * @return void
+ */
+function mpc_render_link_hub_settings_page() {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+
+    $settings =
+        mpc_get_link_hub_settings();
+
+    $stored_page_id = isset(
+        $settings['page_id']
+    )
+        ? absint(
+            $settings['page_id']
+        )
+        : 0;
+
+    $page_id =
+        mpc_get_link_hub_page_id();
+
+    $enabled =
+        mpc_is_link_hub_enabled();
+
+    $notice = '';
+
+    if (
+        isset(
+            $_GET['mpc_link_hub_notice']
+        )
+        && is_scalar(
+            $_GET['mpc_link_hub_notice']
+        )
+    ) {
+        $notice = sanitize_key(
+            wp_unslash(
+                (string)
+                    $_GET[
+                        'mpc_link_hub_notice'
+                    ]
+            )
+        );
+    }
+
+    $front_page_id = absint(
+        get_option(
+            'page_on_front',
+            0
+        )
+    );
+
+    $posts_page_id = absint(
+        get_option(
+            'page_for_posts',
+            0
+        )
+    );
+
+    $pages = get_pages(
+        [
+            'post_status' => 'publish',
+            'sort_column' => 'post_title',
+            'sort_order'  => 'ASC',
+        ]
+    );
+    ?>
+    <div class="wrap">
+        <h1>
+            <?php
+            esc_html_e(
+                'Link in Bio',
+                'music-project-core'
+            );
+            ?>
+        </h1>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Create a focused Link Hub hosted on your own WordPress site. Music Project Core owns the configuration while compatible themes control the frontend presentation.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+
+        <?php if ($notice === 'saved') : ?>
+            <div
+                class="notice notice-success is-dismissible"
+            >
+                <p>
+                    <?php
+                    esc_html_e(
+                        'Link in Bio settings saved.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </div>
+        <?php elseif ($notice === 'configured') : ?>
+            <div
+                class="notice notice-success is-dismissible"
+            >
+                <p>
+                    <?php
+                    esc_html_e(
+                        'The Link Hub page is configured.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </div>
+        <?php elseif ($notice === 'invalid_page') : ?>
+            <div
+                class="notice notice-error is-dismissible"
+            >
+                <p>
+                    <?php
+                    esc_html_e(
+                        'The selected Page cannot be used for Link Hub. Choose another published Page.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </div>
+        <?php endif; ?>
+
+        <?php if ($enabled && $page_id) : ?>
+            <div class="notice notice-success inline">
+                <p>
+                    <strong>
+                        <?php
+                        esc_html_e(
+                            'Link Hub is enabled and has a valid assigned Page.',
+                            'music-project-core'
+                        );
+                        ?>
+                    </strong>
+                </p>
+            </div>
+        <?php elseif ($enabled) : ?>
+            <div class="notice notice-warning inline">
+                <p>
+                    <strong>
+                        <?php
+                        esc_html_e(
+                            'Link Hub is enabled but needs a valid assigned Page.',
+                            'music-project-core'
+                        );
+                        ?>
+                    </strong>
+                </p>
+            </div>
+        <?php else : ?>
+            <div class="notice notice-info inline">
+                <p>
+                    <?php
+                    esc_html_e(
+                        'Link Hub is currently disabled.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </div>
+        <?php endif; ?>
+
+        <?php
+        if (
+            $stored_page_id
+            && !$page_id
+        ) :
+            ?>
+            <div class="notice notice-warning inline">
+                <p>
+                    <?php
+                    esc_html_e(
+                        'The previously assigned Link Hub Page is no longer a valid published Page or is reserved for WordPress Homepage/Posts routing. Choose another Page or run the configuration action below.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </div>
+        <?php endif; ?>
+
+        <h2>
+            <?php
+            esc_html_e(
+                'Status & Page',
+                'music-project-core'
+            );
+            ?>
+        </h2>
+
+        <form
+            method="post"
+            action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+        >
+            <input
+                type="hidden"
+                name="action"
+                value="mpc_save_link_hub_status"
+            >
+
+            <?php
+            wp_nonce_field(
+                'mpc_save_link_hub_status'
+            );
+            ?>
+
+            <table
+                class="form-table"
+                role="presentation"
+            >
+                <tbody>
+                    <tr>
+                        <th scope="row">
+                            <?php
+                            esc_html_e(
+                                'Enable Link Hub',
+                                'music-project-core'
+                            );
+                            ?>
+                        </th>
+                        <td>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    name="mpc_link_hub_enabled"
+                                    value="1"
+                                    <?php checked($enabled); ?>
+                                >
+                                <?php
+                                esc_html_e(
+                                    'Enable the Link Hub frontend when a valid Page is assigned.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </label>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            <label
+                                for="mpc_link_hub_page_id"
+                            >
+                                <?php
+                                esc_html_e(
+                                    'Assigned Page',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </label>
+                        </th>
+
+                        <td>
+                            <select
+                                id="mpc_link_hub_page_id"
+                                name="mpc_link_hub_page_id"
+                            >
+                                <option value="0">
+                                    <?php
+                                    esc_html_e(
+                                        '— No Page assigned —',
+                                        'music-project-core'
+                                    );
+                                    ?>
+                                </option>
+
+                                <?php foreach ($pages as $page) : ?>
+                                    <?php
+                                    if (
+                                        !($page instanceof WP_Post)
+                                        || (int) $page->ID
+                                            === $front_page_id
+                                        || (int) $page->ID
+                                            === $posts_page_id
+                                    ) {
+                                        continue;
+                                    }
+                                    ?>
+
+                                    <option
+                                        value="<?php echo esc_attr($page->ID); ?>"
+                                        <?php
+                                        selected(
+                                            $page_id,
+                                            $page->ID
+                                        );
+                                        ?>
+                                    >
+                                        <?php
+                                        echo esc_html(
+                                            get_the_title(
+                                                $page->ID
+                                            )
+                                        );
+                                        ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+
+                            <p class="description">
+                                <?php
+                                esc_html_e(
+                                    'The Page ID is the routing contract. Its slug may be changed later without breaking Link Hub.',
+                                    'music-project-core'
+                                );
+                                ?>
+                            </p>
+
+                            <?php if ($page_id) : ?>
+                                <p>
+                                    <a
+                                        href="<?php echo esc_url(get_edit_post_link($page_id)); ?>"
+                                    >
+                                        <?php
+                                        esc_html_e(
+                                            'Edit assigned Page',
+                                            'music-project-core'
+                                        );
+                                        ?>
+                                    </a>
+                                </p>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <?php
+            submit_button(
+                __(
+                    'Save Status & Page',
+                    'music-project-core'
+                )
+            );
+            ?>
+        </form>
+
+        <hr>
+
+        <h2>
+            <?php
+            esc_html_e(
+                'Configure Link Hub Page',
+                'music-project-core'
+            );
+            ?>
+        </h2>
+
+        <p>
+            <?php
+            esc_html_e(
+                'This action preserves a valid current assignment. Otherwise, Music Project will reuse a suitable existing Links Page when possible and create a new published Links Page only when necessary.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+
+        <form
+            method="post"
+            action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+        >
+            <input
+                type="hidden"
+                name="action"
+                value="mpc_configure_link_hub_page"
+            >
+
+            <?php
+            wp_nonce_field(
+                'mpc_configure_link_hub_page'
+            );
+
+            submit_button(
+                __(
+                    'Configure Link Hub Page',
+                    'music-project-core'
+                ),
+                'secondary',
+                'submit',
+                false
+            );
+            ?>
+
+            <?php if ($page_id) : ?>
+                <?php
+                $link_hub_url =
+                    mpc_get_link_hub_url();
+                ?>
+
+                <?php if ($link_hub_url) : ?>
+                    <a
+                        class="button"
+                        href="<?php echo esc_url($link_hub_url); ?>"
+                        target="_blank"
+                        rel="noopener"
+                    >
+                        <?php
+                        esc_html_e(
+                            'View Link Hub',
+                            'music-project-core'
+                        );
+                        ?>
+                    </a>
+                <?php endif; ?>
+            <?php endif; ?>
+        </form>
+
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Page creation never runs automatically during Core activation or updates.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </div>
+    <?php
 }
