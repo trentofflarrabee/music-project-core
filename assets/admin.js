@@ -1793,6 +1793,164 @@ function initHomepageColorPickers() {
     fields.wpColorPicker();
 }
 
+/**
+ * Initialize the Theme Style semantic color preview.
+ */
+function initThemeStyleColorPreview() {
+    const preview = document.querySelector(
+        '[data-theme-color-preview]'
+    );
+
+    if (!preview) {
+        return;
+    }
+
+    const panel = document.getElementById(
+        'mpc-theme-style-panel-colors'
+    );
+
+    if (!panel) {
+        return;
+    }
+
+    const variableMap = {
+        color_background:
+            '--mpc-preview-background',
+        color_surface:
+            '--mpc-preview-surface',
+        color_text:
+            '--mpc-preview-text',
+        color_heading:
+            '--mpc-preview-heading',
+        color_muted:
+            '--mpc-preview-muted',
+        color_accent:
+            '--mpc-preview-accent',
+        color_link:
+            '--mpc-preview-link',
+        color_button_background:
+            '--mpc-preview-button-bg',
+        color_button_text:
+            '--mpc-preview-button-text',
+        color_selection:
+            '--mpc-preview-selection',
+    };
+
+    /**
+     * Return a readable dark/light foreground for a hex color.
+     *
+     * @param {string} hex Background color.
+     * @returns {string}
+     */
+    function getContrastTextColor(hex) {
+        if (
+            typeof hex !== 'string'
+            || !/^#[0-9a-f]{6}$/i.test(hex)
+        ) {
+            return '#111111';
+        }
+
+        const channels = [
+            parseInt(hex.slice(1, 3), 16) / 255,
+            parseInt(hex.slice(3, 5), 16) / 255,
+            parseInt(hex.slice(5, 7), 16) / 255,
+        ].map(
+            (channel) => (
+                channel <= 0.04045
+                    ? channel / 12.92
+                    : Math.pow(
+                        (channel + 0.055) / 1.055,
+                        2.4
+                    )
+            )
+        );
+
+        const luminance =
+            (0.2126 * channels[0])
+            + (0.7152 * channels[1])
+            + (0.0722 * channels[2]);
+
+        return luminance > 0.179
+            ? '#111111'
+            : '#ffffff';
+    }
+
+    /**
+     * Update one preview value.
+     *
+     * @param {HTMLInputElement} field Color input.
+     */
+    function updateField(field) {
+        const key = field.getAttribute(
+            'data-theme-color'
+        );
+
+        if (!key) {
+            return;
+        }
+
+        const value = String(
+            field.value || ''
+        ).toLowerCase();
+
+        if (!/^#[0-9a-f]{6}$/i.test(value)) {
+            return;
+        }
+
+        const variable = variableMap[key];
+
+        if (variable) {
+            preview.style.setProperty(
+                variable,
+                value
+            );
+        }
+
+        const valueDisplay = panel.querySelector(
+            '[data-theme-color-value="'
+            + key
+            + '"]'
+        );
+
+        if (valueDisplay) {
+            valueDisplay.textContent = value;
+        }
+
+        if (key === 'color_selection') {
+            preview.style.setProperty(
+                '--mpc-preview-selection-text',
+                getContrastTextColor(value)
+            );
+        }
+    }
+
+    const fields = Array.from(
+        panel.querySelectorAll(
+            '[data-theme-color]'
+        )
+    );
+
+    fields.forEach(
+        (field) => {
+            updateField(field);
+
+            field.addEventListener(
+                'input',
+                () => {
+                    updateField(field);
+                }
+            );
+
+            field.addEventListener(
+                'change',
+                () => {
+                    updateField(field);
+                }
+            );
+        }
+    );
+}
+
 function initStickySubmit() {
     const form = document.querySelector('.mpc-homepage-settings-form');
 
@@ -2277,19 +2435,20 @@ function initStickySubmit() {
     /**
      * Initialize shared Music Project admin behavior.
      */
-    function initMPCAdmin() {
-        initThemeStyleTabs();
-        initMediaUploader();
-        initHeroAdminToggles();
-        initFeaturedAdminToggles();
-        initBlogAdminToggles();
-        initSectionManager();
-        initServicesEditor();
-        initLinkHubEditor();
-        initHomepageColorPickers();
-        initStickySubmit();
-        initAdminPanels();
-    }
+        function initMPCAdmin() {
+            initThemeStyleTabs();
+            initThemeStyleColorPreview();
+            initMediaUploader();
+            initHeroAdminToggles();
+            initFeaturedAdminToggles();
+            initBlogAdminToggles();
+            initSectionManager();
+            initServicesEditor();
+            initLinkHubEditor();
+            initHomepageColorPickers();
+            initStickySubmit();
+            initAdminPanels();
+        }
 
     $(initMPCAdmin);
 })(jQuery);

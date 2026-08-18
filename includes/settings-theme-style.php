@@ -9,14 +9,19 @@ if (!defined('ABSPATH')) {
  */
 function mpc_get_theme_style_defaults() {
     return [
-        // Colors.
+        // Foundation colors.
         'color_background' => '#111111',
-        'color_surface' => '#101010',
-        'color_text' => '#f5f5f5',
-        'color_muted' => '#b8b8b8',
-        'color_accent' => '#ffffff',
+        'color_surface'    => '#101010',
+        'color_text'       => '#f5f5f5',
+        'color_heading'    => '#f5f5f5',
+        'color_muted'      => '#b8b8b8',
+
+        // Brand and interaction colors.
+        'color_accent'            => '#ffffff',
+        'color_link'              => '#ffffff',
         'color_button_background' => '#f5f5f5',
-        'color_button_text' => '#111111',
+        'color_button_text'       => '#111111',
+        'color_selection'         => '#ffffff',
 
         // Site chrome.
         'header_background_color' => '#000000',
@@ -347,15 +352,18 @@ function mpc_sanitize_theme_style_settings($input) {
     $defaults = mpc_get_theme_style_defaults();
     $output = [];
 
-// Core palette colors.
+// Core semantic palette colors.
 $color_fields = [
     'color_background',
     'color_surface',
     'color_text',
+    'color_heading',
     'color_muted',
     'color_accent',
+    'color_link',
     'color_button_background',
     'color_button_text',
+    'color_selection',
 ];
 
 foreach ($color_fields as $field) {
@@ -1162,26 +1170,99 @@ function mpc_render_theme_style_media_field($field_name, $attachment_id, $media_
     }
     ?>
 
-<div class="mpc-media-field">
-    <input type="hidden" id="<?php echo esc_attr($field_id); ?>"
-        name="mpc_theme_style_settings[<?php echo esc_attr($field_name); ?>]"
-        value="<?php echo esc_attr($attachment_id); ?>">
+    <div class="mpc-media-field">
+        <input type="hidden" id="<?php echo esc_attr($field_id); ?>"
+            name="mpc_theme_style_settings[<?php echo esc_attr($field_name); ?>]"
+            value="<?php echo esc_attr($attachment_id); ?>">
 
-    <div class="mpc-media-preview" data-preview-for="<?php echo esc_attr($field_id); ?>">
-        <?php echo wp_kses_post($preview); ?>
+        <div class="mpc-media-preview" data-preview-for="<?php echo esc_attr($field_id); ?>">
+            <?php echo wp_kses_post($preview); ?>
+        </div>
+
+        <button type="button" class="button mpc-media-upload" data-target="<?php echo esc_attr($field_id); ?>"
+            data-type="<?php echo esc_attr($media_type); ?>">
+            <?php echo $attachment_id ? esc_html__('Replace File', 'music-project-core') : esc_html__('Choose File', 'music-project-core'); ?>
+        </button>
+
+        <button type="button" class="button mpc-media-remove" data-target="<?php echo esc_attr($field_id); ?>">
+            <?php esc_html_e('Remove', 'music-project-core'); ?>
+        </button>
     </div>
 
-    <button type="button" class="button mpc-media-upload" data-target="<?php echo esc_attr($field_id); ?>"
-        data-type="<?php echo esc_attr($media_type); ?>">
-        <?php echo $attachment_id ? esc_html__('Replace File', 'music-project-core') : esc_html__('Choose File', 'music-project-core'); ?>
-    </button>
+    <?php
+}
 
-    <button type="button" class="button mpc-media-remove" data-target="<?php echo esc_attr($field_id); ?>">
-        <?php esc_html_e('Remove', 'music-project-core'); ?>
-    </button>
-</div>
+/**
+ * Render one Theme Style color control.
+ *
+ * @param array  $settings    Normalized Theme Style settings.
+ * @param string $key         Setting key.
+ * @param string $label       Human-readable label.
+ * @param string $description Field description.
+ * @return void
+ */
+function mpc_render_theme_style_color_field(
+    $settings,
+    $key,
+    $label,
+    $description = ''
+) {
+    $defaults = mpc_get_theme_style_defaults();
 
-<?php
+    $value = isset($settings[$key])
+        ? sanitize_hex_color(
+            (string) $settings[$key]
+        )
+        : '';
+
+    if (!$value) {
+        $value = isset($defaults[$key])
+            ? sanitize_hex_color(
+                (string) $defaults[$key]
+            )
+            : '';
+    }
+
+    if (!$value) {
+        $value = '#000000';
+    }
+
+    $field_id =
+        'mpc_theme_style_' . sanitize_key($key);
+    ?>
+    <tr>
+        <th scope="row">
+            <label for="<?php echo esc_attr($field_id); ?>">
+                <?php echo esc_html($label); ?>
+            </label>
+        </th>
+
+        <td>
+            <div class="mpc-theme-style-color-field">
+                <input
+                    type="color"
+                    id="<?php echo esc_attr($field_id); ?>"
+                    name="mpc_theme_style_settings[<?php echo esc_attr($key); ?>]"
+                    value="<?php echo esc_attr($value); ?>"
+                    data-theme-color="<?php echo esc_attr($key); ?>"
+                >
+
+                <code
+                    class="mpc-theme-style-color-field__value"
+                    data-theme-color-value="<?php echo esc_attr($key); ?>"
+                >
+                    <?php echo esc_html($value); ?>
+                </code>
+            </div>
+
+            <?php if ($description !== '') : ?>
+                <p class="description">
+                    <?php echo esc_html($description); ?>
+                </p>
+            <?php endif; ?>
+        </td>
+    </tr>
+    <?php
 }
 
 /**
@@ -1290,116 +1371,370 @@ function mpc_render_theme_style_settings_page() {
             </div>
 
             <div class="mpc-theme-style-tabs__panels">
-                <section
-                    id="mpc-theme-style-panel-colors"
-                    class="mpc-theme-style-tabs__panel"
-                    role="tabpanel"
-                    aria-labelledby="mpc-theme-style-tab-colors"
-                    tabindex="0"
-                >
-                    <h2>
-                        <?php esc_html_e('Colors', 'music-project-core'); ?>
-                    </h2>
+<section
+    id="mpc-theme-style-panel-colors"
+    class="mpc-theme-style-tabs__panel"
+    role="tabpanel"
+    aria-labelledby="mpc-theme-style-tab-colors"
+    tabindex="0"
+>
+    <h2>
+        <?php esc_html_e('Colors', 'music-project-core'); ?>
+    </h2>
+
+    <p>
+        <?php
+        esc_html_e(
+            'Build the core color system for the site. Each color has a defined role so branding can stay consistent across templates and components.',
+            'music-project-core'
+        );
+        ?>
+    </p>
+
+    <div
+        class="mpc-color-preview"
+        data-theme-color-preview
+        style="
+            --mpc-preview-background: <?php echo esc_attr($settings['color_background']); ?>;
+            --mpc-preview-surface: <?php echo esc_attr($settings['color_surface']); ?>;
+            --mpc-preview-text: <?php echo esc_attr($settings['color_text']); ?>;
+            --mpc-preview-heading: <?php echo esc_attr($settings['color_heading']); ?>;
+            --mpc-preview-muted: <?php echo esc_attr($settings['color_muted']); ?>;
+            --mpc-preview-accent: <?php echo esc_attr($settings['color_accent']); ?>;
+            --mpc-preview-link: <?php echo esc_attr($settings['color_link']); ?>;
+            --mpc-preview-button-bg: <?php echo esc_attr($settings['color_button_background']); ?>;
+            --mpc-preview-button-text: <?php echo esc_attr($settings['color_button_text']); ?>;
+            --mpc-preview-selection: <?php echo esc_attr($settings['color_selection']); ?>;
+            --mpc-preview-selection-text: #111111;
+        "
+    >
+        <div class="mpc-color-preview__heading">
+            <div>
+                <h3>
+                    <?php esc_html_e('Brand Preview', 'music-project-core'); ?>
+                </h3>
+
+                <p>
+                    <?php
+                    esc_html_e(
+                        'Changes below update this preview immediately. Save Theme Style when you are happy with the palette.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </div>
+
+            <span class="mpc-color-preview__live-label">
+                <?php esc_html_e('Live Preview', 'music-project-core'); ?>
+            </span>
+        </div>
+
+        <div
+            class="mpc-color-preview__palette"
+            aria-hidden="true"
+        >
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="background"
+                ></span>
+                <span><?php esc_html_e('Background', 'music-project-core'); ?></span>
+            </div>
+
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="surface"
+                ></span>
+                <span><?php esc_html_e('Surface', 'music-project-core'); ?></span>
+            </div>
+
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="text"
+                ></span>
+                <span><?php esc_html_e('Text', 'music-project-core'); ?></span>
+            </div>
+
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="heading"
+                ></span>
+                <span><?php esc_html_e('Heading', 'music-project-core'); ?></span>
+            </div>
+
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="muted"
+                ></span>
+                <span><?php esc_html_e('Muted', 'music-project-core'); ?></span>
+            </div>
+
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="accent"
+                ></span>
+                <span><?php esc_html_e('Accent', 'music-project-core'); ?></span>
+            </div>
+
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="link"
+                ></span>
+                <span><?php esc_html_e('Link', 'music-project-core'); ?></span>
+            </div>
+
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="button"
+                ></span>
+                <span><?php esc_html_e('Button', 'music-project-core'); ?></span>
+            </div>
+
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="selection"
+                ></span>
+                <span><?php esc_html_e('Selection', 'music-project-core'); ?></span>
+            </div>
+        </div>
+
+        <div
+            class="mpc-color-preview__canvas"
+            aria-hidden="true"
+        >
+            <div class="mpc-color-preview__surface">
+                <span class="mpc-color-preview__accent">
+                    <?php esc_html_e('Accent Detail', 'music-project-core'); ?>
+                </span>
+
+                <h4>
+                    <?php esc_html_e('Your Music Project', 'music-project-core'); ?>
+                </h4>
+
+                <p>
+                    <?php
+                    esc_html_e(
+                        'This is normal body copy with a',
+                        'music-project-core'
+                    );
+                    ?>
+
+                    <span class="mpc-color-preview__link">
+                        <?php esc_html_e('sample link', 'music-project-core'); ?>
+                    </span>.
+
+                    <?php
+                    esc_html_e(
+                        'The palette establishes a consistent visual language across the site.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+
+                <p class="mpc-color-preview__muted">
+                    <?php
+                    esc_html_e(
+                        'Muted text · supporting information · metadata',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+
+                <div class="mpc-color-preview__actions">
+                    <span class="mpc-color-preview__button">
+                        <?php esc_html_e('Sample Button', 'music-project-core'); ?>
+                    </span>
+
+                    <span class="mpc-color-preview__selection">
+                        <?php esc_html_e('Selected Text', 'music-project-core'); ?>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mpc-theme-style-color-group">
+        <h3>
+            <?php esc_html_e('Foundation', 'music-project-core'); ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'The basic surfaces and typography colors used throughout the site.',
+                'music-project-core'
+            );
+            ?>
+        </p>
 
         <table class="form-table" role="presentation">
-            <tr>
-                <th scope="row">
-                    <label for="color_background"><?php esc_html_e('Background Color', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="color" id="color_background" name="mpc_theme_style_settings[color_background]"
-                        value="<?php echo esc_attr($settings['color_background']); ?>">
-                </td>
-            </tr>
+            <?php
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_background',
+                __('Background Color', 'music-project-core'),
+                __(
+                    'The primary site and page background.',
+                    'music-project-core'
+                )
+            );
 
-            <tr>
-                <th scope="row">
-                    <label
-                        for="color_surface"><?php esc_html_e('Surface / Card Color', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="color" id="color_surface" name="mpc_theme_style_settings[color_surface]"
-                        value="<?php echo esc_attr($settings['color_surface']); ?>">
-                </td>
-            </tr>
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_surface',
+                __('Surface / Card Color', 'music-project-core'),
+                __(
+                    'Used for cards, panels, content surfaces, form controls, and other areas that sit above the main background.',
+                    'music-project-core'
+                )
+            );
 
-            <tr>
-                <th scope="row">
-                    <label for="color_text"><?php esc_html_e('Text Color', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="color" id="color_text" name="mpc_theme_style_settings[color_text]"
-                        value="<?php echo esc_attr($settings['color_text']); ?>">
-                </td>
-            </tr>
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_text',
+                __('Text Color', 'music-project-core'),
+                __(
+                    'Primary body-copy color for paragraphs, lists, and general text.',
+                    'music-project-core'
+                )
+            );
 
-            <tr>
-                <th scope="row">
-                    <label for="color_muted"><?php esc_html_e('Muted Text Color', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="color" id="color_muted" name="mpc_theme_style_settings[color_muted]"
-                        value="<?php echo esc_attr($settings['color_muted']); ?>">
-                </td>
-            </tr>
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_heading',
+                __('Heading Color', 'music-project-core'),
+                __(
+                    'Controls ordinary headings across the site unless a component has its own dedicated foreground or heading color.',
+                    'music-project-core'
+                )
+            );
 
-            <tr>
-                <th scope="row">
-                    <label for="color_accent"><?php esc_html_e('Accent Color', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="color" id="color_accent" name="mpc_theme_style_settings[color_accent]"
-                        value="<?php echo esc_attr($settings['color_accent']); ?>">
-                </td>
-            </tr>
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_muted',
+                __('Muted Text Color', 'music-project-core'),
+                __(
+                    'Used for secondary information such as metadata, dates, captions, subtitles, and supporting copy.',
+                    'music-project-core'
+                )
+            );
+            ?>
+        </table>
+    </div>
 
-            <tr>
-                <th scope="row">
-                    <label
-                        for="color_button_background"><?php esc_html_e('Button Background', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="color" id="color_button_background"
-                        name="mpc_theme_style_settings[color_button_background]"
-                        value="<?php echo esc_attr($settings['color_button_background']); ?>">
-                </td>
-            </tr>
+    <div class="mpc-theme-style-color-group">
+        <h3>
+            <?php esc_html_e('Brand & Interaction', 'music-project-core'); ?>
+        </h3>
 
-            <tr>
-                <th scope="row">
-                    <label for="color_button_text"><?php esc_html_e('Button Text', 'music-project-core'); ?></label>
-                </th>
-                <td>
-                    <input type="color" id="color_button_text" name="mpc_theme_style_settings[color_button_text]"
-                        value="<?php echo esc_attr($settings['color_button_text']); ?>">
-                </td>
-            </tr>
+        <p>
+            <?php
+            esc_html_e(
+                'Colors used for branded emphasis and common interactive elements.',
+                'music-project-core'
+            );
+            ?>
+        </p>
 
-            <tr>
-                <th scope="row">
-                    <label for="mpc_theme_style_hero_heading_color">
-                        <?php esc_html_e('Hero Heading Color', 'music-project-core'); ?>
-                    </label>
-                </th>
-                <td>
-                    <input type="color" id="mpc_theme_style_hero_heading_color"
-                        name="mpc_theme_style_settings[hero_heading_color]"
-                        value="<?php echo esc_attr($settings['hero_heading_color'] ?? '#ffffff'); ?>">
-                </td>
-            </tr>
+        <table class="form-table" role="presentation">
+            <?php
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_accent',
+                __('Accent / Highlight Color', 'music-project-core'),
+                __(
+                    'Used for small branded emphasis such as focus indicators, decorative accents, icons, editorial highlights, and other visual details. Normal links and buttons use their own colors.',
+                    'music-project-core'
+                )
+            );
 
-            <tr>
-                <th scope="row">
-                    <label for="mpc_theme_style_hero_lead_color">
-                        <?php esc_html_e('Hero Lead Text Color', 'music-project-core'); ?>
-                    </label>
-                </th>
-                <td>
-                    <input type="color" id="mpc_theme_style_hero_lead_color"
-                        name="mpc_theme_style_settings[hero_lead_color]"
-                        value="<?php echo esc_attr($settings['hero_lead_color'] ?? '#f5f5f5'); ?>">
-                </td>
-            </tr>
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_link',
+                __('Link Color', 'music-project-core'),
+                __(
+                    'Controls ordinary text links in page and editorial content. Navigation, buttons, cards, and other purpose-built components may use their own presentation.',
+                    'music-project-core'
+                )
+            );
+
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_button_background',
+                __('Button Background', 'music-project-core'),
+                __(
+                    'Primary background color for standard calls to action and button-style controls.',
+                    'music-project-core'
+                )
+            );
+
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_button_text',
+                __('Button Text', 'music-project-core'),
+                __(
+                    'Text and icon color displayed on the standard Button Background.',
+                    'music-project-core'
+                )
+            );
+
+            mpc_render_theme_style_color_field(
+                $settings,
+                'color_selection',
+                __('Text Selection Color', 'music-project-core'),
+                __(
+                    'Background color shown when visitors select or highlight text. The theme automatically chooses readable selection text.',
+                    'music-project-core'
+                )
+            );
+            ?>
+        </table>
+    </div>
+
+    <div class="mpc-theme-style-color-group">
+        <h3>
+            <?php esc_html_e('Hero', 'music-project-core'); ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Dedicated Hero colors are separate because Hero text often sits over photography or video.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+
+        <table class="form-table" role="presentation">
+            <?php
+            mpc_render_theme_style_color_field(
+                $settings,
+                'hero_heading_color',
+                __('Hero Heading Color', 'music-project-core'),
+                __(
+                    'Controls the main Hero heading color.',
+                    'music-project-core'
+                )
+            );
+
+            mpc_render_theme_style_color_field(
+                $settings,
+                'hero_lead_color',
+                __('Hero Lead Text Color', 'music-project-core'),
+                __(
+                    'Controls the supporting Hero copy beneath or beside the Hero heading.',
+                    'music-project-core'
+                )
+            );
+            ?>
 
             <tr>
                 <th scope="row">
@@ -1407,47 +1742,68 @@ function mpc_render_theme_style_settings_page() {
                         <?php esc_html_e('Hero Text Shadow', 'music-project-core'); ?>
                     </label>
                 </th>
+
                 <td>
-                    <select id="mpc_theme_style_hero_text_shadow" name="mpc_theme_style_settings[hero_text_shadow]">
-                        <option value="none" <?php selected($settings['hero_text_shadow'] ?? 'subtle', 'none'); ?>>
+                    <select
+                        id="mpc_theme_style_hero_text_shadow"
+                        name="mpc_theme_style_settings[hero_text_shadow]"
+                    >
+                        <option
+                            value="none"
+                            <?php selected(
+                                $settings['hero_text_shadow'] ?? 'subtle',
+                                'none'
+                            ); ?>
+                        >
                             <?php esc_html_e('None', 'music-project-core'); ?>
                         </option>
 
-                        <option value="subtle" <?php selected($settings['hero_text_shadow'] ?? 'subtle', 'subtle'); ?>>
+                        <option
+                            value="subtle"
+                            <?php selected(
+                                $settings['hero_text_shadow'] ?? 'subtle',
+                                'subtle'
+                            ); ?>
+                        >
                             <?php esc_html_e('Subtle', 'music-project-core'); ?>
                         </option>
 
-                        <option value="strong" <?php selected($settings['hero_text_shadow'] ?? 'subtle', 'strong'); ?>>
+                        <option
+                            value="strong"
+                            <?php selected(
+                                $settings['hero_text_shadow'] ?? 'subtle',
+                                'strong'
+                            ); ?>
+                        >
                             <?php esc_html_e('Strong', 'music-project-core'); ?>
                         </option>
                     </select>
 
                     <p class="description">
-                        <?php esc_html_e('Useful when the hero sits over photos or videos.', 'music-project-core'); ?>
+                        <?php
+                        esc_html_e(
+                            'Adds controlled contrast behind Hero text when it sits over photos or video.',
+                            'music-project-core'
+                        );
+                        ?>
                     </p>
                 </td>
             </tr>
 
-            <tr>
-                <th scope="row">
-                    <label for="mpc_theme_style_hero_text_shadow_color">
-                        <?php esc_html_e('Hero Text Shadow Color', 'music-project-core'); ?>
-                    </label>
-                </th>
-                <td>
-                    <input type="text" id="mpc_theme_style_hero_text_shadow_color"
-                        name="mpc_theme_style_settings[hero_text_shadow_color]"
-                        value="<?php echo esc_attr($settings['hero_text_shadow_color'] ?? '#000000'); ?>"
-                        class="mpc-color-field" data-default-color="#000000">
-
-                    <p class="description">
-                        <?php esc_html_e('Controls the color used by the hero text shadow preset. Use dark colors for light text, or light colors for dark text.', 'music-project-core'); ?>
-                    </p>
-                </td>
-            </tr>
-
+            <?php
+            mpc_render_theme_style_color_field(
+                $settings,
+                'hero_text_shadow_color',
+                __('Hero Text Shadow Color', 'music-project-core'),
+                __(
+                    'Color used by the Hero text-shadow preset. Dark shadows usually suit light Hero text, while light shadows can support dark Hero text.',
+                    'music-project-core'
+                )
+            );
+            ?>
         </table>
-    </section>
+    </div>
+</section>
 
     <section
         id="mpc-theme-style-panel-design"
