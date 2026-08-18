@@ -705,7 +705,30 @@ function mpc_render_integrations_settings_page() {
                         >
                     </td>
                 </tr>
-
+<tr>
+    <th scope="row">
+        <label for="shows_heading_size">
+            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <?php
+        mpc_render_homepage_size_select(
+            'shows_heading_size',
+            'mpc_integrations_settings[shows_heading_size]',
+            $settings['shows_heading_size'] ?? 'standard'
+        );
+        ?>
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Controls the main Shows heading when this section appears on the homepage.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
                 <tr>
                     <th scope="row">
                         <?php esc_html_e('Shows Shortcode / Embed', 'music-project-core'); ?>
@@ -740,7 +763,30 @@ function mpc_render_integrations_settings_page() {
                         >
                     </td>
                 </tr>
-
+<tr>
+    <th scope="row">
+        <label for="newsletter_heading_size">
+            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <?php
+        mpc_render_homepage_size_select(
+            'newsletter_heading_size',
+            'mpc_integrations_settings[newsletter_heading_size]',
+            $settings['newsletter_heading_size'] ?? 'standard'
+        );
+        ?>
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Controls the main Newsletter heading when this section appears on the homepage.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
                 <tr>
                     <th scope="row">
                         <label for="newsletter_text"><?php esc_html_e('Newsletter Intro Text', 'music-project-core'); ?></label>

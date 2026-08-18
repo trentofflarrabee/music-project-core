@@ -1774,6 +1774,25 @@ function initLinkHubEditor() {
     );
 }
 
+/**
+ * Initialize optional Homepage quote color fields.
+ *
+ * A cleared field intentionally means "inherit the current
+ * theme presentation".
+ */
+function initHomepageColorPickers() {
+    const fields = $('.mpc-homepage-color-field');
+
+    if (
+        !fields.length
+        || typeof $.fn.wpColorPicker !== 'function'
+    ) {
+        return;
+    }
+
+    fields.wpColorPicker();
+}
+
 function initStickySubmit() {
     const form = document.querySelector('.mpc-homepage-settings-form');
 
@@ -2267,6 +2286,7 @@ function initStickySubmit() {
         initSectionManager();
         initServicesEditor();
         initLinkHubEditor();
+        initHomepageColorPickers();
         initStickySubmit();
         initAdminPanels();
     }

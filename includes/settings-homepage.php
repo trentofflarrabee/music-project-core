@@ -344,9 +344,9 @@ function mpc_get_homepage_size_options() {
  * @return string
  */
 function mpc_normalize_homepage_size(
-    $value,
-    $default = 'standard'
-) {
+        $value,
+        $default = 'standard'
+    ) {
     $allowed = array_keys(
         mpc_get_homepage_size_options()
     );
@@ -370,6 +370,42 @@ function mpc_normalize_homepage_size(
     return in_array($value, $allowed, true)
         ? $value
         : $default;
+}
+
+/**
+ * Render a curated Compact / Standard / Large selector.
+ *
+ * @param string $id         Field ID.
+ * @param string $name       Complete field name.
+ * @param mixed  $value      Current value.
+ * @return void
+ */
+function mpc_render_homepage_size_select(
+    $id,
+    $name,
+    $value
+) {
+    $value = mpc_normalize_homepage_size(
+        $value,
+        'standard'
+    );
+
+    $options = mpc_get_homepage_size_options();
+    ?>
+    <select
+        id="<?php echo esc_attr($id); ?>"
+        name="<?php echo esc_attr($name); ?>"
+    >
+        <?php foreach ($options as $option_value => $label) : ?>
+            <option
+                value="<?php echo esc_attr($option_value); ?>"
+                <?php selected($value, $option_value); ?>
+            >
+                <?php echo esc_html($label); ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <?php
 }
 
 /**
@@ -1741,12 +1777,20 @@ function mpc_enqueue_admin_assets($hook) {
         return;
     }
 
-    wp_enqueue_media();
+wp_enqueue_media();
+
+wp_enqueue_style(
+    'wp-color-picker'
+);
 
 wp_enqueue_script(
     'mpc-admin',
     MPC_URL . 'assets/admin.js',
-    ['jquery', 'jquery-ui-sortable'],
+    [
+        'jquery',
+        'jquery-ui-sortable',
+        'wp-color-picker',
+    ],
     mpc_get_asset_version('assets/admin.js'),
     true
 );
@@ -3126,6 +3170,31 @@ mpc_admin_panel_open(
             </tr>
 
             <tr>
+    <th scope="row">
+        <label for="mpc_homepage_featured_heading_size">
+            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <?php
+        mpc_render_homepage_size_select(
+            'mpc_homepage_featured_heading_size',
+            'mpc_homepage_settings[featured_heading_size]',
+            $settings['featured_heading_size'] ?? 'standard'
+        );
+        ?>
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Controls only the main Featured Content section heading.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
+
+            <tr>
                 <th scope="row">
                     <label for="mpc_homepage_featured_layout">
                         <?php esc_html_e('Featured Layout', 'music-project-core'); ?>
@@ -3178,6 +3247,58 @@ mpc_admin_panel_open(
                     </p>
                 </td>
             </tr>
+
+            <tr>
+    <th scope="row">
+        <label for="mpc_homepage_featured_quote_size">
+            <?php esc_html_e('Quote Size', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <?php
+        mpc_render_homepage_size_select(
+            'mpc_homepage_featured_quote_size',
+            'mpc_homepage_settings[featured_quote_size]',
+            $settings['featured_quote_size'] ?? 'standard'
+        );
+        ?>
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Controls the size of a quote displayed inside Featured Content.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
+
+<tr>
+    <th scope="row">
+        <label for="mpc_homepage_featured_quote_color">
+            <?php esc_html_e('Quote Color', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <input
+            type="text"
+            id="mpc_homepage_featured_quote_color"
+            name="mpc_homepage_settings[featured_quote_color]"
+            class="mpc-homepage-color-field"
+            value="<?php echo esc_attr(
+                $settings['featured_quote_color'] ?? ''
+            ); ?>"
+        >
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Choose a custom quote-text color, or clear the field to use the current theme color.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
 
             <tr>
                 <th scope="row">
@@ -3330,7 +3451,30 @@ mpc_admin_panel_open(
                         class="regular-text">
                 </td>
             </tr>
-
+<tr>
+    <th scope="row">
+        <label for="mpc_homepage_services_heading_size">
+            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <?php
+        mpc_render_homepage_size_select(
+            'mpc_homepage_services_heading_size',
+            'mpc_homepage_settings[services_heading_size]',
+            $settings['services_heading_size'] ?? 'standard'
+        );
+        ?>
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Controls only the main Services section heading. Service-card titles are unchanged.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
             <tr>
                 <th scope="row">
                     <label for="mpc_homepage_services_intro">
@@ -3705,7 +3849,30 @@ mpc_admin_panel_open(
                         class="regular-text">
                 </td>
             </tr>
-
+<tr>
+    <th scope="row">
+        <label for="mpc_homepage_quotes_heading_size">
+            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <?php
+        mpc_render_homepage_size_select(
+            'mpc_homepage_quotes_heading_size',
+            'mpc_homepage_settings[quotes_heading_size]',
+            $settings['quotes_heading_size'] ?? 'standard'
+        );
+        ?>
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Controls only the Quotes / Testimonials section heading.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
             <tr>
                 <th scope="row">
                     <label for="mpc_homepage_quotes_intro">
@@ -3743,7 +3910,57 @@ mpc_admin_panel_open(
                     </p>
                 </td>
             </tr>
+<tr>
+    <th scope="row">
+        <label for="mpc_homepage_quotes_text_size">
+            <?php esc_html_e('Quote Size', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <?php
+        mpc_render_homepage_size_select(
+            'mpc_homepage_quotes_text_size',
+            'mpc_homepage_settings[quotes_text_size]',
+            $settings['quotes_text_size'] ?? 'standard'
+        );
+        ?>
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Scales quote text while preserving the hierarchy of the selected Quotes layout.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
 
+<tr>
+    <th scope="row">
+        <label for="mpc_homepage_quotes_text_color">
+            <?php esc_html_e('Quote Color', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <input
+            type="text"
+            id="mpc_homepage_quotes_text_color"
+            name="mpc_homepage_settings[quotes_text_color]"
+            class="mpc-homepage-color-field"
+            value="<?php echo esc_attr(
+                $settings['quotes_text_color'] ?? ''
+            ); ?>"
+        >
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Choose a custom quote-text color, or clear the field to inherit the current Quotes section color.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
             <tr>
                 <th scope="row">
                     <label for="mpc_homepage_quotes_count">
@@ -3851,7 +4068,30 @@ mpc_admin_panel_open(
                         value="<?php echo esc_attr($settings['blog_heading']); ?>">
                 </td>
             </tr>
-
+<tr>
+    <th scope="row">
+        <label for="mpc_homepage_blog_heading_size">
+            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
+        </label>
+    </th>
+    <td>
+        <?php
+        mpc_render_homepage_size_select(
+            'mpc_homepage_blog_heading_size',
+            'mpc_homepage_settings[blog_heading_size]',
+            $settings['blog_heading_size'] ?? 'standard'
+        );
+        ?>
+        <p class="description">
+            <?php
+            esc_html_e(
+                'Controls only the homepage Blog section heading. Post-preview titles are unchanged.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </td>
+</tr>
             <tr>
                 <th scope="row">
                     <label for="mpc_homepage_blog_layout">
