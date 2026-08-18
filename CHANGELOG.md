@@ -6,6 +6,35 @@ This project follows the Keep a Changelog structure and intends to use Semantic 
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-18
+
+### Added
+
+- Added curated Compact, Standard, and Large heading-size controls for individual homepage sections.
+- Added independent quote-size controls for Featured Content quotes and the Quotes / Testimonials homepage section.
+- Added optional custom quote-text colors for Featured Content and Quotes / Testimonials with inherited-color fallback.
+- Added Theme Style Color System v2 with clearer semantic color roles.
+- Added a dedicated Heading Color separate from normal body Text Color.
+- Added a dedicated Link Color for ordinary editorial and text-style links.
+- Added a configurable browser Text Selection Color.
+- Added automatic readable foreground selection for browser text selection.
+- Added a live Theme Style color preview with palette swatches and representative heading, body, link, accent, button, muted-text, and selection examples.
+
+### Changed
+
+- Reorganized Theme Style colors into Foundation, Brand & Interaction, and Hero groups.
+- Added explanatory descriptions to Theme Style color controls.
+- Narrowed Accent / Highlight Color to decorative emphasis, focus treatment, icons, editorial accents, and other branded details rather than ordinary text links.
+- Homepage typography emphasis is configured per section rather than through one blanket homepage heading size.
+- Hero typography remains independent from homepage section-heading controls.
+- Shows and Newsletter heading-size settings remain owned by Integrations alongside their existing section content.
+- Homepage quote typography remains separate from blog and editorial blockquotes.
+
+### Security
+
+- Added strict allowlist normalization for homepage typography-size presets.
+- Added WordPress hex-color sanitization for optional homepage quote colors and new Theme Style semantic colors.
+
 ## [1.3.0] - 2026-08-17
 
 ### Added

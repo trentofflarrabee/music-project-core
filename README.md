@@ -541,7 +541,7 @@ Include WordPress version, PHP version, active theme, Music Project Base version
 Current version:
 
 ```text
-1.2.0
+1.4.0
 ```
 
 # License
