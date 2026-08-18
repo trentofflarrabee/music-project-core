@@ -1977,16 +1977,16 @@ function initStickySubmit() {
     });
 }
 
-    /**
-     * Initialize accessible Theme Style tabs.
-     *
-     * Without JavaScript, the tab navigation remains hidden and every
-     * settings section remains visible.
-     */
-    function initThemeStyleTabs() {
-        const root = document.querySelector(
-            '[data-theme-style-tabs]'
-        );
+/**
+ * Initialize the accessible Music Project admin tab interface.
+ *
+ * Without JavaScript, tab navigation remains hidden and every
+ * settings section remains visible.
+ */
+function initAdminTabs() {
+    const root = document.querySelector(
+        '[data-theme-style-tabs], [data-homepage-tabs]'
+    );
 
         if (!root) {
             return;
@@ -1996,17 +1996,17 @@ function initStickySubmit() {
             '[role="tablist"]'
         );
 
-        const tabs = Array.from(
-            root.querySelectorAll(
-                '.mpc-theme-style-tabs__tab[role="tab"]'
-            )
-        );
+const tabs = Array.from(
+    root.querySelectorAll(
+        '[role="tab"]'
+    )
+);
 
-        const panels = Array.from(
-            root.querySelectorAll(
-                '.mpc-theme-style-tabs__panel[role="tabpanel"]'
-            )
-        );
+const panels = Array.from(
+    root.querySelectorAll(
+        '[role="tabpanel"]'
+    )
+);
 
         if (
             !tablist
@@ -2016,10 +2016,17 @@ function initStickySubmit() {
             return;
         }
 
-        const storageKey = [
-            'mpc_theme_style_active_tab',
-            window.location.pathname,
-        ].join(':');
+       const pageKey = (
+    new URLSearchParams(
+        window.location.search
+    ).get('page')
+    || window.location.pathname
+);
+
+const storageKey = [
+    'mpc_admin_active_tab',
+    pageKey,
+].join(':');
 
         /**
          * Get the panel controlled by a tab.
@@ -2144,13 +2151,13 @@ function initStickySubmit() {
                 return null;
             }
 
-            const panel = target.matches(
-                '.mpc-theme-style-tabs__panel'
-            )
-                ? target
-                : target.closest(
-                    '.mpc-theme-style-tabs__panel'
-                );
+const panel = target.matches(
+    '[role="tabpanel"]'
+)
+    ? target
+    : target.closest(
+        '[role="tabpanel"]'
+    );
 
             return getTabForPanel(panel);
         }
@@ -2354,6 +2361,84 @@ function initStickySubmit() {
     }
 
     /**
+ * Keep Homepage section-tab status badges synchronized with
+ * Section Manager visibility checkboxes.
+ */
+function initHomepageTabStates() {
+    const root = document.querySelector(
+        '[data-homepage-tabs]'
+    );
+
+    if (!root) {
+        return;
+    }
+
+    const tabs = Array.from(
+        root.querySelectorAll(
+            '[data-homepage-section-tab]'
+        )
+    );
+
+    const sectionItems = Array.from(
+        document.querySelectorAll(
+            '.mpc-section-list__item[data-section]'
+        )
+    );
+
+    sectionItems.forEach((item) => {
+        const section = item.getAttribute(
+            'data-section'
+        );
+
+        if (!section) {
+            return;
+        }
+
+        const field = item.querySelector(
+            'input[type="checkbox"]'
+        );
+
+        const tab = tabs.find(
+            (candidate) => (
+                candidate.getAttribute(
+                    'data-homepage-section-tab'
+                ) === section
+            )
+        );
+
+        if (!field || !tab) {
+            return;
+        }
+
+        const status = tab.querySelector(
+            '[data-homepage-tab-status]'
+        );
+
+        if (!status) {
+            return;
+        }
+
+        function syncState() {
+            const isEnabled = field.checked;
+
+            status.hidden = isEnabled;
+
+            tab.classList.toggle(
+                'is-section-disabled',
+                !isEnabled
+            );
+        }
+
+        syncState();
+
+        field.addEventListener(
+            'change',
+            syncState
+        );
+    });
+}
+
+    /**
      * Restore and remember expandable admin-panel states.
      */
     function initAdminPanels() {
@@ -2436,7 +2521,8 @@ function initStickySubmit() {
      * Initialize shared Music Project admin behavior.
      */
         function initMPCAdmin() {
-            initThemeStyleTabs();
+            initAdminTabs();
+            initHomepageTabStates();
             initThemeStyleColorPreview();
             initMediaUploader();
             initHeroAdminToggles();

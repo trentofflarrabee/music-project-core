@@ -676,6 +676,138 @@
 }
 
 /* =========================================================
+   HOMEPAGE ADMIN V2
+   ========================================================= */
+
+.mpc-homepage-tabs__tab {
+    display: inline-flex;
+    gap: 0.45rem;
+    align-items: center;
+}
+
+.mpc-homepage-tabs__status {
+    display: inline-flex;
+    align-items: center;
+    min-height: 18px;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    background: #dcdcde;
+    color: #50575e;
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.mpc-homepage-tabs__status[hidden] {
+    display: none;
+}
+
+.mpc-homepage-tabs__tab.is-section-disabled {
+    color: #646970;
+}
+
+.mpc-homepage-tabs__panel
+    > .mpc-section-manager {
+    margin-bottom: 0;
+}
+
+.mpc-homepage-tabs__source-card {
+    max-width: 720px;
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    background: #f6f7f7;
+}
+
+.mpc-homepage-tabs__source-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.4rem;
+}
+
+.mpc-homepage-tabs__source-card p {
+    max-width: 640px;
+}
+
+.mpc-homepage-tabs__source-card p:last-child {
+    margin-bottom: 0;
+}
+
+/* Shared Homepage presentation groups */
+
+.mpc-homepage-presentation {
+    max-width: 920px;
+    margin: 1.5rem 0 2rem;
+    overflow: hidden;
+    border: 1px solid #dcdcde;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.mpc-homepage-presentation__header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #dcdcde;
+    background: #f6f7f7;
+}
+
+.mpc-homepage-presentation__header h3 {
+    margin: 0 0 0.3rem;
+    font-size: 1rem;
+}
+
+.mpc-homepage-presentation__header p {
+    max-width: 720px;
+    margin: 0;
+    color: #646970;
+}
+
+.mpc-homepage-presentation .form-table {
+    margin: 0;
+}
+
+.mpc-homepage-presentation
+    .form-table th,
+.mpc-homepage-presentation
+    .form-table td {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.mpc-homepage-presentation
+    .form-table tr:not(:last-child)
+    th,
+.mpc-homepage-presentation
+    .form-table tr:not(:last-child)
+    td {
+    border-bottom: 1px solid #f0f0f1;
+}
+
+.mpc-homepage-section-subheading {
+    max-width: 920px;
+    margin: 2rem 0 0.25rem;
+    padding-bottom: 0.55rem;
+    border-bottom: 1px solid #dcdcde;
+    font-size: 1rem;
+}
+
+@media (max-width: 782px) {
+    .mpc-homepage-presentation {
+        margin-block: 1rem 1.5rem;
+    }
+
+    .mpc-homepage-presentation__header {
+        padding: 1rem;
+    }
+
+    .mpc-homepage-presentation
+        .form-table tr:not(:last-child)
+        th {
+        border-bottom: 0;
+    }
+}
+
+/* =========================================================
    THEME STYLE TABS
    ========================================================= */
 

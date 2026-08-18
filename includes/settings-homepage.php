@@ -373,6 +373,151 @@ function mpc_normalize_homepage_size(
 }
 
 /**
+ * Get the semantic font roles available to Homepage presentation.
+ *
+ * These values do not store literal font families. Base maps them to
+ * Theme Style typography roles during frontend rendering.
+ *
+ * @param bool $include_default Whether to include an inherit/default option.
+ * @return array
+ */
+function mpc_get_homepage_font_role_options(
+    $include_default = false
+) {
+    $options = [
+        'heading' => __(
+            'General Heading',
+            'music-project-core'
+        ),
+        'accent' => __(
+            'Accent',
+            'music-project-core'
+        ),
+        'editorial' => __(
+            'Blog / Editorial',
+            'music-project-core'
+        ),
+        'body' => __(
+            'Body',
+            'music-project-core'
+        ),
+    ];
+
+    if ($include_default) {
+        $options = [
+            'default' => __(
+                'Use Homepage Default',
+                'music-project-core'
+            ),
+        ] + $options;
+    }
+
+    return $options;
+}
+
+/**
+ * Normalize a Homepage semantic font role.
+ *
+ * @param mixed  $value         Submitted or stored value.
+ * @param string $default       Fallback role.
+ * @param bool   $allow_default Whether "default" inheritance is allowed.
+ * @return string
+ */
+function mpc_normalize_homepage_font_role(
+    $value,
+    $default = 'heading',
+    $allow_default = false
+) {
+    $allowed = array_keys(
+        mpc_get_homepage_font_role_options(
+            $allow_default
+        )
+    );
+
+    $fallback = $allow_default
+        ? 'default'
+        : 'heading';
+
+    $default = sanitize_key(
+        (string) $default
+    );
+
+    if (!in_array($default, $allowed, true)) {
+        $default = $fallback;
+    }
+
+    if (!is_scalar($value)) {
+        return $default;
+    }
+
+    $value = sanitize_key(
+        (string) $value
+    );
+
+    return in_array($value, $allowed, true)
+        ? $value
+        : $default;
+}
+
+/**
+ * Get shared Homepage section-background treatments.
+ *
+ * @return array
+ */
+function mpc_get_homepage_background_options() {
+    return [
+        'default' => __(
+            'Default',
+            'music-project-core'
+        ),
+        'surface' => __(
+            'Surface',
+            'music-project-core'
+        ),
+        'accent' => __(
+            'Accent',
+            'music-project-core'
+        ),
+    ];
+}
+
+/**
+ * Normalize a shared Homepage section-background treatment.
+ *
+ * @param mixed  $value   Submitted or stored value.
+ * @param string $default Fallback treatment.
+ * @return string
+ */
+function mpc_normalize_homepage_background(
+    $value,
+    $default = 'default'
+) {
+    $allowed = array_keys(
+        mpc_get_homepage_background_options()
+    );
+
+    $default = sanitize_key(
+        (string) $default
+    );
+
+    if (!in_array($default, $allowed, true)) {
+        $default = 'default';
+    }
+
+    if (!is_scalar($value)) {
+        return $default;
+    }
+
+    $value = sanitize_key(
+        (string) $value
+    );
+
+    return in_array($value, $allowed, true)
+        ? $value
+        : $default;
+}
+
+/**
  * Render a curated Compact / Standard / Large selector.
  *
  * @param string $id         Field ID.
@@ -402,6 +547,133 @@ function mpc_render_homepage_size_select(
                 <?php selected($value, $option_value); ?>
             >
                 <?php echo esc_html($label); ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <?php
+}
+
+/**
+ * Render a Homepage semantic font-role selector.
+ *
+ * @param string $id             Field ID.
+ * @param string $name           Complete field name.
+ * @param mixed  $value          Current value.
+ * @param bool   $allow_default  Whether inheritance is available.
+ * @param string $default_label  Optional custom label for "default".
+ * @return void
+ */
+function mpc_render_homepage_font_role_select(
+    $id,
+    $name,
+    $value,
+    $allow_default = true,
+    $default_label = ''
+) {
+    $fallback = $allow_default
+        ? 'default'
+        : 'heading';
+
+    $value = mpc_normalize_homepage_font_role(
+        $value,
+        $fallback,
+        $allow_default
+    );
+
+    $options =
+        mpc_get_homepage_font_role_options(
+            $allow_default
+        );
+
+    if (
+        $allow_default
+        && $default_label !== ''
+        && isset($options['default'])
+    ) {
+        $options['default'] =
+            $default_label;
+    }
+    ?>
+    <select
+        id="<?php echo esc_attr($id); ?>"
+        name="<?php echo esc_attr($name); ?>"
+    >
+        <?php
+        foreach (
+            $options
+            as $option_value => $label
+        ) :
+            ?>
+            <option
+                value="<?php
+                    echo esc_attr(
+                        $option_value
+                    );
+                ?>"
+                <?php
+                selected(
+                    $value,
+                    $option_value
+                );
+                ?>
+            >
+                <?php
+                echo esc_html($label);
+                ?>
+            </option>
+        <?php endforeach; ?>
+    </select>
+    <?php
+}
+
+/**
+ * Render a shared Homepage section-background selector.
+ *
+ * @param string $id    Field ID.
+ * @param string $name  Complete field name.
+ * @param mixed  $value Current value.
+ * @return void
+ */
+function mpc_render_homepage_background_select(
+    $id,
+    $name,
+    $value
+) {
+    $value =
+        mpc_normalize_homepage_background(
+            $value,
+            'default'
+        );
+
+    $options =
+        mpc_get_homepage_background_options();
+    ?>
+    <select
+        id="<?php echo esc_attr($id); ?>"
+        name="<?php echo esc_attr($name); ?>"
+    >
+        <?php
+        foreach (
+            $options
+            as $option_value => $label
+        ) :
+            ?>
+            <option
+                value="<?php
+                    echo esc_attr(
+                        $option_value
+                    );
+                ?>"
+                <?php
+                selected(
+                    $value,
+                    $option_value
+                );
+                ?>
+            >
+                <?php
+                echo esc_html($label);
+                ?>
             </option>
         <?php endforeach; ?>
     </select>
@@ -442,6 +714,8 @@ function mpc_get_homepage_defaults() {
     return [
         'section_order' => implode(',', mpc_get_homepage_section_default_order()),
         'section_visibility' => mpc_get_homepage_section_default_visibility(),
+        // Shared Homepage presentation.
+        'homepage_heading_font_role' => 'heading',
 
        // Hero. 
         'hero_enabled' => 1,
@@ -480,6 +754,8 @@ function mpc_get_homepage_defaults() {
             'music-project-core'
         ),
         'featured_heading_size' => 'standard',
+        'featured_heading_font_role' => 'default',
+        'featured_background' => 'default',
         'featured_title' => '',
         'featured_text' => '',
         'featured_image_id' => 0,
@@ -496,6 +772,9 @@ function mpc_get_homepage_defaults() {
         // Services.
         'services_heading' => __('Services', 'music-project-core'),
         'services_heading_size' => 'standard',
+                'services_heading_font_role' => 'default',
+        'services_card_heading_font_role' => 'default',
+        'services_background' => 'default',
         'services_intro' => '',
         'services_layout' => 'grid',
         'services_columns' => '3',
@@ -506,6 +785,8 @@ function mpc_get_homepage_defaults() {
         // Quotes / Testimonials.
         'quotes_heading' => __('Kind Words', 'music-project-core'),
         'quotes_heading_size' => 'standard',
+                'quotes_heading_font_role' => 'default',
+        'quotes_background' => 'surface',
         'quotes_intro' => '',
         'quotes_layout' => 'grid',
         'quotes_count' => 3,
@@ -522,6 +803,8 @@ function mpc_get_homepage_defaults() {
             'music-project-core'
         ),
         'blog_heading_size' => 'standard',
+                'blog_heading_font_role' => 'default',
+        'blog_background' => 'default',
         'blog_layout' => 'grid',
         'blog_featured_source' => 'latest',
         'blog_featured_post_id' => 0,
@@ -562,14 +845,57 @@ function mpc_get_homepage_settings() {
         []
     );
 
-    if (!is_array($saved)) {
-        $saved = [];
-    }
+if (!is_array($saved)) {
+    $saved = [];
+}
 
-    $settings = wp_parse_args(
-        $saved,
-        $defaults
-    );
+/*
+ * Homepage Section Presentation v2:
+ * migrate the legacy Quotes background role at the read boundary.
+ *
+ * The database is not updated here. Once the Homepage settings form
+ * is saved, the canonical quotes_background value will be stored.
+ */
+if (
+    !array_key_exists(
+        'quotes_background',
+        $saved
+    )
+) {
+    $legacy_quotes_background = isset(
+        $saved['quotes_background_tone']
+    )
+        && is_scalar(
+            $saved['quotes_background_tone']
+        )
+        ? sanitize_key(
+            (string) $saved[
+                'quotes_background_tone'
+            ]
+        )
+        : 'surface';
+
+    $legacy_quotes_background_map = [
+        'default'  => 'default',
+        'surface'  => 'surface',
+        'contrast' => 'accent',
+    ];
+
+    $saved['quotes_background'] = isset(
+        $legacy_quotes_background_map[
+            $legacy_quotes_background
+        ]
+    )
+        ? $legacy_quotes_background_map[
+            $legacy_quotes_background
+        ]
+        : 'surface';
+}
+
+$settings = wp_parse_args(
+    $saved,
+    $defaults
+);
 
     /*
      * Reuse the Settings API sanitizer as the read boundary for Core-owned
@@ -790,8 +1116,21 @@ function mpc_sanitize_homepage_settings($input) {
             : 0;
     }
 
-    $output['section_visibility'] =
-        $section_visibility;
+$output['section_visibility'] =
+    $section_visibility;
+
+// Shared Homepage presentation.
+$output['homepage_heading_font_role'] =
+    mpc_normalize_homepage_font_role(
+        $input['homepage_heading_font_role']
+            ?? $defaults[
+                'homepage_heading_font_role'
+            ],
+        $defaults[
+            'homepage_heading_font_role'
+        ],
+        false
+    );
 
 // Hero.
 $allowed_hero_layouts = [
@@ -1088,6 +1427,29 @@ $output['featured_heading'] = (
         $defaults['featured_heading_size']
     );
 
+    $output['featured_heading_font_role'] =
+    mpc_normalize_homepage_font_role(
+        $input['featured_heading_font_role']
+            ?? $defaults[
+                'featured_heading_font_role'
+            ],
+        $defaults[
+            'featured_heading_font_role'
+        ],
+        true
+    );
+
+$output['featured_background'] =
+    mpc_normalize_homepage_background(
+        $input['featured_background']
+            ?? $defaults[
+                'featured_background'
+            ],
+        $defaults[
+            'featured_background'
+        ]
+    );
+
 $output['featured_label'] = (
     isset($input['featured_label'])
     && is_scalar($input['featured_label'])
@@ -1266,6 +1628,18 @@ $output['quotes_heading'] = (
         $defaults['quotes_heading_size']
     );
 
+    $output['quotes_heading_font_role'] =
+    mpc_normalize_homepage_font_role(
+        $input['quotes_heading_font_role']
+            ?? $defaults[
+                'quotes_heading_font_role'
+            ],
+        $defaults[
+            'quotes_heading_font_role'
+        ],
+        true
+    );
+
 $output['quotes_text_size'] =
     mpc_normalize_homepage_size(
         $input['quotes_text_size']
@@ -1341,11 +1715,79 @@ $output['quotes_show_attribution'] = isset(
     )
     : 0;
 
-$allowed_quotes_background_tones = [
-    'default',
-    'surface',
-    'contrast',
+/*
+ * Homepage Section Presentation v2.
+ *
+ * quotes_background is now canonical. Keep the legacy
+ * quotes_background_tone mirror synchronized until Base
+ * finishes its shared background cutover.
+ */
+if (
+    array_key_exists(
+        'quotes_background',
+        $input
+    )
+) {
+    $quotes_background =
+        mpc_normalize_homepage_background(
+            $input['quotes_background'],
+            $defaults['quotes_background']
+        );
+} else {
+    $legacy_quotes_background = (
+        isset(
+            $input[
+                'quotes_background_tone'
+            ]
+        )
+        && is_scalar(
+            $input[
+                'quotes_background_tone'
+            ]
+        )
+    )
+        ? sanitize_key(
+            (string) $input[
+                'quotes_background_tone'
+            ]
+        )
+        : $defaults[
+            'quotes_background_tone'
+        ];
+
+    $legacy_to_canonical = [
+        'default'  => 'default',
+        'surface'  => 'surface',
+        'contrast' => 'accent',
+    ];
+
+    $quotes_background = isset(
+        $legacy_to_canonical[
+            $legacy_quotes_background
+        ]
+    )
+        ? $legacy_to_canonical[
+            $legacy_quotes_background
+        ]
+        : $defaults['quotes_background'];
+}
+
+$output['quotes_background'] =
+    mpc_normalize_homepage_background(
+        $quotes_background,
+        $defaults['quotes_background']
+    );
+
+$canonical_to_legacy = [
+    'default' => 'default',
+    'surface' => 'surface',
+    'accent'  => 'contrast',
 ];
+
+$output['quotes_background_tone'] =
+    $canonical_to_legacy[
+        $output['quotes_background']
+    ] ?? 'surface';
 
 $quotes_background_tone = (
     isset($input['quotes_background_tone'])
@@ -1367,6 +1809,47 @@ $output['quotes_background_tone'] = in_array(
 )
     ? $quotes_background_tone
     : $defaults['quotes_background_tone'];
+
+/*
+ * Section Presentation v2 canonical background.
+ *
+ * Until the new Homepage UI replaces the old Quotes control,
+ * continue accepting quotes_background_tone from the existing form.
+ */
+if (
+    array_key_exists(
+        'quotes_background',
+        $input
+    )
+) {
+    $quotes_background =
+        $input['quotes_background'];
+} else {
+    $legacy_quotes_background_map = [
+        'default'  => 'default',
+        'surface'  => 'surface',
+        'contrast' => 'accent',
+    ];
+
+    $legacy_quotes_background =
+        $output['quotes_background_tone'];
+
+    $quotes_background = isset(
+        $legacy_quotes_background_map[
+            $legacy_quotes_background
+        ]
+    )
+        ? $legacy_quotes_background_map[
+            $legacy_quotes_background
+        ]
+        : $defaults['quotes_background'];
+}
+
+$output['quotes_background'] =
+    mpc_normalize_homepage_background(
+        $quotes_background,
+        $defaults['quotes_background']
+    );
 
 
     // Blog.
@@ -1392,6 +1875,29 @@ $output['blog_heading'] = (
         $input['blog_heading_size']
             ?? $defaults['blog_heading_size'],
         $defaults['blog_heading_size']
+    );
+
+    $output['blog_heading_font_role'] =
+    mpc_normalize_homepage_font_role(
+        $input['blog_heading_font_role']
+            ?? $defaults[
+                'blog_heading_font_role'
+            ],
+        $defaults[
+            'blog_heading_font_role'
+        ],
+        true
+    );
+
+$output['blog_background'] =
+    mpc_normalize_homepage_background(
+        $input['blog_background']
+            ?? $defaults[
+                'blog_background'
+            ],
+        $defaults[
+            'blog_background'
+        ]
     );
 
 $allowed_blog_layouts = [
@@ -1574,6 +2080,42 @@ $output['services_heading'] = (
         $input['services_heading_size']
             ?? $defaults['services_heading_size'],
         $defaults['services_heading_size']
+    );
+
+    $output['services_heading_font_role'] =
+    mpc_normalize_homepage_font_role(
+        $input['services_heading_font_role']
+            ?? $defaults[
+                'services_heading_font_role'
+            ],
+        $defaults[
+            'services_heading_font_role'
+        ],
+        true
+    );
+
+$output['services_card_heading_font_role'] =
+    mpc_normalize_homepage_font_role(
+        $input[
+            'services_card_heading_font_role'
+        ] ?? $defaults[
+            'services_card_heading_font_role'
+        ],
+        $defaults[
+            'services_card_heading_font_role'
+        ],
+        true
+    );
+
+$output['services_background'] =
+    mpc_normalize_homepage_background(
+        $input['services_background']
+            ?? $defaults[
+                'services_background'
+            ],
+        $defaults[
+            'services_background'
+        ]
     );
 
 $output['services_intro'] = (
@@ -2703,23 +3245,210 @@ function mpc_render_homepage_settings_page() {
     <form method="post" action="options.php" class="mpc-homepage-settings-form">
         <?php settings_fields('mpc_homepage_settings_group'); ?>
 
-        <?php
-            $section_definitions = mpc_get_homepage_section_definitions();
-            $section_order = mpc_get_homepage_section_order();
-            $section_visibility = mpc_get_homepage_section_visibility();
-            ?>
+<?php
+$section_definitions =
+    mpc_get_homepage_section_definitions();
 
-        <?php
-mpc_admin_panel_open(
-    'section-manager',
-    __('Section Manager', 'music-project-core'),
-    __(
-        'Choose which homepage sections appear, then drag the rows or use the move buttons to change their order.',
-        'music-project-core'
-    ),
-    true
-);
+$section_order =
+    mpc_get_homepage_section_order();
+
+$section_visibility =
+    mpc_get_homepage_section_visibility();
+
+$homepage_tabs = [
+    'overview' => [
+        'label'   => __(
+            'Overview',
+            'music-project-core'
+        ),
+        'section' => '',
+    ],
+    'hero' => [
+        'label'   => __(
+            'Hero',
+            'music-project-core'
+        ),
+        'section' => 'hero',
+    ],
+    'featured-content' => [
+        'label'   => __(
+            'Featured',
+            'music-project-core'
+        ),
+        'section' => 'featured-content',
+    ],
+    'services' => [
+        'label'   => __(
+            'Services',
+            'music-project-core'
+        ),
+        'section' => 'services',
+    ],
+    'quotes' => [
+        'label'   => __(
+            'Quotes',
+            'music-project-core'
+        ),
+        'section' => 'quotes',
+    ],
+    'shows' => [
+        'label'   => __(
+            'Shows',
+            'music-project-core'
+        ),
+        'section' => 'shows',
+    ],
+    'blog' => [
+        'label'   => __(
+            'Blog',
+            'music-project-core'
+        ),
+        'section' => 'blog',
+    ],
+    'newsletter' => [
+        'label'   => __(
+            'Newsletter',
+            'music-project-core'
+        ),
+        'section' => 'newsletter',
+    ],
+];
 ?>
+
+<div
+    class="mpc-theme-style-tabs mpc-homepage-tabs"
+    data-homepage-tabs
+>
+    <div
+        class="mpc-theme-style-tabs__tablist
+            mpc-homepage-tabs__tablist"
+        role="tablist"
+        aria-label="<?php
+        esc_attr_e(
+            'Homepage sections',
+            'music-project-core'
+        );
+        ?>"
+        aria-orientation="horizontal"
+        hidden
+    >
+        <?php
+        foreach (
+            $homepage_tabs
+            as $tab_key => $tab_definition
+        ) :
+            $section_key =
+                $tab_definition['section'];
+
+            $is_overview =
+                $tab_key === 'overview';
+
+            $is_enabled = (
+                $section_key === ''
+                || !empty(
+                    $section_visibility[
+                        $section_key
+                    ]
+                )
+            );
+            ?>
+            <button
+                type="button"
+                id="mpc-homepage-tab-<?php
+                    echo esc_attr($tab_key);
+                ?>"
+                class="mpc-theme-style-tabs__tab
+                    mpc-homepage-tabs__tab<?php
+                    echo (
+                        !$is_enabled
+                        && !$is_overview
+                    )
+                        ? ' is-section-disabled'
+                        : '';
+                    ?>"
+                role="tab"
+                aria-selected="<?php
+                    echo $is_overview
+                        ? 'true'
+                        : 'false';
+                ?>"
+                aria-controls="mpc-homepage-panel-<?php
+                    echo esc_attr($tab_key);
+                ?>"
+                tabindex="<?php
+                    echo $is_overview
+                        ? '0'
+                        : '-1';
+                ?>"
+                <?php if ($section_key !== '') : ?>
+                    data-homepage-section-tab="<?php
+                        echo esc_attr(
+                            $section_key
+                        );
+                    ?>"
+                <?php endif; ?>
+            >
+                <span>
+                    <?php
+                    echo esc_html(
+                        $tab_definition['label']
+                    );
+                    ?>
+                </span>
+
+                <?php if ($section_key !== '') : ?>
+                    <span
+                        class="mpc-homepage-tabs__status"
+                        data-homepage-tab-status
+                        <?php
+                        if ($is_enabled) :
+                            ?>
+                            hidden
+                            <?php
+                        endif;
+                        ?>
+                    >
+                        <?php
+                        esc_html_e(
+                            'Off',
+                            'music-project-core'
+                        );
+                        ?>
+                    </span>
+                <?php endif; ?>
+            </button>
+        <?php endforeach; ?>
+    </div>
+
+    <div
+        class="mpc-theme-style-tabs__panels
+            mpc-homepage-tabs__panels"
+    >
+        <section
+            id="mpc-homepage-panel-overview"
+            class="mpc-theme-style-tabs__panel
+                mpc-homepage-tabs__panel"
+            role="tabpanel"
+            aria-labelledby="mpc-homepage-tab-overview"
+            tabindex="0"
+        >
+            <h2>
+                <?php
+                esc_html_e(
+                    'Homepage Sections',
+                    'music-project-core'
+                );
+                ?>
+            </h2>
+
+            <p>
+                <?php
+                esc_html_e(
+                    'Choose which sections appear on the homepage and arrange the order in which visitors see them.',
+                    'music-project-core'
+                );
+                ?>
+            </p>
 
         <div class="mpc-section-manager" data-moved-template="<?php echo esc_attr__(
         '%1$s moved to position %2$d of %3$d.',
@@ -2814,18 +3543,94 @@ mpc_admin_panel_open(
             </ul>
 
             <p class="screen-reader-text mpc-section-manager__status" aria-live="polite" aria-atomic="true"></p>
-        </div>
+</div>
 
-        <?php mpc_admin_panel_close(); ?>
-
-        <?php
-            mpc_admin_panel_open(
-                'hero',
-                __('Hero Section', 'music-project-core'),
-                __('Homepage hero content, media, layout, height, overlay, and positioning.', 'music-project-core'),
-                true
+<div class="mpc-homepage-presentation">
+    <div class="mpc-homepage-presentation__header">
+        <h3>
+            <?php
+            esc_html_e(
+                'Homepage Presentation',
+                'music-project-core'
             );
             ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Set shared presentation defaults for homepage sections. Individual sections can override these choices when needed.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </div>
+
+    <table
+        class="form-table"
+        role="presentation"
+    >
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_heading_font_role"
+                >
+                    <?php
+                    esc_html_e(
+                        'Section Heading Font',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_font_role_select(
+                    'mpc_homepage_heading_font_role',
+                    'mpc_homepage_settings[homepage_heading_font_role]',
+                    $settings[
+                        'homepage_heading_font_role'
+                    ] ?? 'heading',
+                    false
+                );
+                ?>
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Default typography role for primary homepage section headings. Individual sections can override this without changing the Theme Style font assignments.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </td>
+        </tr>
+    </table>
+</div>
+
+</section>
+
+<section
+    id="mpc-homepage-panel-hero"
+    class="mpc-theme-style-tabs__panel
+        mpc-homepage-tabs__panel"
+    role="tabpanel"
+    aria-labelledby="mpc-homepage-tab-hero"
+    tabindex="0"
+>
+    <h2>
+        <?php esc_html_e('Hero', 'music-project-core'); ?>
+    </h2>
+
+    <p>
+        <?php
+        esc_html_e(
+            'Homepage hero content, media, layout, height, overlay, and positioning.',
+            'music-project-core'
+        );
+        ?>
+    </p>
 
         <table class="form-table" role="presentation">
 
@@ -3143,16 +3948,207 @@ mpc_admin_panel_open(
                         value="<?php echo esc_url($settings['hero_cta_url']); ?>">
                 </td>
             </tr>
-        </table>
+</table>
+</section>
 
-        <?php mpc_admin_panel_close(); ?>
+<section
+    id="mpc-homepage-panel-featured-content"
+    class="mpc-theme-style-tabs__panel
+        mpc-homepage-tabs__panel"
+    role="tabpanel"
+    aria-labelledby="mpc-homepage-tab-featured-content"
+    tabindex="0"
+>
+    <h2>
         <?php
-mpc_admin_panel_open(
-    'featured-content',
-    __('Featured Content', 'music-project-core'),
-    __('Promo section for a release, video, announcement, or featured message.', 'music-project-core')
-);
-?>
+        esc_html_e(
+            'Featured Content',
+            'music-project-core'
+        );
+        ?>
+    </h2>
+
+    <p>
+        <?php
+        esc_html_e(
+            'Promo section for a release, video, announcement, or featured message.',
+            'music-project-core'
+        );
+        ?>
+    </p>
+
+    <div class="mpc-homepage-presentation">
+    <div class="mpc-homepage-presentation__header">
+        <h3>
+            <?php
+            esc_html_e(
+                'Presentation',
+                'music-project-core'
+            );
+            ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Control the main section heading and how Featured Content sits within the homepage color and typography system.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </div>
+
+    <table
+        class="form-table"
+        role="presentation"
+    >
+        <tr>
+            <th scope="row">
+                <label for="featured_heading">
+                    <?php
+                    esc_html_e(
+                        'Section Heading',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <input
+                    type="text"
+                    id="featured_heading"
+                    name="mpc_homepage_settings[featured_heading]"
+                    class="regular-text"
+                    value="<?php
+                    echo esc_attr(
+                        $settings[
+                            'featured_heading'
+                        ]
+                    );
+                    ?>"
+                >
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_featured_heading_size"
+                >
+                    <?php
+                    esc_html_e(
+                        'Heading Size',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_size_select(
+                    'mpc_homepage_featured_heading_size',
+                    'mpc_homepage_settings[featured_heading_size]',
+                    $settings[
+                        'featured_heading_size'
+                    ] ?? 'standard'
+                );
+                ?>
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Controls only the main Featured Content section heading.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_featured_heading_font_role"
+                >
+                    <?php
+                    esc_html_e(
+                        'Heading Font',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_font_role_select(
+                    'mpc_homepage_featured_heading_font_role',
+                    'mpc_homepage_settings[featured_heading_font_role]',
+                    $settings[
+                        'featured_heading_font_role'
+                    ] ?? 'default'
+                );
+                ?>
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Use the Homepage default or choose another Theme Style typography role for this section heading.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_featured_background"
+                >
+                    <?php
+                    esc_html_e(
+                        'Section Background',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_background_select(
+                    'mpc_homepage_featured_background',
+                    'mpc_homepage_settings[featured_background]',
+                    $settings[
+                        'featured_background'
+                    ] ?? 'default'
+                );
+                ?>
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Default uses the main site background. Surface uses the Theme Style surface color. Accent creates a stronger branded section treatment.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<h3 class="mpc-homepage-section-subheading">
+    <?php
+    esc_html_e(
+        'Featured Content',
+        'music-project-core'
+    );
+    ?>
+</h3>
 
         <table class="form-table" role="presentation">
 
@@ -3426,17 +4422,272 @@ mpc_admin_panel_open(
                     </p>
                 </td>
             </tr>
-        </table>
+</table>
+</section>
 
-        <?php mpc_admin_panel_close(); ?>
-
+<section
+    id="mpc-homepage-panel-services"
+    class="mpc-theme-style-tabs__panel
+        mpc-homepage-tabs__panel"
+    role="tabpanel"
+    aria-labelledby="mpc-homepage-tab-services"
+    tabindex="0"
+>
+    <h2>
         <?php
-mpc_admin_panel_open(
-    'services',
-    __('Services', 'music-project-core'),
-    __('Text-based service cards for weddings, sessions, lessons, packages, or offerings.', 'music-project-core')
-);
-?>
+        esc_html_e(
+            'Services',
+            'music-project-core'
+        );
+        ?>
+    </h2>
+
+    <p>
+        <?php
+        esc_html_e(
+            'Text-based service cards for weddings, sessions, lessons, packages, or offerings.',
+            'music-project-core'
+        );
+        ?>
+    </p>
+
+    <div class="mpc-homepage-presentation">
+    <div class="mpc-homepage-presentation__header">
+        <h3>
+            <?php
+            esc_html_e(
+                'Presentation',
+                'music-project-core'
+            );
+            ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Control the Services section heading and its relationship to the shared homepage design system.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </div>
+
+    <table
+        class="form-table"
+        role="presentation"
+    >
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_services_heading"
+                >
+                    <?php
+                    esc_html_e(
+                        'Section Heading',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <input
+                    type="text"
+                    id="mpc_homepage_services_heading"
+                    name="mpc_homepage_settings[services_heading]"
+                    value="<?php
+                    echo esc_attr(
+                        $settings[
+                            'services_heading'
+                        ] ?? __(
+                            'Services',
+                            'music-project-core'
+                        )
+                    );
+                    ?>"
+                    class="regular-text"
+                >
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_services_heading_size"
+                >
+                    <?php
+                    esc_html_e(
+                        'Heading Size',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_size_select(
+                    'mpc_homepage_services_heading_size',
+                    'mpc_homepage_settings[services_heading_size]',
+                    $settings[
+                        'services_heading_size'
+                    ] ?? 'standard'
+                );
+                ?>
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Controls only the main Services section heading.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_services_heading_font_role"
+                >
+                    <?php
+                    esc_html_e(
+                        'Heading Font',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_font_role_select(
+                    'mpc_homepage_services_heading_font_role',
+                    'mpc_homepage_settings[services_heading_font_role]',
+                    $settings[
+                        'services_heading_font_role'
+                    ] ?? 'default'
+                );
+                ?>
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Use the Homepage default or choose another Theme Style typography role for the Services section heading.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_services_background"
+                >
+                    <?php
+                    esc_html_e(
+                        'Section Background',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_background_select(
+                    'mpc_homepage_services_background',
+                    'mpc_homepage_settings[services_background]',
+                    $settings[
+                        'services_background'
+                    ] ?? 'default'
+                );
+                ?>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div class="mpc-homepage-presentation">
+    <div class="mpc-homepage-presentation__header">
+        <h3>
+            <?php
+            esc_html_e(
+                'Service Presentation',
+                'music-project-core'
+            );
+            ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Service cards normally follow the Services heading typography, but their titles can use another existing Theme Style font role when the design needs more contrast.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </div>
+
+    <table
+        class="form-table"
+        role="presentation"
+    >
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_services_card_heading_font_role"
+                >
+                    <?php
+                    esc_html_e(
+                        'Card Heading Font',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_font_role_select(
+                    'mpc_homepage_services_card_heading_font_role',
+                    'mpc_homepage_settings[services_card_heading_font_role]',
+                    $settings[
+                        'services_card_heading_font_role'
+                    ] ?? 'default',
+                    true,
+                    __(
+                        'Use Services Heading Font',
+                        'music-project-core'
+                    )
+                );
+                ?>
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Overrides only the individual service-card titles. Descriptions, links, and buttons keep their existing typography.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<h3 class="mpc-homepage-section-subheading">
+    <?php
+    esc_html_e(
+        'Services',
+        'music-project-core'
+    );
+    ?>
+</h3>
+
 
         <table class="form-table" role="presentation">
             <tr>
@@ -3451,30 +4702,7 @@ mpc_admin_panel_open(
                         class="regular-text">
                 </td>
             </tr>
-<tr>
-    <th scope="row">
-        <label for="mpc_homepage_services_heading_size">
-            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
-        </label>
-    </th>
-    <td>
-        <?php
-        mpc_render_homepage_size_select(
-            'mpc_homepage_services_heading_size',
-            'mpc_homepage_settings[services_heading_size]',
-            $settings['services_heading_size'] ?? 'standard'
-        );
-        ?>
-        <p class="description">
-            <?php
-            esc_html_e(
-                'Controls only the main Services section heading. Service-card titles are unchanged.',
-                'music-project-core'
-            );
-            ?>
-        </p>
-    </td>
-</tr>
+
             <tr>
                 <th scope="row">
                     <label for="mpc_homepage_services_intro">
@@ -3825,54 +5053,198 @@ $render_service_item = static function (
                         value="<?php echo esc_url($settings['services_cta_url'] ?? ''); ?>" class="regular-text">
                 </td>
             </tr>
-        </table>
+</table>
+</section>
 
-        <?php mpc_admin_panel_close(); ?>
+<section
+    id="mpc-homepage-panel-quotes"
+    class="mpc-theme-style-tabs__panel
+        mpc-homepage-tabs__panel"
+    role="tabpanel"
+    aria-labelledby="mpc-homepage-tab-quotes"
+    tabindex="0"
+>
+    <h2>
         <?php
-mpc_admin_panel_open(
-    'quotes',
-    __('Quotes / Testimonials', 'music-project-core'),
-    __('Standalone social proof section using saved quotes or testimonials.', 'music-project-core')
-);
-?>
-
-        <table class="form-table" role="presentation">
-            <tr>
-                <th scope="row">
-                    <label for="mpc_homepage_quotes_heading">
-                        <?php esc_html_e('Section Heading', 'music-project-core'); ?>
-                    </label>
-                </th>
-                <td>
-                    <input type="text" id="mpc_homepage_quotes_heading" name="mpc_homepage_settings[quotes_heading]"
-                        value="<?php echo esc_attr($settings['quotes_heading'] ?? __('Kind Words', 'music-project-core')); ?>"
-                        class="regular-text">
-                </td>
-            </tr>
-<tr>
-    <th scope="row">
-        <label for="mpc_homepage_quotes_heading_size">
-            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
-        </label>
-    </th>
-    <td>
-        <?php
-        mpc_render_homepage_size_select(
-            'mpc_homepage_quotes_heading_size',
-            'mpc_homepage_settings[quotes_heading_size]',
-            $settings['quotes_heading_size'] ?? 'standard'
+        esc_html_e(
+            'Quotes / Testimonials',
+            'music-project-core'
         );
         ?>
-        <p class="description">
+    </h2>
+
+    <p>
+        <?php
+        esc_html_e(
+            'Standalone social proof section using saved quotes or testimonials.',
+            'music-project-core'
+        );
+        ?>
+    </p>
+
+    <div class="mpc-homepage-presentation">
+    <div class="mpc-homepage-presentation__header">
+        <h3>
             <?php
             esc_html_e(
-                'Controls only the Quotes / Testimonials section heading.',
+                'Presentation',
+                'music-project-core'
+            );
+            ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Control the Quotes section heading and its shared homepage background treatment.',
                 'music-project-core'
             );
             ?>
         </p>
-    </td>
-</tr>
+    </div>
+
+    <table
+        class="form-table"
+        role="presentation"
+    >
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_quotes_heading"
+                >
+                    <?php
+                    esc_html_e(
+                        'Section Heading',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <input
+                    type="text"
+                    id="mpc_homepage_quotes_heading"
+                    name="mpc_homepage_settings[quotes_heading]"
+                    value="<?php
+                    echo esc_attr(
+                        $settings[
+                            'quotes_heading'
+                        ] ?? __(
+                            'Kind Words',
+                            'music-project-core'
+                        )
+                    );
+                    ?>"
+                    class="regular-text"
+                >
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_quotes_heading_size"
+                >
+                    <?php
+                    esc_html_e(
+                        'Heading Size',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_size_select(
+                    'mpc_homepage_quotes_heading_size',
+                    'mpc_homepage_settings[quotes_heading_size]',
+                    $settings[
+                        'quotes_heading_size'
+                    ] ?? 'standard'
+                );
+                ?>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_quotes_heading_font_role"
+                >
+                    <?php
+                    esc_html_e(
+                        'Heading Font',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_font_role_select(
+                    'mpc_homepage_quotes_heading_font_role',
+                    'mpc_homepage_settings[quotes_heading_font_role]',
+                    $settings[
+                        'quotes_heading_font_role'
+                    ] ?? 'default'
+                );
+                ?>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_quotes_background"
+                >
+                    <?php
+                    esc_html_e(
+                        'Section Background',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_background_select(
+                    'mpc_homepage_quotes_background',
+                    'mpc_homepage_settings[quotes_background]',
+                    $settings[
+                        'quotes_background'
+                    ] ?? 'surface'
+                );
+                ?>
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Quotes uses the same Default, Surface, and Accent background language as other homepage sections.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<h3 class="mpc-homepage-section-subheading">
+    <?php
+    esc_html_e(
+        'Quote Settings',
+        'music-project-core'
+    );
+    ?>
+</h3>
+
+
+        <table class="form-table" role="presentation">
+
             <tr>
                 <th scope="row">
                     <label for="mpc_homepage_quotes_intro">
@@ -4014,84 +5386,260 @@ mpc_admin_panel_open(
                 </td>
             </tr>
 
-            <tr>
-                <th scope="row">
-                    <label for="mpc_homepage_quotes_background_tone">
-                        <?php esc_html_e('Background Tone', 'music-project-core'); ?>
-                    </label>
-                </th>
-                <td>
-                    <select id="mpc_homepage_quotes_background_tone"
-                        name="mpc_homepage_settings[quotes_background_tone]">
-                        <option value="default"
-                            <?php selected($settings['quotes_background_tone'] ?? 'surface', 'default'); ?>>
-                            <?php esc_html_e('Default', 'music-project-core'); ?>
-                        </option>
-                        <option value="surface"
-                            <?php selected($settings['quotes_background_tone'] ?? 'surface', 'surface'); ?>>
-                            <?php esc_html_e('Surface', 'music-project-core'); ?>
-                        </option>
-                        <option value="contrast"
-                            <?php selected($settings['quotes_background_tone'] ?? 'surface', 'contrast'); ?>>
-                            <?php esc_html_e('Contrast', 'music-project-core'); ?>
-                        </option>
-                    </select>
 
-                    <p class="description">
-                        <?php esc_html_e('Use Contrast when you want the quotes section to visually stand apart from the surrounding homepage sections.', 'music-project-core'); ?>
-                    </p>
-                </td>
-            </tr>
-        </table>
+</table>
+</section>
 
-        <?php mpc_admin_panel_close(); ?>
-
+<section
+    id="mpc-homepage-panel-shows"
+    class="mpc-theme-style-tabs__panel
+        mpc-homepage-tabs__panel"
+    role="tabpanel"
+    aria-labelledby="mpc-homepage-tab-shows"
+    tabindex="0"
+>
+    <h2>
         <?php
-mpc_admin_panel_open(
-    'blog',
-    __('Blog / News', 'music-project-core'),
-    __('Recent posts, featured article layout, and homepage blog display settings.', 'music-project-core')
-);
-?>
-
-        <table class="form-table" role="presentation">
-
-
-            <tr>
-                <th scope="row">
-                    <label for="blog_heading">
-                        <?php esc_html_e('Section Heading', 'music-project-core'); ?>
-                    </label>
-                </th>
-                <td>
-                    <input type="text" id="blog_heading" name="mpc_homepage_settings[blog_heading]" class="regular-text"
-                        value="<?php echo esc_attr($settings['blog_heading']); ?>">
-                </td>
-            </tr>
-<tr>
-    <th scope="row">
-        <label for="mpc_homepage_blog_heading_size">
-            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
-        </label>
-    </th>
-    <td>
-        <?php
-        mpc_render_homepage_size_select(
-            'mpc_homepage_blog_heading_size',
-            'mpc_homepage_settings[blog_heading_size]',
-            $settings['blog_heading_size'] ?? 'standard'
+        esc_html_e(
+            'Shows',
+            'music-project-core'
         );
         ?>
-        <p class="description">
+    </h2>
+
+    <p>
+        <?php
+        esc_html_e(
+            'Shows is now represented as a normal Homepage section. Presentation controls will move here in the next steps.',
+            'music-project-core'
+        );
+        ?>
+    </p>
+
+    <div class="mpc-homepage-tabs__source-card">
+        <h3>
             <?php
             esc_html_e(
-                'Controls only the homepage Blog section heading. Post-preview titles are unchanged.',
+                'Current Content Source',
+                'music-project-core'
+            );
+            ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Shows content is currently supplied through Integrations. Provider or embed configuration will remain integration-owned.',
                 'music-project-core'
             );
             ?>
         </p>
-    </td>
-</tr>
+
+        <p>
+            <a
+                class="button button-secondary"
+                href="<?php
+                echo esc_url(
+                    admin_url(
+                        'admin.php?page=mpc-integrations'
+                    )
+                );
+                ?>"
+            >
+                <?php
+                esc_html_e(
+                    'Manage Shows Integration',
+                    'music-project-core'
+                );
+                ?>
+            </a>
+        </p>
+    </div>
+</section>
+
+<section
+    id="mpc-homepage-panel-blog"
+    class="mpc-theme-style-tabs__panel
+        mpc-homepage-tabs__panel"
+    role="tabpanel"
+    aria-labelledby="mpc-homepage-tab-blog"
+    tabindex="0"
+>
+    <h2>
+        <?php
+        esc_html_e(
+            'Blog / News',
+            'music-project-core'
+        );
+        ?>
+    </h2>
+
+    <p>
+        <?php
+        esc_html_e(
+            'Recent posts, featured article layout, and homepage blog display settings.',
+            'music-project-core'
+        );
+        ?>
+    </p>
+
+    <div class="mpc-homepage-presentation">
+    <div class="mpc-homepage-presentation__header">
+        <h3>
+            <?php
+            esc_html_e(
+                'Presentation',
+                'music-project-core'
+            );
+            ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Control the homepage Blog section heading and section background without changing individual post-preview typography.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+    </div>
+
+    <table
+        class="form-table"
+        role="presentation"
+    >
+        <tr>
+            <th scope="row">
+                <label for="blog_heading">
+                    <?php
+                    esc_html_e(
+                        'Section Heading',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <input
+                    type="text"
+                    id="blog_heading"
+                    name="mpc_homepage_settings[blog_heading]"
+                    class="regular-text"
+                    value="<?php
+                    echo esc_attr(
+                        $settings[
+                            'blog_heading'
+                        ]
+                    );
+                    ?>"
+                >
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_blog_heading_size"
+                >
+                    <?php
+                    esc_html_e(
+                        'Heading Size',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_size_select(
+                    'mpc_homepage_blog_heading_size',
+                    'mpc_homepage_settings[blog_heading_size]',
+                    $settings[
+                        'blog_heading_size'
+                    ] ?? 'standard'
+                );
+                ?>
+
+                <p class="description">
+                    <?php
+                    esc_html_e(
+                        'Controls only the homepage Blog section heading. Post-preview titles remain independent.',
+                        'music-project-core'
+                    );
+                    ?>
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_blog_heading_font_role"
+                >
+                    <?php
+                    esc_html_e(
+                        'Heading Font',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_font_role_select(
+                    'mpc_homepage_blog_heading_font_role',
+                    'mpc_homepage_settings[blog_heading_font_role]',
+                    $settings[
+                        'blog_heading_font_role'
+                    ] ?? 'default'
+                );
+                ?>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">
+                <label
+                    for="mpc_homepage_blog_background"
+                >
+                    <?php
+                    esc_html_e(
+                        'Section Background',
+                        'music-project-core'
+                    );
+                    ?>
+                </label>
+            </th>
+
+            <td>
+                <?php
+                mpc_render_homepage_background_select(
+                    'mpc_homepage_blog_background',
+                    'mpc_homepage_settings[blog_background]',
+                    $settings[
+                        'blog_background'
+                    ] ?? 'default'
+                );
+                ?>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<h3 class="mpc-homepage-section-subheading">
+    <?php
+    esc_html_e(
+        'Blog Content',
+        'music-project-core'
+    );
+    ?>
+</h3>
+
+        <table class="form-table" role="presentation">
+
             <tr>
                 <th scope="row">
                     <label for="mpc_homepage_blog_layout">
@@ -4289,11 +5837,80 @@ mpc_admin_panel_open(
                     </p>
                 </td>
             </tr>
-        </table>
+</table>
+</section>
 
-        <?php mpc_admin_panel_close(); ?>
+<section
+    id="mpc-homepage-panel-newsletter"
+    class="mpc-theme-style-tabs__panel
+        mpc-homepage-tabs__panel"
+    role="tabpanel"
+    aria-labelledby="mpc-homepage-tab-newsletter"
+    tabindex="0"
+>
+    <h2>
+        <?php
+        esc_html_e(
+            'Newsletter',
+            'music-project-core'
+        );
+        ?>
+    </h2>
 
-        <div class="mpc-sticky-submit">
+    <p>
+        <?php
+        esc_html_e(
+            'Newsletter is now represented as a normal Homepage section. Presentation controls will move here in the next steps.',
+            'music-project-core'
+        );
+        ?>
+    </p>
+
+    <div class="mpc-homepage-tabs__source-card">
+        <h3>
+            <?php
+            esc_html_e(
+                'Current Signup Source',
+                'music-project-core'
+            );
+            ?>
+        </h3>
+
+        <p>
+            <?php
+            esc_html_e(
+                'Newsletter signup content is currently supplied through Integrations. Provider, embed, or signup-source configuration will remain integration-owned.',
+                'music-project-core'
+            );
+            ?>
+        </p>
+
+        <p>
+            <a
+                class="button button-secondary"
+                href="<?php
+                echo esc_url(
+                    admin_url(
+                        'admin.php?page=mpc-integrations'
+                    )
+                );
+                ?>"
+            >
+                <?php
+                esc_html_e(
+                    'Manage Newsletter Integration',
+                    'music-project-core'
+                );
+                ?>
+            </a>
+        </p>
+    </div>
+</section>
+
+    </div>
+</div>
+
+<div class="mpc-sticky-submit">
             <div class="mpc-sticky-submit__inner">
                 <?php
                     submit_button(
