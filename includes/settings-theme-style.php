@@ -9,12 +9,13 @@ if (!defined('ABSPATH')) {
  */
 function mpc_get_theme_style_defaults() {
     return [
-        // Foundation colors.
-        'color_background' => '#111111',
-        'color_surface'    => '#101010',
-        'color_text'       => '#f5f5f5',
-        'color_heading'    => '#f5f5f5',
-        'color_muted'      => '#b8b8b8',
+// Foundation colors.
+'color_background'     => '#111111',
+'color_alt_background' => '#1a1a1a',
+'color_surface'        => '#101010',
+'color_text'           => '#f5f5f5',
+'color_heading'        => '#f5f5f5',
+'color_muted'          => '#b8b8b8',
 
         // Brand and interaction colors.
         'color_accent'            => '#ffffff',
@@ -355,6 +356,7 @@ function mpc_sanitize_theme_style_settings($input) {
 // Core semantic palette colors.
 $color_fields = [
     'color_background',
+    'color_alt_background',
     'color_surface',
     'color_text',
     'color_heading',
@@ -1396,6 +1398,7 @@ function mpc_render_theme_style_settings_page() {
         data-theme-color-preview
         style="
             --mpc-preview-background: <?php echo esc_attr($settings['color_background']); ?>;
+            --mpc-preview-alt-background: <?php echo esc_attr($settings['color_alt_background']); ?>;
             --mpc-preview-surface: <?php echo esc_attr($settings['color_surface']); ?>;
             --mpc-preview-text: <?php echo esc_attr($settings['color_text']); ?>;
             --mpc-preview-heading: <?php echo esc_attr($settings['color_heading']); ?>;
@@ -1439,6 +1442,14 @@ function mpc_render_theme_style_settings_page() {
                     data-preview-swatch="background"
                 ></span>
                 <span><?php esc_html_e('Background', 'music-project-core'); ?></span>
+            </div>
+
+            <div class="mpc-color-preview__swatch">
+                <span
+                    class="mpc-color-preview__chip"
+                    data-preview-swatch="alternate"
+                ></span>
+                <span><?php esc_html_e('Alternate', 'music-project-core'); ?></span>
             </div>
 
             <div class="mpc-color-preview__swatch">
@@ -1510,6 +1521,52 @@ function mpc_render_theme_style_settings_page() {
             class="mpc-color-preview__canvas"
             aria-hidden="true"
         >
+        <div class="mpc-color-preview__alternate">
+    <span class="mpc-color-preview__accent">
+        <?php
+        esc_html_e(
+            'Alternate Section',
+            'music-project-core'
+        );
+        ?>
+    </span>
+
+    <h4>
+        <?php
+        esc_html_e(
+            'Sample Section Heading',
+            'music-project-core'
+        );
+        ?>
+    </h4>
+
+    <p>
+        <?php
+        esc_html_e(
+            'Normal body copy remains controlled by the site palette, including a',
+            'music-project-core'
+        );
+        ?>
+
+        <span class="mpc-color-preview__link">
+            <?php
+            esc_html_e(
+                'sample link',
+                'music-project-core'
+            );
+            ?>
+        </span>.
+    </p>
+
+    <p class="mpc-color-preview__muted">
+        <?php
+        esc_html_e(
+            'Muted supporting information',
+            'music-project-core'
+        );
+        ?>
+    </p>
+</div>
             <div class="mpc-color-preview__surface">
                 <span class="mpc-color-preview__accent">
                     <?php esc_html_e('Accent Detail', 'music-project-core'); ?>
@@ -1586,6 +1643,16 @@ function mpc_render_theme_style_settings_page() {
                     'music-project-core'
                 )
             );
+
+            mpc_render_theme_style_color_field(
+    $settings,
+    'color_alt_background',
+    __('Alternate Background Color', 'music-project-core'),
+    __(
+        'Used for optional full-width contrasting sections, such as alternating homepage bands. Choose a color that remains readable with the site Heading, Text, Muted Text, and Link colors.',
+        'music-project-core'
+    )
+);
 
             mpc_render_theme_style_color_field(
                 $settings,

@@ -1816,6 +1816,8 @@ function initThemeStyleColorPreview() {
     const variableMap = {
         color_background:
             '--mpc-preview-background',
+        color_alt_background:
+            '--mpc-preview-alt-background',
         color_surface:
             '--mpc-preview-surface',
         color_text:

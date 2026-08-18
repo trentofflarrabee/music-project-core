@@ -470,12 +470,12 @@ function mpc_get_homepage_background_options() {
             'Default',
             'music-project-core'
         ),
-        'surface' => __(
-            'Surface',
+        'alternate' => __(
+            'Alternate',
             'music-project-core'
         ),
-        'accent' => __(
-            'Accent',
+        'surface' => __(
+            'Surface',
             'music-project-core'
         ),
     ];
@@ -875,11 +875,11 @@ if (
         )
         : 'surface';
 
-    $legacy_quotes_background_map = [
-        'default'  => 'default',
-        'surface'  => 'surface',
-        'contrast' => 'accent',
-    ];
+$legacy_quotes_background_map = [
+    'default'  => 'default',
+    'surface'  => 'surface',
+    'contrast' => 'alternate',
+];
 
     $saved['quotes_background'] = isset(
         $legacy_quotes_background_map[
@@ -1718,7 +1718,7 @@ $output['quotes_show_attribution'] = isset(
 /*
  * Homepage Section Presentation v2.
  *
- * quotes_background is now canonical. Keep the legacy
+ * quotes_background is canonical. Keep the legacy
  * quotes_background_tone mirror synchronized until Base
  * finishes its shared background cutover.
  */
@@ -1758,7 +1758,7 @@ if (
     $legacy_to_canonical = [
         'default'  => 'default',
         'surface'  => 'surface',
-        'contrast' => 'accent',
+        'contrast' => 'alternate',
     ];
 
     $quotes_background = isset(
@@ -1778,10 +1778,16 @@ $output['quotes_background'] =
         $defaults['quotes_background']
     );
 
+/*
+ * Temporary legacy mirror for the current Base Quotes
+ * presentation. "alternate" continues to render through
+ * the previous "contrast" treatment until the shared Base
+ * section-background system replaces it.
+ */
 $canonical_to_legacy = [
-    'default' => 'default',
-    'surface' => 'surface',
-    'accent'  => 'contrast',
+    'default'   => 'default',
+    'surface'   => 'surface',
+    'alternate' => 'contrast',
 ];
 
 $output['quotes_background_tone'] =
@@ -1789,70 +1795,7 @@ $output['quotes_background_tone'] =
         $output['quotes_background']
     ] ?? 'surface';
 
-$quotes_background_tone = (
-    isset($input['quotes_background_tone'])
-    && is_scalar(
-        $input['quotes_background_tone']
-    )
-)
-    ? sanitize_key(
-        (string) $input[
-            'quotes_background_tone'
-        ]
-    )
-    : $defaults['quotes_background_tone'];
-
-$output['quotes_background_tone'] = in_array(
-    $quotes_background_tone,
-    $allowed_quotes_background_tones,
-    true
-)
-    ? $quotes_background_tone
-    : $defaults['quotes_background_tone'];
-
-/*
- * Section Presentation v2 canonical background.
- *
- * Until the new Homepage UI replaces the old Quotes control,
- * continue accepting quotes_background_tone from the existing form.
- */
-if (
-    array_key_exists(
-        'quotes_background',
-        $input
-    )
-) {
-    $quotes_background =
-        $input['quotes_background'];
-} else {
-    $legacy_quotes_background_map = [
-        'default'  => 'default',
-        'surface'  => 'surface',
-        'contrast' => 'accent',
-    ];
-
-    $legacy_quotes_background =
-        $output['quotes_background_tone'];
-
-    $quotes_background = isset(
-        $legacy_quotes_background_map[
-            $legacy_quotes_background
-        ]
-    )
-        ? $legacy_quotes_background_map[
-            $legacy_quotes_background
-        ]
-        : $defaults['quotes_background'];
-}
-
-$output['quotes_background'] =
-    mpc_normalize_homepage_background(
-        $quotes_background,
-        $defaults['quotes_background']
-    );
-
-
-    // Blog.
+// Blog.
 
 /*
  * Legacy mirror retained for backward compatibility.
@@ -4131,8 +4074,7 @@ $homepage_tabs = [
                 <p class="description">
                     <?php
                     esc_html_e(
-                        'Default uses the main site background. Surface uses the Theme Style surface color. Accent creates a stronger branded section treatment.',
-                        'music-project-core'
+            'Default uses the main site background. Alternate uses the Theme Style Alternate Background color for alternating section bands. Surface uses the Theme Style Surface / Card color.',                        'music-project-core'
                     );
                     ?>
                 </p>
@@ -5223,7 +5165,7 @@ $render_service_item = static function (
                 <p class="description">
                     <?php
                     esc_html_e(
-                        'Quotes uses the same Default, Surface, and Accent background language as other homepage sections.',
+'Quotes uses the same Default, Alternate, and Surface background language as other homepage sections.',
                         'music-project-core'
                     );
                     ?>
