@@ -10,18 +10,20 @@ if (!defined('ABSPATH')) {
 function mpc_get_integrations_defaults() {
     return [
         'shows_enabled' => 1,
-        'shows_heading' => __(
-            'Shows',
-            'music-project-core'
-        ),
-        'shows_embed' => '',
+'shows_heading' => __(
+    'Shows',
+    'music-project-core'
+),
+'shows_heading_size' => 'standard',
+'shows_embed' => '',
 
         'newsletter_enabled' => 1,
-        'newsletter_heading' => __(
-            'Newsletter',
-            'music-project-core'
-        ),
-        'newsletter_text' => __(
+'newsletter_heading' => __(
+    'Newsletter',
+    'music-project-core'
+),
+'newsletter_heading_size' => 'standard',
+'newsletter_text' => __(
             'Sign up for updates.',
             'music-project-core'
         ),
@@ -170,6 +172,13 @@ function mpc_get_integrations_settings() {
         )
         : $defaults['shows_heading'];
 
+        $settings['shows_heading_size'] =
+    mpc_normalize_homepage_size(
+        $saved['shows_heading_size']
+            ?? $defaults['shows_heading_size'],
+        $defaults['shows_heading_size']
+    );
+
     /*
      * Preserve trusted saved markup exactly. Non-string malformed values
      * safely fall back to an empty embed.
@@ -193,6 +202,13 @@ function mpc_get_integrations_settings() {
             ]
         )
         : $defaults['newsletter_heading'];
+
+        $settings['newsletter_heading_size'] =
+    mpc_normalize_homepage_size(
+        $saved['newsletter_heading_size']
+            ?? $defaults['newsletter_heading_size'],
+        $defaults['newsletter_heading_size']
+    );
 
     $settings['newsletter_text'] = (
         isset($saved['newsletter_text'])
@@ -529,6 +545,13 @@ function mpc_sanitize_integrations_settings($input) {
         )
         : $defaults['shows_heading'];
 
+        $output['shows_heading_size'] =
+    mpc_normalize_homepage_size(
+        $input['shows_heading_size']
+            ?? $defaults['shows_heading_size'],
+        $defaults['shows_heading_size']
+    );
+
     $output['shows_embed'] = (
         isset($input['shows_embed'])
         && is_string($input['shows_embed'])
@@ -550,6 +573,13 @@ function mpc_sanitize_integrations_settings($input) {
             ]
         )
         : $defaults['newsletter_heading'];
+
+        $output['newsletter_heading_size'] =
+    mpc_normalize_homepage_size(
+        $input['newsletter_heading_size']
+            ?? $defaults['newsletter_heading_size'],
+        $defaults['newsletter_heading_size']
+    );
 
     $output['newsletter_text'] = (
         isset($input['newsletter_text'])

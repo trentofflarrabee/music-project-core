@@ -324,6 +324,82 @@ function mpc_get_services_item_limit() {
 }
 
 /**
+ * Get the curated homepage typography size presets.
+ *
+ * @return array
+ */
+function mpc_get_homepage_size_options() {
+    return [
+        'compact'  => __('Compact', 'music-project-core'),
+        'standard' => __('Standard', 'music-project-core'),
+        'large'    => __('Large', 'music-project-core'),
+    ];
+}
+
+/**
+ * Normalize a homepage typography size preset.
+ *
+ * @param mixed  $value   Submitted value.
+ * @param string $default Fallback size.
+ * @return string
+ */
+function mpc_normalize_homepage_size(
+    $value,
+    $default = 'standard'
+) {
+    $allowed = array_keys(
+        mpc_get_homepage_size_options()
+    );
+
+    $default = sanitize_key(
+        (string) $default
+    );
+
+    if (!in_array($default, $allowed, true)) {
+        $default = 'standard';
+    }
+
+    if (!is_scalar($value)) {
+        return $default;
+    }
+
+    $value = sanitize_key(
+        (string) $value
+    );
+
+    return in_array($value, $allowed, true)
+        ? $value
+        : $default;
+}
+
+/**
+ * Sanitize an optional homepage presentation color.
+ *
+ * An empty value intentionally means "inherit the current
+ * theme presentation".
+ *
+ * @param mixed $value Submitted color.
+ * @return string
+ */
+function mpc_sanitize_homepage_optional_color($value) {
+    if (!is_scalar($value)) {
+        return '';
+    }
+
+    $value = trim((string) $value);
+
+    if ($value === '') {
+        return '';
+    }
+
+    $color = sanitize_hex_color($value);
+
+    return is_string($color)
+        ? $color
+        : '';
+}
+
+/**
  * Default homepage settings.
  */
 function mpc_get_homepage_defaults() {
@@ -367,6 +443,7 @@ function mpc_get_homepage_defaults() {
             'Latest Release',
             'music-project-core'
         ),
+        'featured_heading_size' => 'standard',
         'featured_title' => '',
         'featured_text' => '',
         'featured_image_id' => 0,
@@ -375,11 +452,14 @@ function mpc_get_homepage_defaults() {
         'featured_show_quote' => 0,
         'featured_layout' => 'split_card',
         'featured_quote_position' => 'hidden',
+        'featured_quote_size'  => 'standard',
+        'featured_quote_color' => '',
         'featured_media_type' => 'image',
         'featured_video_url' => '',
 
         // Services.
         'services_heading' => __('Services', 'music-project-core'),
+        'services_heading_size' => 'standard',
         'services_intro' => '',
         'services_layout' => 'grid',
         'services_columns' => '3',
@@ -389,12 +469,15 @@ function mpc_get_homepage_defaults() {
 
         // Quotes / Testimonials.
         'quotes_heading' => __('Kind Words', 'music-project-core'),
+        'quotes_heading_size' => 'standard',
         'quotes_intro' => '',
         'quotes_layout' => 'grid',
         'quotes_count' => 3,
         'quotes_featured_only' => 1,
         'quotes_background_tone' => 'surface',
         'quotes_show_attribution' => 1,
+        'quotes_text_size'  => 'standard',
+        'quotes_text_color' => '',
 
         // Blog.
         'blog_enabled' => 1,
@@ -402,6 +485,7 @@ function mpc_get_homepage_defaults() {
             'Blog',
             'music-project-core'
         ),
+        'blog_heading_size' => 'standard',
         'blog_layout' => 'grid',
         'blog_featured_source' => 'latest',
         'blog_featured_post_id' => 0,
@@ -961,6 +1045,13 @@ $output['featured_heading'] = (
     )
     : $defaults['featured_heading'];
 
+    $output['featured_heading_size'] =
+    mpc_normalize_homepage_size(
+        $input['featured_heading_size']
+            ?? $defaults['featured_heading_size'],
+        $defaults['featured_heading_size']
+    );
+
 $output['featured_label'] = (
     isset($input['featured_label'])
     && is_scalar($input['featured_label'])
@@ -1077,6 +1168,21 @@ $output['featured_show_quote'] = (
     ? 0
     : 1;
 
+
+    $output['featured_quote_size'] =
+    mpc_normalize_homepage_size(
+        $input['featured_quote_size']
+            ?? $defaults['featured_quote_size'],
+        $defaults['featured_quote_size']
+    );
+
+$output['featured_quote_color'] =
+    mpc_sanitize_homepage_optional_color(
+        $input['featured_quote_color']
+            ?? ''
+    );
+
+
 $allowed_featured_media_types = [
     'image',
     'video',
@@ -1116,6 +1222,26 @@ $output['quotes_heading'] = (
         (string) $input['quotes_heading']
     )
     : $defaults['quotes_heading'];
+
+    $output['quotes_heading_size'] =
+    mpc_normalize_homepage_size(
+        $input['quotes_heading_size']
+            ?? $defaults['quotes_heading_size'],
+        $defaults['quotes_heading_size']
+    );
+
+$output['quotes_text_size'] =
+    mpc_normalize_homepage_size(
+        $input['quotes_text_size']
+            ?? $defaults['quotes_text_size'],
+        $defaults['quotes_text_size']
+    );
+
+$output['quotes_text_color'] =
+    mpc_sanitize_homepage_optional_color(
+        $input['quotes_text_color']
+            ?? ''
+    );
 
 $output['quotes_intro'] = (
     isset($input['quotes_intro'])
@@ -1224,6 +1350,13 @@ $output['blog_heading'] = (
         (string) $input['blog_heading']
     )
     : $defaults['blog_heading'];
+
+    $output['blog_heading_size'] =
+    mpc_normalize_homepage_size(
+        $input['blog_heading_size']
+            ?? $defaults['blog_heading_size'],
+        $defaults['blog_heading_size']
+    );
 
 $allowed_blog_layouts = [
     'grid',
@@ -1399,6 +1532,13 @@ $output['services_heading'] = (
         (string) $input['services_heading']
     )
     : $defaults['services_heading'];
+
+    $output['services_heading_size'] =
+    mpc_normalize_homepage_size(
+        $input['services_heading_size']
+            ?? $defaults['services_heading_size'],
+        $defaults['services_heading_size']
+    );
 
 $output['services_intro'] = (
     isset($input['services_intro'])
