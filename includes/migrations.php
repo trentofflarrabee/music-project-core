@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
  */
 function mpc_get_current_schema_versions() {
     return [
-        'homepage'   => 1,
+        'homepage'   => 2,
         'theme_style' => 1,
         'link_hub'    => 1,
     ];
@@ -361,6 +361,231 @@ function mpc_migrate_homepage_schema_1() {
 }
 
 /**
+ * Migrate Homepage settings to schema version 2.
+ *
+ * Version 2 moves Shows and Newsletter presentation
+ * settings out of Integrations and into Homepage.
+ *
+ * Integration embeds remain Integration-owned.
+ *
+ * @return void
+ */
+function mpc_migrate_homepage_schema_2() {
+    $original_homepage = get_option(
+        'mpc_homepage_settings',
+        []
+    );
+
+    $original_integrations = get_option(
+        'mpc_integrations_settings',
+        []
+    );
+
+    $homepage = is_array(
+        $original_homepage
+    )
+        ? $original_homepage
+        : [];
+
+    $integrations = is_array(
+        $original_integrations
+    )
+        ? $original_integrations
+        : [];
+
+    $homepage_defaults =
+        function_exists(
+            'mpc_get_homepage_defaults'
+        )
+            ? mpc_get_homepage_defaults()
+            : [];
+
+    /*
+     * Preserve an already-saved Homepage value.
+     * Only migrate the Integration value when the new
+     * canonical Homepage key does not yet exist.
+     */
+    if (
+        !array_key_exists(
+            'shows_heading',
+            $homepage
+        )
+        && array_key_exists(
+            'shows_heading',
+            $integrations
+        )
+        && is_scalar(
+            $integrations['shows_heading']
+        )
+    ) {
+        $homepage['shows_heading'] =
+            sanitize_text_field(
+                (string) $integrations[
+                    'shows_heading'
+                ]
+            );
+    }
+
+    if (
+        !array_key_exists(
+            'shows_heading_size',
+            $homepage
+        )
+        && array_key_exists(
+            'shows_heading_size',
+            $integrations
+        )
+    ) {
+        $homepage['shows_heading_size'] =
+            function_exists(
+                'mpc_normalize_homepage_size'
+            )
+                ? mpc_normalize_homepage_size(
+                    $integrations[
+                        'shows_heading_size'
+                    ],
+                    'standard'
+                )
+                : 'standard';
+    }
+
+    if (
+        !array_key_exists(
+            'newsletter_heading',
+            $homepage
+        )
+        && array_key_exists(
+            'newsletter_heading',
+            $integrations
+        )
+        && is_scalar(
+            $integrations[
+                'newsletter_heading'
+            ]
+        )
+    ) {
+        $homepage['newsletter_heading'] =
+            sanitize_text_field(
+                (string) $integrations[
+                    'newsletter_heading'
+                ]
+            );
+    }
+
+    if (
+        !array_key_exists(
+            'newsletter_heading_size',
+            $homepage
+        )
+        && array_key_exists(
+            'newsletter_heading_size',
+            $integrations
+        )
+    ) {
+        $homepage[
+            'newsletter_heading_size'
+        ] = function_exists(
+            'mpc_normalize_homepage_size'
+        )
+            ? mpc_normalize_homepage_size(
+                $integrations[
+                    'newsletter_heading_size'
+                ],
+                'standard'
+            )
+            : 'standard';
+    }
+
+    if (
+        !array_key_exists(
+            'newsletter_text',
+            $homepage
+        )
+        && array_key_exists(
+            'newsletter_text',
+            $integrations
+        )
+        && is_scalar(
+            $integrations[
+                'newsletter_text'
+            ]
+        )
+    ) {
+        $homepage['newsletter_text'] =
+            sanitize_textarea_field(
+                (string) $integrations[
+                    'newsletter_text'
+                ]
+            );
+    }
+
+    /*
+     * Establish missing v2 presentation values only when
+     * Homepage already exists. Brand-new installations
+     * continue to receive them through normal defaults.
+     */
+    foreach (
+        [
+            'shows_heading_font_role',
+            'shows_background',
+            'newsletter_heading_font_role',
+            'newsletter_background',
+        ]
+        as $key
+    ) {
+        if (
+            !array_key_exists($key, $homepage)
+            && array_key_exists(
+                $key,
+                $homepage_defaults
+            )
+        ) {
+            $homepage[$key] =
+                $homepage_defaults[$key];
+        }
+    }
+
+    /*
+     * These presentation values are now Homepage-owned.
+     * Embeds and visibility compatibility mirrors stay
+     * inside Integration settings.
+     */
+    foreach (
+        [
+            'shows_heading',
+            'shows_heading_size',
+            'newsletter_heading',
+            'newsletter_heading_size',
+            'newsletter_text',
+        ]
+        as $legacy_key
+    ) {
+        unset(
+            $integrations[$legacy_key]
+        );
+    }
+
+    if (
+        $homepage !== $original_homepage
+    ) {
+        update_option(
+            'mpc_homepage_settings',
+            $homepage
+        );
+    }
+
+    if (
+        $integrations
+        !== $original_integrations
+    ) {
+        update_option(
+            'mpc_integrations_settings',
+            $integrations
+        );
+    }
+}
+
+/**
  * Migrate Theme Style settings to schema version 1.
  *
  * Version 1 establishes a complete saved settings shape without deleting
@@ -565,31 +790,27 @@ function mpc_run_schema_migrations(
     $stored = mpc_get_stored_schema_versions();
     $changed = false;
 
-    $homepage_version = isset($stored['homepage'])
-        ? absint($stored['homepage'])
+    $homepage_version = isset(
+        $stored['homepage']
+    )
+        ? absint(
+            $stored['homepage']
+        )
         : 0;
 
-    if (
-        $homepage_version
-        < $current['homepage']
-    ) {
+    if ($homepage_version < 1) {
         mpc_migrate_homepage_schema_1();
 
+        $homepage_version = 1;
         $stored['homepage'] = 1;
         $changed = true;
     }
 
-    $theme_style_version = isset($stored['theme_style'])
-        ? absint($stored['theme_style'])
-        : 0;
+    if ($homepage_version < 2) {
+        mpc_migrate_homepage_schema_2();
 
-    if (
-        $theme_style_version
-        < $current['theme_style']
-    ) {
-        mpc_migrate_theme_style_schema_1();
-
-        $stored['theme_style'] = 1;
+        $homepage_version = 2;
+        $stored['homepage'] = 2;
         $changed = true;
     }
 

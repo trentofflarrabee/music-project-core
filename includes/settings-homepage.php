@@ -796,6 +796,15 @@ function mpc_get_homepage_defaults() {
         'quotes_text_size'  => 'standard',
         'quotes_text_color' => '',
 
+                // Shows.
+        'shows_heading' => __(
+            'Shows',
+            'music-project-core'
+        ),
+        'shows_heading_size' => 'standard',
+        'shows_heading_font_role' => 'default',
+        'shows_background' => 'default',
+
         // Blog.
         'blog_enabled' => 1,
         'blog_heading' => __(
@@ -822,6 +831,18 @@ function mpc_get_homepage_defaults() {
             'music-project-core'
         ),
         'blog_view_all_url' => '',
+                // Newsletter.
+        'newsletter_heading' => __(
+            'Newsletter',
+            'music-project-core'
+        ),
+        'newsletter_heading_size' => 'standard',
+        'newsletter_heading_font_role' => 'default',
+        'newsletter_background' => 'default',
+        'newsletter_text' => __(
+            'Sign up for updates.',
+            'music-project-core'
+        ),
     ];
 }
 
@@ -1795,6 +1816,43 @@ $output['quotes_background_tone'] =
         $output['quotes_background']
     ] ?? 'surface';
 
+
+// Shows.
+$output['shows_heading'] = (
+    isset($input['shows_heading'])
+    && is_scalar($input['shows_heading'])
+)
+    ? sanitize_text_field(
+        (string) $input['shows_heading']
+    )
+    : $defaults['shows_heading'];
+
+$output['shows_heading_size'] =
+    mpc_normalize_homepage_size(
+        $input['shows_heading_size']
+            ?? $defaults['shows_heading_size'],
+        $defaults['shows_heading_size']
+    );
+
+$output['shows_heading_font_role'] =
+    mpc_normalize_homepage_font_role(
+        $input['shows_heading_font_role']
+            ?? $defaults[
+                'shows_heading_font_role'
+            ],
+        $defaults[
+            'shows_heading_font_role'
+        ],
+        true
+    );
+
+$output['shows_background'] =
+    mpc_normalize_homepage_background(
+        $input['shows_background']
+            ?? $defaults['shows_background'],
+        $defaults['shows_background']
+    );
+
 // Blog.
 
 /*
@@ -2007,6 +2065,68 @@ $output['blog_view_all_url'] = (
         ]
     )
     : $defaults['blog_view_all_url'];
+
+    // Newsletter.
+$output['newsletter_heading'] = (
+    isset($input['newsletter_heading'])
+    && is_scalar(
+        $input['newsletter_heading']
+    )
+)
+    ? sanitize_text_field(
+        (string) $input[
+            'newsletter_heading'
+        ]
+    )
+    : $defaults['newsletter_heading'];
+
+$output['newsletter_heading_size'] =
+    mpc_normalize_homepage_size(
+        $input['newsletter_heading_size']
+            ?? $defaults[
+                'newsletter_heading_size'
+            ],
+        $defaults[
+            'newsletter_heading_size'
+        ]
+    );
+
+$output['newsletter_heading_font_role'] =
+    mpc_normalize_homepage_font_role(
+        $input[
+            'newsletter_heading_font_role'
+        ] ?? $defaults[
+            'newsletter_heading_font_role'
+        ],
+        $defaults[
+            'newsletter_heading_font_role'
+        ],
+        true
+    );
+
+$output['newsletter_background'] =
+    mpc_normalize_homepage_background(
+        $input['newsletter_background']
+            ?? $defaults[
+                'newsletter_background'
+            ],
+        $defaults[
+            'newsletter_background'
+        ]
+    );
+
+$output['newsletter_text'] = (
+    isset($input['newsletter_text'])
+    && is_scalar(
+        $input['newsletter_text']
+    )
+)
+    ? sanitize_textarea_field(
+        (string) $input[
+            'newsletter_text'
+        ]
+    )
+    : $defaults['newsletter_text'];
 
 // Services.
 $output['services_heading'] = (
@@ -4094,44 +4214,6 @@ $homepage_tabs = [
 
         <table class="form-table" role="presentation">
 
-
-            <tr>
-                <th scope="row">
-                    <label for="featured_heading">
-                        <?php esc_html_e('Section Heading', 'music-project-core'); ?>
-                    </label>
-                </th>
-                <td>
-                    <input type="text" id="featured_heading" name="mpc_homepage_settings[featured_heading]"
-                        class="regular-text" value="<?php echo esc_attr($settings['featured_heading']); ?>">
-                </td>
-            </tr>
-
-            <tr>
-    <th scope="row">
-        <label for="mpc_homepage_featured_heading_size">
-            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
-        </label>
-    </th>
-    <td>
-        <?php
-        mpc_render_homepage_size_select(
-            'mpc_homepage_featured_heading_size',
-            'mpc_homepage_settings[featured_heading_size]',
-            $settings['featured_heading_size'] ?? 'standard'
-        );
-        ?>
-        <p class="description">
-            <?php
-            esc_html_e(
-                'Controls only the main Featured Content section heading.',
-                'music-project-core'
-            );
-            ?>
-        </p>
-    </td>
-</tr>
-
             <tr>
                 <th scope="row">
                     <label for="mpc_homepage_featured_layout">
@@ -4632,19 +4714,6 @@ $homepage_tabs = [
 
 
         <table class="form-table" role="presentation">
-            <tr>
-                <th scope="row">
-                    <label for="mpc_homepage_services_heading">
-                        <?php esc_html_e('Services Heading', 'music-project-core'); ?>
-                    </label>
-                </th>
-                <td>
-                    <input type="text" id="mpc_homepage_services_heading" name="mpc_homepage_settings[services_heading]"
-                        value="<?php echo esc_attr($settings['services_heading'] ?? __('Services', 'music-project-core')); ?>"
-                        class="regular-text">
-                </td>
-            </tr>
-
             <tr>
                 <th scope="row">
                     <label for="mpc_homepage_services_intro">
@@ -5352,17 +5421,151 @@ $render_service_item = static function (
     <p>
         <?php
         esc_html_e(
-            'Shows is now represented as a normal Homepage section. Presentation controls will move here in the next steps.',
+            'Control how the Shows section is presented on the homepage. The actual show source remains Integration-owned.',
             'music-project-core'
         );
         ?>
     </p>
 
+    <div class="mpc-homepage-presentation">
+        <div class="mpc-homepage-presentation__header">
+            <h3>
+                <?php
+                esc_html_e(
+                    'Presentation',
+                    'music-project-core'
+                );
+                ?>
+            </h3>
+
+            <p>
+                <?php
+                esc_html_e(
+                    'Control the Shows section heading, typography, and section background.',
+                    'music-project-core'
+                );
+                ?>
+            </p>
+        </div>
+
+        <table
+            class="form-table"
+            role="presentation"
+        >
+            <tr>
+                <th scope="row">
+                    <label for="mpc_homepage_shows_heading">
+                        <?php
+                        esc_html_e(
+                            'Section Heading',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+                </th>
+
+                <td>
+                    <input
+                        type="text"
+                        id="mpc_homepage_shows_heading"
+                        name="mpc_homepage_settings[shows_heading]"
+                        class="regular-text"
+                        value="<?php
+                        echo esc_attr(
+                            $settings[
+                                'shows_heading'
+                            ] ?? __(
+                                'Shows',
+                                'music-project-core'
+                            )
+                        );
+                        ?>"
+                    >
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_homepage_shows_heading_size">
+                        <?php
+                        esc_html_e(
+                            'Heading Size',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+                </th>
+
+                <td>
+                    <?php
+                    mpc_render_homepage_size_select(
+                        'mpc_homepage_shows_heading_size',
+                        'mpc_homepage_settings[shows_heading_size]',
+                        $settings[
+                            'shows_heading_size'
+                        ] ?? 'standard'
+                    );
+                    ?>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_homepage_shows_heading_font_role">
+                        <?php
+                        esc_html_e(
+                            'Heading Font',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+                </th>
+
+                <td>
+                    <?php
+                    mpc_render_homepage_font_role_select(
+                        'mpc_homepage_shows_heading_font_role',
+                        'mpc_homepage_settings[shows_heading_font_role]',
+                        $settings[
+                            'shows_heading_font_role'
+                        ] ?? 'default'
+                    );
+                    ?>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_homepage_shows_background">
+                        <?php
+                        esc_html_e(
+                            'Section Background',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+                </th>
+
+                <td>
+                    <?php
+                    mpc_render_homepage_background_select(
+                        'mpc_homepage_shows_background',
+                        'mpc_homepage_settings[shows_background]',
+                        $settings[
+                            'shows_background'
+                        ] ?? 'default'
+                    );
+                    ?>
+                </td>
+            </tr>
+        </table>
+    </div>
+
     <div class="mpc-homepage-tabs__source-card">
         <h3>
             <?php
             esc_html_e(
-                'Current Content Source',
+                'Content Source',
                 'music-project-core'
             );
             ?>
@@ -5371,7 +5574,7 @@ $render_service_item = static function (
         <p>
             <?php
             esc_html_e(
-                'Shows content is currently supplied through Integrations. Provider or embed configuration will remain integration-owned.',
+                'Shows content is currently supplied through Integrations. Future first-party Shows content can use this same Homepage presentation layer.',
                 'music-project-core'
             );
             ?>
@@ -5390,7 +5593,7 @@ $render_service_item = static function (
             >
                 <?php
                 esc_html_e(
-                    'Manage Shows Integration',
+                    'Manage Shows Source',
                     'music-project-core'
                 );
                 ?>
@@ -5802,17 +6005,188 @@ $render_service_item = static function (
     <p>
         <?php
         esc_html_e(
-            'Newsletter is now represented as a normal Homepage section. Presentation controls will move here in the next steps.',
+            'Control the Homepage Newsletter presentation and supporting copy. The signup source remains Integration-owned.',
             'music-project-core'
         );
         ?>
     </p>
 
+    <div class="mpc-homepage-presentation">
+        <div class="mpc-homepage-presentation__header">
+            <h3>
+                <?php
+                esc_html_e(
+                    'Presentation',
+                    'music-project-core'
+                );
+                ?>
+            </h3>
+
+            <p>
+                <?php
+                esc_html_e(
+                    'Control the Newsletter heading, typography, background, and supporting homepage text.',
+                    'music-project-core'
+                );
+                ?>
+            </p>
+        </div>
+
+        <table
+            class="form-table"
+            role="presentation"
+        >
+            <tr>
+                <th scope="row">
+                    <label for="mpc_homepage_newsletter_heading">
+                        <?php
+                        esc_html_e(
+                            'Section Heading',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+                </th>
+
+                <td>
+                    <input
+                        type="text"
+                        id="mpc_homepage_newsletter_heading"
+                        name="mpc_homepage_settings[newsletter_heading]"
+                        class="regular-text"
+                        value="<?php
+                        echo esc_attr(
+                            $settings[
+                                'newsletter_heading'
+                            ] ?? __(
+                                'Newsletter',
+                                'music-project-core'
+                            )
+                        );
+                        ?>"
+                    >
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_homepage_newsletter_heading_size">
+                        <?php
+                        esc_html_e(
+                            'Heading Size',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+                </th>
+
+                <td>
+                    <?php
+                    mpc_render_homepage_size_select(
+                        'mpc_homepage_newsletter_heading_size',
+                        'mpc_homepage_settings[newsletter_heading_size]',
+                        $settings[
+                            'newsletter_heading_size'
+                        ] ?? 'standard'
+                    );
+                    ?>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_homepage_newsletter_heading_font_role">
+                        <?php
+                        esc_html_e(
+                            'Heading Font',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+                </th>
+
+                <td>
+                    <?php
+                    mpc_render_homepage_font_role_select(
+                        'mpc_homepage_newsletter_heading_font_role',
+                        'mpc_homepage_settings[newsletter_heading_font_role]',
+                        $settings[
+                            'newsletter_heading_font_role'
+                        ] ?? 'default'
+                    );
+                    ?>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_homepage_newsletter_background">
+                        <?php
+                        esc_html_e(
+                            'Section Background',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+                </th>
+
+                <td>
+                    <?php
+                    mpc_render_homepage_background_select(
+                        'mpc_homepage_newsletter_background',
+                        'mpc_homepage_settings[newsletter_background]',
+                        $settings[
+                            'newsletter_background'
+                        ] ?? 'default'
+                    );
+                    ?>
+                </td>
+            </tr>
+
+            <tr>
+                <th scope="row">
+                    <label for="mpc_homepage_newsletter_text">
+                        <?php
+                        esc_html_e(
+                            'Supporting Text',
+                            'music-project-core'
+                        );
+                        ?>
+                    </label>
+                </th>
+
+                <td>
+                    <textarea
+                        id="mpc_homepage_newsletter_text"
+                        name="mpc_homepage_settings[newsletter_text]"
+                        class="large-text"
+                        rows="3"
+                    ><?php
+                    echo esc_textarea(
+                        $settings[
+                            'newsletter_text'
+                        ] ?? ''
+                    );
+                    ?></textarea>
+
+                    <p class="description">
+                        <?php
+                        esc_html_e(
+                            'Optional homepage copy shown with the signup source. Provider-specific form content remains configured under Integrations.',
+                            'music-project-core'
+                        );
+                        ?>
+                    </p>
+                </td>
+            </tr>
+        </table>
+    </div>
+
     <div class="mpc-homepage-tabs__source-card">
         <h3>
             <?php
             esc_html_e(
-                'Current Signup Source',
+                'Signup Source',
                 'music-project-core'
             );
             ?>
@@ -5821,7 +6195,7 @@ $render_service_item = static function (
         <p>
             <?php
             esc_html_e(
-                'Newsletter signup content is currently supplied through Integrations. Provider, embed, or signup-source configuration will remain integration-owned.',
+                'The actual signup form, shortcode, embed, or provider source is configured through Integrations.',
                 'music-project-core'
             );
             ?>
@@ -5840,7 +6214,7 @@ $render_service_item = static function (
             >
                 <?php
                 esc_html_e(
-                    'Manage Newsletter Integration',
+                    'Manage Newsletter Source',
                     'music-project-core'
                 );
                 ?>

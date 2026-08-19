@@ -9,24 +9,14 @@ if (!defined('ABSPATH')) {
  */
 function mpc_get_integrations_defaults() {
     return [
+        /*
+         * Visibility remains as a compatibility mirror.
+         * Homepage Section Manager is canonical.
+         */
         'shows_enabled' => 1,
-'shows_heading' => __(
-    'Shows',
-    'music-project-core'
-),
-'shows_heading_size' => 'standard',
-'shows_embed' => '',
+        'shows_embed' => '',
 
         'newsletter_enabled' => 1,
-'newsletter_heading' => __(
-    'Newsletter',
-    'music-project-core'
-),
-'newsletter_heading_size' => 'standard',
-'newsletter_text' => __(
-            'Sign up for updates.',
-            'music-project-core'
-        ),
         'newsletter_embed' => '',
     ];
 }
@@ -163,21 +153,7 @@ function mpc_get_integrations_settings() {
                 ];
     }
 
-    $settings['shows_heading'] = (
-        isset($saved['shows_heading'])
-        && is_scalar($saved['shows_heading'])
-    )
-        ? sanitize_text_field(
-            (string) $saved['shows_heading']
-        )
-        : $defaults['shows_heading'];
 
-        $settings['shows_heading_size'] =
-    mpc_normalize_homepage_size(
-        $saved['shows_heading_size']
-            ?? $defaults['shows_heading_size'],
-        $defaults['shows_heading_size']
-    );
 
     /*
      * Preserve trusted saved markup exactly. Non-string malformed values
@@ -189,35 +165,6 @@ function mpc_get_integrations_settings() {
     )
         ? $saved['shows_embed']
         : $defaults['shows_embed'];
-
-    $settings['newsletter_heading'] = (
-        isset($saved['newsletter_heading'])
-        && is_scalar(
-            $saved['newsletter_heading']
-        )
-    )
-        ? sanitize_text_field(
-            (string) $saved[
-                'newsletter_heading'
-            ]
-        )
-        : $defaults['newsletter_heading'];
-
-        $settings['newsletter_heading_size'] =
-    mpc_normalize_homepage_size(
-        $saved['newsletter_heading_size']
-            ?? $defaults['newsletter_heading_size'],
-        $defaults['newsletter_heading_size']
-    );
-
-    $settings['newsletter_text'] = (
-        isset($saved['newsletter_text'])
-        && is_scalar($saved['newsletter_text'])
-    )
-        ? sanitize_textarea_field(
-            (string) $saved['newsletter_text']
-        )
-        : $defaults['newsletter_text'];
 
     /*
      * Preserve trusted saved markup exactly. Non-string malformed values
@@ -259,6 +206,36 @@ function mpc_get_integration_setting($key, $default = '') {
             $legacy_visibility_keys[$key]
         ) ? 1 : 0;
     }
+
+    /*
+ * Compatibility bridge for Base versions that still ask
+ * Integrations for Homepage presentation settings.
+ *
+ * Homepage is now canonical for these values.
+ */
+$homepage_presentation_keys = [
+    'shows_heading',
+    'shows_heading_size',
+    'newsletter_heading',
+    'newsletter_heading_size',
+    'newsletter_text',
+];
+
+if (
+    in_array(
+        $key,
+        $homepage_presentation_keys,
+        true
+    )
+    && function_exists(
+        'mpc_get_homepage_setting'
+    )
+) {
+    return mpc_get_homepage_setting(
+        $key,
+        $default
+    );
+}
 
     $settings = mpc_get_integrations_settings();
 
@@ -536,21 +513,7 @@ function mpc_sanitize_integrations_settings($input) {
                 ];
     }
 
-    $output['shows_heading'] = (
-        isset($input['shows_heading'])
-        && is_scalar($input['shows_heading'])
-    )
-        ? sanitize_text_field(
-            (string) $input['shows_heading']
-        )
-        : $defaults['shows_heading'];
-
-        $output['shows_heading_size'] =
-    mpc_normalize_homepage_size(
-        $input['shows_heading_size']
-            ?? $defaults['shows_heading_size'],
-        $defaults['shows_heading_size']
-    );
+    
 
     $output['shows_embed'] = (
         isset($input['shows_embed'])
@@ -561,34 +524,6 @@ function mpc_sanitize_integrations_settings($input) {
         )
         : '';
 
-    $output['newsletter_heading'] = (
-        isset($input['newsletter_heading'])
-        && is_scalar(
-            $input['newsletter_heading']
-        )
-    )
-        ? sanitize_text_field(
-            (string) $input[
-                'newsletter_heading'
-            ]
-        )
-        : $defaults['newsletter_heading'];
-
-        $output['newsletter_heading_size'] =
-    mpc_normalize_homepage_size(
-        $input['newsletter_heading_size']
-            ?? $defaults['newsletter_heading_size'],
-        $defaults['newsletter_heading_size']
-    );
-
-    $output['newsletter_text'] = (
-        isset($input['newsletter_text'])
-        && is_scalar($input['newsletter_text'])
-    )
-        ? sanitize_textarea_field(
-            (string) $input['newsletter_text']
-        )
-        : $defaults['newsletter_text'];
 
     $output['newsletter_embed'] = (
         isset($input['newsletter_embed'])
@@ -659,6 +594,8 @@ function mpc_render_integrations_settings_page() {
         return;
     }
 
+
+
     $settings = mpc_get_integrations_settings();
     ?>
 
@@ -673,15 +610,14 @@ function mpc_render_integrations_settings_page() {
     );
     ?>
 </p>
-
-        <p>
-            <?php
-            esc_html_e(
-                'Homepage visibility is controlled under Music Project → Homepage → Section Manager.',
-                'music-project-core'
-            );
-            ?>
-        </p>
+<p>
+    <?php
+    esc_html_e(
+        'Homepage visibility, headings, typography, backgrounds, and supporting section copy are configured under Music Project → Homepage. Integrations owns only the external content or signup source.',
+        'music-project-core'
+    );
+    ?>
+</p>
 
         <form method="post" action="options.php">
             <?php settings_fields('mpc_integrations_settings_group'); ?>
@@ -690,45 +626,6 @@ function mpc_render_integrations_settings_page() {
 
             <table class="form-table" role="presentation">
 
-
-                <tr>
-                    <th scope="row">
-                        <label for="shows_heading"><?php esc_html_e('Shows Heading', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="shows_heading"
-                            name="mpc_integrations_settings[shows_heading]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['shows_heading']); ?>"
-                        >
-                    </td>
-                </tr>
-<tr>
-    <th scope="row">
-        <label for="shows_heading_size">
-            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
-        </label>
-    </th>
-    <td>
-        <?php
-        mpc_render_homepage_size_select(
-            'shows_heading_size',
-            'mpc_integrations_settings[shows_heading_size]',
-            $settings['shows_heading_size'] ?? 'standard'
-        );
-        ?>
-        <p class="description">
-            <?php
-            esc_html_e(
-                'Controls the main Shows heading when this section appears on the homepage.',
-                'music-project-core'
-            );
-            ?>
-        </p>
-    </td>
-</tr>
                 <tr>
                     <th scope="row">
                         <?php esc_html_e('Shows Shortcode / Embed', 'music-project-core'); ?>
@@ -747,59 +644,6 @@ function mpc_render_integrations_settings_page() {
             <h2><?php esc_html_e('Newsletter / Mailing List', 'music-project-core'); ?></h2>
 
             <table class="form-table" role="presentation">
-
-
-                <tr>
-                    <th scope="row">
-                        <label for="newsletter_heading"><?php esc_html_e('Newsletter Heading', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <input
-                            type="text"
-                            id="newsletter_heading"
-                            name="mpc_integrations_settings[newsletter_heading]"
-                            class="regular-text"
-                            value="<?php echo esc_attr($settings['newsletter_heading']); ?>"
-                        >
-                    </td>
-                </tr>
-<tr>
-    <th scope="row">
-        <label for="newsletter_heading_size">
-            <?php esc_html_e('Heading Size', 'music-project-core'); ?>
-        </label>
-    </th>
-    <td>
-        <?php
-        mpc_render_homepage_size_select(
-            'newsletter_heading_size',
-            'mpc_integrations_settings[newsletter_heading_size]',
-            $settings['newsletter_heading_size'] ?? 'standard'
-        );
-        ?>
-        <p class="description">
-            <?php
-            esc_html_e(
-                'Controls the main Newsletter heading when this section appears on the homepage.',
-                'music-project-core'
-            );
-            ?>
-        </p>
-    </td>
-</tr>
-                <tr>
-                    <th scope="row">
-                        <label for="newsletter_text"><?php esc_html_e('Newsletter Intro Text', 'music-project-core'); ?></label>
-                    </th>
-                    <td>
-                        <textarea
-                            id="newsletter_text"
-                            name="mpc_integrations_settings[newsletter_text]"
-                            class="large-text"
-                            rows="3"
-                        ><?php echo esc_textarea($settings['newsletter_text']); ?></textarea>
-                    </td>
-                </tr>
 
                 <tr>
                     <th scope="row">
