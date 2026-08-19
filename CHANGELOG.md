@@ -6,6 +6,42 @@ This project follows the Keep a Changelog structure and intends to use Semantic 
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-08-19
+
+### Added
+
+- Added Homepage Admin v2 with a tabbed workspace for Overview, Hero, Featured Content, Services, Quotes / Testimonials, Shows, Blog / News, and Newsletter.
+- Added a Homepage-wide semantic Section Heading Font role.
+- Added per-section heading-font overrides using existing Theme Style typography roles.
+- Added a dedicated Service Card Heading Font override.
+- Added shared Default, Alternate, and Surface background treatments for ordinary homepage sections.
+- Added a dedicated Alternate Background Color to the Theme Style Foundation palette.
+- Added Alternate Background representation to the live Theme Style color preview.
+- Added Homepage presentation controls for Shows and Newsletter.
+- Added Homepage schema migration version 2 for Shows and Newsletter presentation ownership.
+
+### Changed
+
+- Replaced top-level Homepage section accordions with an accessible tabbed administration interface.
+- Moved the Homepage section manager into a dedicated Overview tab.
+- Disabled homepage sections remain configurable and display an Off status in the tab interface.
+- Homepage section heading typography now inherits from a shared Homepage default unless explicitly overridden.
+- Service card headings can inherit the Services heading typography or use another existing Theme Style typography role.
+- Featured Content, Services, Quotes / Testimonials, Shows, Blog / News, and Newsletter now share the same section-background vocabulary.
+- Replaced the proposed Accent section-background role with a dedicated Alternate Background semantic role.
+- Migrated the legacy Quotes contrast-background concept to the shared Alternate Background role.
+- Shows heading, heading size, heading typography, and background presentation are now Homepage-owned.
+- Newsletter heading, heading size, heading typography, background, and supporting Homepage copy are now Homepage-owned.
+- Integrations now owns Shows and Newsletter source/embed mechanics rather than Homepage presentation.
+- Homepage and Theme Style tabs remember the active workspace during normal settings editing.
+
+### Security
+
+- Added strict allowlist normalization for Homepage semantic font roles.
+- Added strict allowlist normalization for Homepage section-background roles.
+- Alternate Background Color uses the existing sanitized Theme Style hex-color pipeline.
+- Shows and Newsletter presentation migration preserves normalized values while keeping provider/embed configuration Integration-owned.
+
 ## [1.4.0] - 2026-08-18
 
 ### Added

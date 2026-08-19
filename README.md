@@ -14,7 +14,7 @@ It is designed to pair with the **Music Project Base** theme.
 
 Music Project Core owns reusable site configuration and reusable content.
 
-The companion Music Project Base theme owns frontend templates, markup, responsive layout, accessibility presentation, animation, and visual styling.
+The companion Music Project Base theme owns frontend templates, markup, responsive layout, accessibility presentation, and visual styling.
 
 This separation allows important content and configuration to remain available when the active theme changes.
 
@@ -22,15 +22,18 @@ This separation allows important content and configuration to remain available w
 
 - Homepage configuration
 - Homepage section visibility and order
+- Homepage section presentation settings
 - Hero configuration
 - Featured Content configuration
 - Services configuration
 - Quotes / Testimonials
-- Integrations
+- Shows and Newsletter presentation settings
+- Integrations and external source configuration
 - Social Links
 - Theme Style
 - Footer configuration
 - Site Status
+- Page Title Presentation settings
 - Link Hub / Link in Bio configuration
 - Link Hub routing state
 - Link Hub sanitization and normalization
@@ -46,6 +49,7 @@ This separation allows important content and configuration to remain available w
 - Link Hub frontend markup
 - Link Hub layouts and styling
 - Blog and editorial templates
+- Page Title Presentation markup
 - Responsive behavior
 - Frontend JavaScript
 - Accessibility presentation
@@ -57,10 +61,11 @@ Themes and extensions should consume documented Core APIs rather than reading or
 
 # Features
 
-## Homepage Section Manager
+## Homepage Administration
 
-Control the visibility and order of these homepage sections:
+The Homepage screen uses a tabbed workspace for:
 
+- Overview
 - Hero
 - Featured Content
 - Services
@@ -69,15 +74,80 @@ Control the visibility and order of these homepage sections:
 - Blog / News
 - Newsletter
 
-Sections can be reordered through drag-and-drop or keyboard-accessible move controls.
+### Overview
+
+Overview controls homepage composition:
+
+- Section visibility
+- Section order
+- Drag-and-drop ordering
+- Keyboard-accessible move controls
+- Shared Homepage section-heading typography
+
+Disabled sections remain configurable through their tabs and display an **Off** status in the tab interface.
+
+### Shared section presentation
+
+Ordinary homepage sections can share a Homepage heading-font default while retaining curated per-section overrides.
+
+Supported ordinary sections are:
+
+- Featured Content
+- Services
+- Quotes / Testimonials
+- Shows
+- Blog / News
+- Newsletter
+
+Available shared presentation controls include:
+
+- Section Heading
+- Heading Size
+- Heading Font
+- Section Background
+
+Heading sizes use curated presets:
+
+- Compact
+- Standard
+- Large
+
+Heading font roles reuse the Theme Style typography system:
+
+- General Heading
+- Accent
+- Blog / Editorial
+- Body
+
+Available shared section backgrounds are:
+
+- Default
+- Alternate
+- Surface
+
+Hero remains intentionally outside the shared section-background and heading-role system.
 
 ## Hero
 
 Configure split or full-bleed layouts, responsive media, overlay treatment, content placement, heading, supporting text, calls to action, and Social Links.
 
+Hero retains dedicated typography and color controls because its content commonly appears over photography or video.
+
 ## Featured Content
 
 Create promotional sections for releases, videos, announcements, featured messages, images, supported video URLs, and optional embedded featured quotes.
+
+Featured Content supports:
+
+- Section heading
+- Heading size
+- Heading font role
+- Section background
+- Existing Featured layout controls
+- Featured quote size
+- Optional Featured quote color
+
+Featured quote styling remains separate from ordinary blog/editorial blockquotes.
 
 ## Services
 
@@ -90,17 +160,78 @@ Each service supports:
 - Link text
 - Link URL
 
+The Services section supports shared Homepage presentation controls plus an independent **Service Card Heading Font** option.
+
+Service card headings may:
+
+- Inherit the Services section heading font
+- Use General Heading
+- Use Accent
+- Use Blog / Editorial
+- Use Body
+
+Descriptions, links, and buttons retain their existing semantic typography.
+
 ## Quotes / Testimonials
 
-Quotes and testimonials are stored as reusable WordPress content and support featured status, attribution, source URLs, ordering, homepage counts, layout, and background tone.
+Quotes and testimonials are stored as reusable WordPress content and support:
+
+- Featured status
+- Attribution
+- Source URLs
+- Ordering
+- Homepage counts
+- Layout
+- Quote-size presentation
+- Optional quote-text color
+- Shared Homepage section backgrounds
+- Featured-first visual hierarchy
+
+The legacy Quotes background-tone model has been folded into the shared Homepage background system.
 
 ## Blog / News
 
-Configure homepage blog presentation including Grid, Featured First, or Compact layouts; featured-post selection; post counts; featured images; dates; excerpts; and call-to-action labels.
+Configure homepage blog presentation including:
 
-## Shows and Newsletter
+- Grid
+- Featured First
+- Compact
+- Featured-post selection
+- Post counts
+- Featured images
+- Dates
+- Excerpts
+- Call-to-action labels
+- Section heading size
+- Section heading font role
+- Section background
 
-The Integrations screen provides provider-neutral fields for shows/event embeds and newsletter signup embeds.
+Homepage Blog section-heading typography remains independent from post-preview title typography.
+
+## Shows
+
+Shows is treated as a normal Homepage presentation section.
+
+Configure under:
+
+```text
+Music Project → Homepage → Shows
+```
+
+Homepage owns:
+
+- Section heading
+- Heading size
+- Heading font role
+- Section background
+
+The external Shows source remains Integration-owned.
+
+Configure the current source under:
+
+```text
+Music Project → Integrations
+```
 
 An optional Bandsintown adapter is available through:
 
@@ -110,11 +241,56 @@ An optional Bandsintown adapter is available through:
 
 The application ID may also be supplied through the `BIT_APP_ID` environment variable.
 
+This presentation/source split allows future first-party Shows content to use the same Homepage presentation layer without redesigning the Homepage admin.
+
+## Newsletter
+
+Newsletter is treated as a normal Homepage presentation section.
+
+Configure under:
+
+```text
+Music Project → Homepage → Newsletter
+```
+
+Homepage owns:
+
+- Section heading
+- Heading size
+- Heading font role
+- Section background
+- Supporting text
+
+The actual signup source remains Integration-owned.
+
+Configure the source under:
+
+```text
+Music Project → Integrations
+```
+
+Integrations may store provider-neutral shortcode, embed, URL, or other supported signup-source configuration.
+
+Music Project Core does not act as an email-marketing platform and does not store subscriber lists as part of this feature.
+
+## Integrations
+
+Integrations owns external source mechanics rather than Homepage presentation.
+
+Current integration responsibilities include:
+
+- Shows source/embed configuration
+- Newsletter signup source/embed configuration
+- Trusted provider rendering
+- Supported integration adapters
+
+Homepage presentation settings for Shows and Newsletter are stored separately under Homepage.
+
 ## Social Links
 
 Manage reusable social and contact links for supported placements such as:
 
-- Homepage hero
+- Homepage Hero
 - Mobile navigation
 - Footer
 - Site Status page
@@ -243,11 +419,77 @@ External services are contacted only through normal visitor actions such as foll
 
 Theme Style provides curated controls for colors, header behavior, brand display, corner styles, card shadows, border strength, font stacks, semantic typography assignments, and environmental texture.
 
+### Color System
+
+Theme Style uses semantic color roles instead of treating one Accent color as a catch-all.
+
+Foundation colors include:
+
+- Background Color
+- Alternate Background Color
+- Surface / Card Color
+- Text Color
+- Heading Color
+- Muted Text Color
+
+Brand and interaction colors include:
+
+- Accent / Highlight Color
+- Link Color
+- Button Background
+- Button Text
+- Text Selection Color
+
+Hero retains dedicated Hero text controls.
+
+**Alternate Background Color** is intended for optional full-width contrasting sections, such as alternating Homepage bands. It changes the section background only; normal Heading, Text, Muted Text, and Link colors continue to apply.
+
+The Colors screen includes a lightweight live palette preview so administrators can evaluate semantic color relationships before saving.
+
 Compatible themes may reuse these shared values for additional curated presentation surfaces such as Link Hub.
+
+## Page Title Presentation
+
+Music Project Core provides presentation settings for ordinary WordPress Pages.
+
+Global Theme Style controls include:
+
+- Page Title Style
+- Page Title Panel Tone
+- Page Title Panel Strength
+- Page Title Size
+
+Supported title styles are:
+
+- Standard
+- Editorial Panel
+- Minimal Overlay
+
+Individual Pages may override the global style or inherit the Theme Style default.
+
+The feature intentionally excludes:
+
+- Static Homepage
+- Posts page
+- Link Hub assigned Page
+- Posts
+- Archives
+
+Core owns the settings, normalization, Page override metadata, and public helper contract.
+
+Music Project Base owns the actual frontend markup and responsive presentation.
 
 ## Footer
 
-Configure tagline, copyright text, token replacement, brand visibility, footer menu visibility, Social Links visibility, and curated footer layouts.
+Configure:
+
+- Tagline
+- Copyright text
+- Token replacement
+- Brand visibility
+- Footer menu visibility
+- Social Links visibility
+- Curated footer layouts
 
 ## Site Status
 
@@ -271,14 +513,15 @@ Administrators retain access and can preview the status page before enabling it 
 # Suggested Setup Order
 
 1. Configure Homepage section visibility and order.
-2. Add Hero and Featured Content.
-3. Add Services and Quotes / Testimonials.
-4. Configure Shows and Newsletter under Integrations.
-5. Add Social Links.
-6. Configure Theme Style.
-7. Configure the Footer.
-8. Configure Link in Bio if required.
-9. Review Site Status settings.
+2. Configure Theme Style colors and typography.
+3. Add Hero and Featured Content.
+4. Add Services and Quotes / Testimonials.
+5. Configure Shows and Newsletter presentation under Homepage.
+6. Configure Shows and Newsletter external sources under Integrations.
+7. Add Social Links.
+8. Configure the Footer.
+9. Configure Link in Bio if required.
+10. Review Site Status settings.
 
 # Stored Data
 
@@ -301,6 +544,8 @@ Quotes and testimonials use the custom post type:
 mpc_press_quote
 ```
 
+Page Title Presentation overrides use Page metadata.
+
 Link Hub destinations are stored as bounded configuration within `mpc_link_hub_settings`.
 
 Individual Link Hub links are not WordPress posts and do not use a custom post type.
@@ -312,6 +557,8 @@ The assigned Link Hub WordPress Page remains an ordinary WordPress Page.
 Outstanding schema migrations run when the plugin is activated.
 
 A lightweight migration check also runs in WordPress administration so normal plugin updates can apply schema changes without requiring deactivation and reactivation.
+
+Homepage schema migrations preserve existing Shows and Newsletter presentation values while moving presentation ownership out of Integrations.
 
 Activation and updates do not automatically create a Link Hub Page.
 
@@ -384,7 +631,20 @@ Install and test the generated ZIP on a clean WordPress site before publishing i
 
 # Development
 
-The plugin uses WordPress-native APIs, including the Settings API, custom post types, Media Library, shortcodes, nonces, capabilities, translation functions, activation hooks, WordPress hooks and filters, Page APIs, and URL sanitization APIs.
+The plugin uses WordPress-native APIs, including:
+
+- Settings API
+- Custom post types
+- Media Library
+- Shortcodes
+- Nonces
+- Capabilities
+- Translation functions
+- Activation hooks
+- WordPress hooks and filters
+- Page APIs
+- Metadata APIs
+- URL sanitization APIs
 
 Asset versions use file modification times when available for cache busting.
 
@@ -407,6 +667,7 @@ mpc_is_homepage_section_visible()
 
 mpc_get_theme_style_settings()
 mpc_get_theme_style_setting()
+mpc_get_page_title_style()
 
 mpc_get_social_links_settings()
 mpc_get_social_links_setting()
@@ -434,7 +695,7 @@ mpc_get_link_hub_page_id()
 
 Callers should check `function_exists()` when Core may be inactive.
 
-Themes should consume the public Link Hub functions instead of reading `mpc_link_hub_settings` directly.
+Themes should consume documented Core functions instead of reading Core option arrays directly.
 
 ## Public Filters
 
@@ -496,7 +757,7 @@ to track settings-schema versions.
 
 Schema migrations are versioned separately from the public plugin version.
 
-Current schema groups include Link Hub.
+Current schema groups include Homepage and Link Hub.
 
 Future migrations must preserve existing settings and content, be idempotent, tolerate malformed legacy values, preserve extension-owned data where appropriate, and update schema versions only after successful migration.
 
@@ -514,7 +775,15 @@ Music Project Core intends to use Semantic Versioning for production releases.
 
 Music Project Core does not send product analytics or telemetry by default.
 
-Some user-configured features may intentionally communicate with third-party services, including Google Fonts, Shows or Newsletter providers, Bandsintown, WordPress oEmbed providers, Social Links, and Link Hub destinations.
+Some user-configured features may intentionally communicate with third-party services, including:
+
+- Google Fonts
+- Shows providers
+- Newsletter providers
+- Bandsintown
+- WordPress oEmbed providers
+- Social Links
+- Link Hub destinations
 
 The Link Hub itself does not bundle a third-party analytics SDK or load third-party social content merely because the Link Hub is viewed.
 
@@ -541,7 +810,7 @@ Include WordPress version, PHP version, active theme, Music Project Base version
 Current version:
 
 ```text
-1.4.0
+1.5.0
 ```
 
 # License
